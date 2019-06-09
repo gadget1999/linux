@@ -1,0 +1,2 @@
+sudo rm /home/share/bin/$1
+

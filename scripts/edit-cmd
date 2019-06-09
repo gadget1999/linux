@@ -1,0 +1,19 @@
+#!/bin/bash
+
+NOW=$(date +"%Y.%m.%d-%H:%M:%S")
+PROGRAM="${0##*/}"
+LOG=/tmp/$PROGRAM.log
+DEBUG=1
+
+source common.sh
+
+TEMPLATE=$CMD_PATH/cmd-template
+CMD_FILE=$CMD_PATH/$1
+
+if [ ! -e $CMD_FILE ]; then
+    debug "Command [$1] does not exist"
+    exit 1
+fi
+
+nano $CMD_FILE
+
