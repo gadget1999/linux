@@ -1,0 +1,50 @@
+# all logging settins
+$path = Get-Location
+$scriptName = $MyInvocation.MyCommand.Name
+$logFile = "$path\$scriptName.log"
+$logLevel = "INFO" # ("DEBUG","INFO","WARN","ERROR")
+$logSize = 1mb # 30kb
+$logCount = 10
+# end of settings
+
+function Write-Log-Line ($line) {
+ Add-Content $logFile -Value $Line
+ Write-Host $Line
+}
+
+# http://stackoverflow.com/a/38738942
+Function Write-Log {
+ [CmdletBinding()]
+ Param(
+  [Parameter(Mandatory=$True)]
+  [string]
+  $Message,
+ 
+  [Parameter(Mandatory=$False)]
+  [String]
+  $Level = "INFO"
+ )
+
+ $levels = ("DEBUG","INFO","WARN","ERROR")
+ $logLevelPos = [array]::IndexOf($levels, $logLevel)
+ $levelPos = [array]::IndexOf($levels, $Level)
+ $Stamp = (Get-Date).toString("yyyy/MM/dd HH:mm:ss:fff")
+
+ if ($logLevelPos -lt 0){
+  Write-Log-Line "$Stamp ERROR Wrong logLevel configuration [$logLevel]"
+ }
+ 
+ if ($levelPos -lt 0){
+  Write-Log-Line "$Stamp ERROR Wrong log level parameter [$Level]"
+ }
+
+ # if level parameter is wrong or configuration is wrong I still want to see the 
+ # message in log
+ if ($levelPos -lt $logLevelPos -and $levelPos -ge 0 -and $logLevelPos -ge 0){
+  return
+ }
+
+ $Line = "$Stamp $Level $Message"
+ Write-Log-Line $Line
+}
+
