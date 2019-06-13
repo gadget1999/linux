@@ -19,11 +19,11 @@ function Shutdown-IdleVMs
   {
    Shutdown-VM $VM.ResourceGroupName $VM.Name
   }
-#  elseif ($VM.PowerState -eq "VM running")
-#  {
-#   $metric=Get-AzMetric -ResourceId $VM.Id -TimeGrain 01:00:00 -DetailedOutput -MetricNames "Percentage CPU" -AggregationType Maximum
-#   Write-Log "CPU: $metric" "DEBUG"
-#  }
+  elseif ($VM.PowerState -eq "VM running")
+  {
+   $metric=Get-AzMetric -ResourceId $VM.Id -TimeGrain 01:00:00 -DetailedOutput -MetricNames "Percentage CPU" -AggregationType Maximum
+   Write-Log "CPU: $metric" "DEBUG"
+  }
  }
 }
 
