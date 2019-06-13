@@ -1,7 +1,7 @@
 . "./logger.ps1"
 $logFile="/tmp/shutdown-vms.log"
-#$logLevel="INFO"
-$logLevel="DEBUG"
+$logLevel="INFO"
+#$logLevel="DEBUG"
 
 function Shutdown-VM([string]$rg, [string]$vm)
 {
