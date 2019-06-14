@@ -1,6 +1,5 @@
 . "./logger.ps1"
 $logFile="/tmp/shutdown-vms.log"
-$logLevel="INFO"
 #$logLevel="DEBUG"
 
 function Shutdown-VM([string]$rg, [string]$vm)
@@ -19,11 +18,15 @@ function Shutdown-IdleVMs
   {
    Shutdown-VM $VM.ResourceGroupName $VM.Name
   }
-  elseif ($VM.PowerState -eq "VM running")
+  elseif (($VM.PowerState -eq "VM running") -and ($VM.StorageProfile.OsDisk.OsType -eq "Windows"))
   {
    $metric=Get-AzMetric -ResourceId $VM.Id -TimeGrain 01:00:00 -DetailedOutput -MetricNames "Percentage CPU" -AggregationType Maximum
    $cpu=$metric.Data.Maximum
-   Write-Log "CPU: $cpu" "DEBUG"
+   if ($cpu -lt 20)
+   {
+    Write-Log "VM CPU: $cpu" "INFO"
+    Shutdown-VM $VM.ResourceGroupName $VM.Name
+   }
   }
  }
 }
