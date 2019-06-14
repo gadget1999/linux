@@ -22,10 +22,17 @@ function Shutdown-IdleVMs
   {
    $metric=Get-AzMetric -ResourceId $VM.Id -TimeGrain 01:00:00 -DetailedOutput -MetricNames "Percentage CPU" -AggregationType Maximum
    $cpu=$metric.Data.Maximum
-   if (($cpu -ne $null) -and ($cpu -lt 20))
+   if ($cpu -ne $null)
    {
-    Write-Log "VM CPU: $cpu" "INFO"
-    Shutdown-VM $VM.ResourceGroupName $VM.Name
+    if ($cpu -lt 20)
+    {
+     Write-Log "VM max CPU in last hour: $cpu%" "INFO"
+     Shutdown-VM $VM.ResourceGroupName $VM.Name
+    }
+    else
+    {
+     Write-Log "VM max CPU in last hour: $cpu%" "DEBUG"
+    }
    }
   }
  }
