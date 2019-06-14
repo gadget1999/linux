@@ -22,7 +22,8 @@ function Shutdown-IdleVMs
   elseif ($VM.PowerState -eq "VM running")
   {
    $metric=Get-AzMetric -ResourceId $VM.Id -TimeGrain 01:00:00 -DetailedOutput -MetricNames "Percentage CPU" -AggregationType Maximum
-   Write-Log "CPU: $metric" "DEBUG"
+   $cpu=$metric.Data.Maximum
+   Write-Log "CPU: $cpu" "DEBUG"
   }
  }
 }
