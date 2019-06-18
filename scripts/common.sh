@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CMD_PATH=/usr/local/bin
+SUDO=sudo
 
 #PATH=$PATH:$CMD_PATH
 
