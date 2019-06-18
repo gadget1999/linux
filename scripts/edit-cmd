@@ -15,5 +15,5 @@ if [ ! -e $CMD_FILE ]; then
     exit 1
 fi
 
-nano $CMD_FILE
+$SUDO nano $CMD_FILE
 
