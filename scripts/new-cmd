@@ -11,9 +11,9 @@ TEMPLATE=$CMD_PATH/cmd-template
 CMD_FILE=$CMD_PATH/$1
 
 if [ ! -e $CMD_FILE ]; then
-    cp $TEMPLATE $CMD_FILE
-    chmod +x $CMD_FILE
-    nano $CMD_FILE
+ $SUDO cp $TEMPLATE $CMD_FILE
+ $SUDO chmod +x $CMD_FILE
+ $SUDO nano $CMD_FILE
 else
     debug "Command [$1] already exists."
 fi
