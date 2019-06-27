@@ -1,0 +1,3 @@
+         File: mycron
+
+@reboot /usr/local/bin/reboot-tasks #start services
