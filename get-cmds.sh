@@ -8,3 +8,4 @@ sudo chmod +x /usr/local/bin/*
 ls -l /usr/local/bin
 rm -R /tmp/linux-master
 rm /tmp/master.zip
+crontab /usr/local/bin/mycron
