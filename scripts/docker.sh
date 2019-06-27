@@ -5,8 +5,7 @@ PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 DEBUG=1
 
-CMD_PATH="/home/share/bin"
-source $CMD_PATH/common.sh
+source common.sh
 
 #####################################
 ## Docker helper functions
