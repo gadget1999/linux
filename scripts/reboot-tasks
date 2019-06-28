@@ -14,6 +14,6 @@ TASKS=( \
 
 for TASK in ${TASKS[*]}; do
   log "Starting $TASK..."
-  ($CMD_PATH/$TASK)&
+  ($TASK)&
   sleep 5
 done
