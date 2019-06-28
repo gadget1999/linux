@@ -5,7 +5,8 @@ PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 DEBUG=1
 
-source common.sh
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
 
 TASKS=( \
  ddns \
@@ -14,6 +15,6 @@ TASKS=( \
 
 for TASK in ${TASKS[*]}; do
   log "Starting $TASK..."
-  ($TASK)&
+  ($CMD_PATH/$TASK)&
   sleep 5
 done
