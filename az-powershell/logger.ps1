@@ -38,13 +38,15 @@ Function Write-Log {
   Write-Log-Line "$Stamp ERROR Wrong log level parameter [$Level]"
  }
 
+ $Line = "$Stamp $Level $Message"
+
  # if level parameter is wrong or configuration is wrong I still want to see the 
  # message in log
  if ($levelPos -lt $logLevelPos -and $levelPos -ge 0 -and $logLevelPos -ge 0){
+  Write-Host $Line
   return
  }
 
- $Line = "$Stamp $Level $Message"
  Write-Log-Line $Line
 }
 
