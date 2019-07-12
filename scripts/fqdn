@@ -1,2 +1,4 @@
+#!/bin/bash
+
 FQDN=test.gethow.com
 echo $FQDN
