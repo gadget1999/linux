@@ -1,3 +1,4 @@
-         File: mycron
+MAILTO=""
 
 @reboot /usr/local/bin/reboot-tasks #start services
+@daily /usr/local/bin/daily-tasks #start services
