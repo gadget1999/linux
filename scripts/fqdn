@@ -1,0 +1,2 @@
+FQDN=test.gethow.com
+echo $FQDN
