@@ -10,7 +10,7 @@ source $CMD_PATH/common.sh
 
 TASKS=( \
  ddns \
- ssr \
+ ssr-v2ray \
 )
 
 for TASK in ${TASKS[*]}; do
