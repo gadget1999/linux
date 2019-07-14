@@ -1,14 +1,8 @@
 #!/bin/bash
 
-NOW=$(date +"%Y.%m.%d-%H:%M:%S")
-PROGRAM="${0##*/}"
-LOG=/tmp/$PROGRAM.log
-DEBUG=1
-
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
-CERT_CMD=/home/cgadmin/.acme.sh/acme.sh
-CERT_DOMAIN=$($CMD_PATH/fqdn)
+CERT_CMD=/home/$MAIN_USER/.acme.sh/acme.sh
 
-sudo $CERT_CMD --renew -d $CERT_DOMAIN --standalone
+sudo $CERT_CMD --renew -d $DDNS_DOMAIN --standalone
