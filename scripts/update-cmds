@@ -54,10 +54,9 @@ TMP_FOLDER=/tmp/linux-master
 TMP_CMD_FOLDER=/tmp/linux-master/scripts
 
 cd /tmp
-rm $TMP_ZIP
 
-wget $GITHUB_URL > /dev/null
-unzip -o $TMP_ZIP > /dev/null
+wget -q $GITHUB_URL
+unzip -qq -o $TMP_ZIP
 
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 
