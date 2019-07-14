@@ -3,4 +3,4 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
-curl http://ip.42.pl/short; echo
+/usr/bin/curl -q http://ip.42.pl/short; echo
