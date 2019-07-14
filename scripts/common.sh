@@ -1,9 +1,7 @@
 #!/bin/bash
 
-CMD_PATH=/usr/local/bin
-SUDO=sudo
-
-#PATH=$PATH:$CMD_PATH
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/env.conf
 
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
