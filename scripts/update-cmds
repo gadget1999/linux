@@ -63,5 +63,5 @@ copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 
 sudo chmod +x $CMD_PATH/*
 
-rm -R TMP_FOLDER
+rm -R $TMP_FOLDER
 rm $TMP_ZIP
