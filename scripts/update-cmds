@@ -1,0 +1,67 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+function copy_file() {
+ source=$1
+ target=$2
+
+ # copy if target does not exist
+ if [ ! -f $target ]; then
+  log "Copying $target"
+  $SUDO cp $source $target
+  return 0
+ fi
+
+ # do not overwrite conf files
+ if [[ $target == *".conf" ]]; then
+  return 0
+ fi
+
+ # ask for confirmation if files are different
+ md5source=( $(md5sum "$source") )
+ md5target=( $(md5sum "$target") )
+ if [ $md5source == $md5target ]; then
+#  debug "Skipping unchanged file: $target"
+  return 0
+ fi
+
+ # file changed, asking for confirmation
+ read -p "Overwrite $target (y/n)?" CONT
+ if [ "$CONT" = "y" ]; then
+  log "Updating $target"
+  $SUDO cp $source $target
+ else
+  return 0;
+ fi
+}
+
+function copy_files() {
+ files=$1
+ folder=$2
+
+ for filepath in $files; do
+  filename=$(basename "$filepath")
+  target=$folder/$filename
+  copy_file $filepath $target
+ done
+}
+
+GITHUB_URL="https://github.com/gadget1999/linux/archive/master.zip"
+TMP_ZIP=/tmp/master.zip
+TMP_FOLDER=/tmp/linux-master
+TMP_CMD_FOLDER=/tmp/linux-master/scripts
+
+cd /tmp
+rm $TMP_ZIP
+
+wget $GITHUB_URL
+unzip -o $TMP_ZIP
+
+copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
+
+sudo chmod +x $CMD_PATH/*
+
+rm -R TMP_FOLDER
+rm $TMP_ZIP
