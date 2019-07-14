@@ -19,7 +19,7 @@ log "Starting container: $CONTAINER"
 docker run -d --rm \
  --name $CONTAINER \
  -v /etc/hosts:/etc/hosts \
- -e PASSWORD=$SSR-PASSWORD \ 
+ -e PASSWORD=$SSR_PASSWORD \ 
  -p $PORT:8388 \
  -p $PORT:8388/udp \
  $IMAGE
