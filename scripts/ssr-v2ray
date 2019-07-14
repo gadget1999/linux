@@ -8,7 +8,7 @@ CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
 
-V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts server;mode=quic;host=$DDNS-DOMAIN"
+V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts server;mode=quic;host=$DDNS_DOMAIN"
 
 log "Stop current container"
 stop_container $CONTAINER
@@ -25,7 +25,7 @@ docker run -d --rm \
  -v /etc/hosts:/etc/hosts \
  -v /root/.acme.sh:/root/.acme.sh \
  -v /etc/hosts:/etc/hosts \
- -e PASSWORD=$SSR-PASSWORD \
+ -e PASSWORD=$SSR_PASSWORD \
  -e DNS_ADDRS=176.103.130.130,176.103.130.131 \
  -p $PORT:8388 \
  -p $PORT:8388/udp \
