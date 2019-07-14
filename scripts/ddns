@@ -1,0 +1,26 @@
+#!/bin/bash
+
+NOW=$(date +"%Y.%m.%d-%H:%M:%S")
+PROGRAM="${0##*/}"
+LOG=/tmp/$PROGRAM.log
+DEBUG=1
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+$CMD_PATH/wait-internet
+
+PUBLIC_IP=$($CMD_PATH/public-ip)
+FQDN=$($CMD_PATH/fqdn)
+DNS_IP=$(dig +short $FQDN)
+
+debug "Public IP: $PUBLIC_IP, DNS IP: $DNS_IP"
+if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
+ log "No need to update DDNS"
+ exit
+fi
+
+log "Updating DDNS ..."
+/usr/bin/curl -s http://sync.afraid.org/u/$(ddns-key)/ >> $LOG
+
+cat $LOG
