@@ -21,6 +21,7 @@ if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
 fi
 
 log "Updating DDNS ..."
-/usr/bin/curl -s http://sync.afraid.org/u/$(ddns-key)/ >> $LOG
+DDNS_KEY=$($CMD_PATH/ddns-key)
+/usr/bin/curl -s http://sync.afraid.org/u/$DDNS_KEY/ >> $LOG
 
 cat $LOG
