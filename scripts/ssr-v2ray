@@ -1,10 +1,5 @@
 #!/bin/bash
 
-NOW=$(date +"%Y.%m.%d-%H:%M:%S")
-PROGRAM="${0##*/}"
-LOG=/tmp/$PROGRAM.log
-DEBUG=1
-
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 source $CMD_PATH/docker.sh
@@ -12,10 +7,8 @@ source $CMD_PATH/docker.sh
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
-PASSWORD=$($CMD_PATH/ssr-password)
 
-V2RAY_DOMAIN=$($CMD_PATH/fqdn)
-V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts server;mode=quic;host=$V2RAY_DOMAIN"
+V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts server;mode=quic;host=$DDNS-DOMAIN"
 
 log "Stop current container"
 stop_container $CONTAINER
@@ -32,7 +25,7 @@ docker run -d --rm \
  -v /etc/hosts:/etc/hosts \
  -v /root/.acme.sh:/root/.acme.sh \
  -v /etc/hosts:/etc/hosts \
- -e PASSWORD=$PASSWORD \
+ -e PASSWORD=$SSR-PASSWORD \
  -e DNS_ADDRS=176.103.130.130,176.103.130.131 \
  -p $PORT:8388 \
  -p $PORT:8388/udp \
