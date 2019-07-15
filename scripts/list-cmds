@@ -1,5 +1,8 @@
 #!/bin/bash
 
-ls /usr/local/bin
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+ls -c $CMD_PATH
 
 
