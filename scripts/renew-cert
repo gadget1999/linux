@@ -5,4 +5,4 @@ source $CMD_PATH/common.sh
 
 CERT_CMD=/home/$MAIN_USER/.acme.sh/acme.sh
 
-sudo $CERT_CMD --renew -d $DDNS_DOMAIN --standalone
+$SUDO $CERT_CMD --renew -d $DDNS_DOMAIN --standalone
