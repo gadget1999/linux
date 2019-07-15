@@ -13,6 +13,13 @@ function log() {
     echo "$TIMESTAMP $1" >> $LOG
 }
 
+function log_error() {
+    local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
+
+    echo "${RED}$TIMESTAMP $1${NOCOLOR}"
+    echo "$TIMESTAMP $1" >> $LOG
+}
+
 function debug() {
     if [ "$DEBUG" == "1" ]; then
         local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
@@ -75,7 +82,7 @@ function check_env
  local VARS=$1
  for VAR in ${VARS[*]}; do
   if [[ ${!VAR} == "" ]]; then
-   log "Invalid ENV variables found: $VAR"
+   log_error "Invalid ENV variables found: $VAR"
    exit
   fi
  done
