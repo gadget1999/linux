@@ -3,6 +3,8 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
+check_env "DDNS_DOMAIN DDNS_KEY"
+
 $CMD_PATH/wait-internet
 
 PUBLIC_IP=$($CMD_PATH/public-ip)
