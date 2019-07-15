@@ -3,6 +3,28 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/env.conf
 
+# Common variables
+NOW=$(date +"%Y.%m.%d-%H:%M:%S")
+PROGRAM="${0##*/}"
+LOG=/tmp/$PROGRAM.log
+DEBUG=1
+
+############# Env checking #############
+
+function check_env
+{
+ local VARS=$1
+ for VAR in ${VARS[*]}; do
+  if [[ ${!VAR} == "" ]]; then
+   log_error "Invalid ENV variables found: $VAR"
+   exit
+  fi
+   debug "$VAR=${!VAR}"
+ done
+}
+
+############# Logging #############
+
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NOCOLOR=`tput sgr0`
@@ -28,6 +50,8 @@ function debug() {
     fi
 }
 
+############# Locking (single-run) #############
+
 LOCKFILE=/tmp/$PROGRAM.lock
 
 function cleanup() {
@@ -39,10 +63,6 @@ function cleanup() {
 }
 
 function lock() {
-  Lock
-}
-
-function Lock() {
   trap cleanup EXIT
 
   if [ -e $LOCKFILE ]; then
@@ -62,29 +82,4 @@ function should_continue() {
   else
     return 0; # 0 means success (true condition)
   fi
-}
-
-function mqtt_pub() {
-  /home/share/bin/mqtt-pub "$1" "$2" $3
-}
-
-function combine_topics
-{
-  combine_topics=""
-  for a in "$@" # Loop over arguments
-  do
-    combine_topics+=" -t $a/# "
-  done
-}
-
-function check_env
-{
- local VARS=$1
- for VAR in ${VARS[*]}; do
-  if [[ ${!VAR} == "" ]]; then
-   log_error "Invalid ENV variables found: $VAR"
-   exit
-  fi
-   debug "$VAR=${!VAR}"
- done
 }
