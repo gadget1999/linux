@@ -4,6 +4,8 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 source $CMD_PATH/docker.sh
 
+check_env "SSR_PASSWORD DDNS_DOMAIN SSR_CERT_PATH" 
+
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
