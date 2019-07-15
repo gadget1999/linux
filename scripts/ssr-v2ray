@@ -23,8 +23,6 @@ log "Starting container: $CONTAINER"
 docker run -d --rm \
  --name $CONTAINER \
  -e "$V2RAY_ARGS" \
- -v /root/.acme.sh:/root/.acme.sh \
- -v /etc/hosts:/etc/hosts \
  -v $SSR_CERT_PATH:/root/.acme.sh \
  -v /etc/hosts:/etc/hosts \
  -e PASSWORD=$SSR_PASSWORD \
