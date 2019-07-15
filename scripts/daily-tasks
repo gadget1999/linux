@@ -1,19 +1,9 @@
 #!/bin/bash
 
-NOW=$(date +"%Y.%m.%d-%H:%M:%S")
-PROGRAM="${0##*/}"
-LOG=/tmp/$PROGRAM.log
-DEBUG=1
-
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
-TASKS=( \
- renew-cert \
- update-system \
-)
-
-for TASK in ${TASKS[*]}; do
+for TASK in ${DAILY_TASKS[*]}; do
   log "Starting $TASK..."
   ($CMD_PATH/$TASK)&
   sleep 5
