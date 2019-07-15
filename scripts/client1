@@ -1,2 +1,3 @@
-screen -D -R client1
+#!/bin/bash
 
+screen -D -R client1
