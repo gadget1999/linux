@@ -69,3 +69,14 @@ function combine_topics
     combine_topics+=" -t $a/# "
   done
 }
+
+function check_env
+{
+ local VARS=$1
+ for VAR in ${VARS[*]}; do
+  if [ ${$VAR} == "" ]; then
+   log "Invalid ENV variables found: $VAR"
+   exit
+  fi
+ done
+}
