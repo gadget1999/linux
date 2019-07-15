@@ -8,6 +8,7 @@ $CMD_PATH/wait-internet
 PUBLIC_IP=$($CMD_PATH/public-ip)
 DNS_IP=$(dig +short $DDNS_DOMAIN)
 
+logger "Public IP: $PUBLIC_IP, DNS IP: $DNS_IP"
 debug "Public IP: $PUBLIC_IP, DNS IP: $DNS_IP"
 if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
  log "No need to update DDNS"
@@ -17,4 +18,5 @@ fi
 log "Updating DDNS ..."
 /usr/bin/curl -s http://sync.afraid.org/u/$DDNS_KEY/ >> $LOG
 
+logger "$(tail $LOG)"
 cat $LOG
