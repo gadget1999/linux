@@ -19,7 +19,7 @@ function check_env
    log_error "Invalid ENV variables found: $VAR"
    exit
   fi
-   debug "$VAR=${!VAR}"
+  # debug "$VAR=${!VAR}"
  done
 }
 
