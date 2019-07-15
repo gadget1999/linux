@@ -3,6 +3,8 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
+check_env "MAIN_USER DDNS_DOMAIN"
+
 CERT_CMD=/home/$MAIN_USER/.acme.sh/acme.sh
 
 $SUDO $CERT_CMD --renew -d $DDNS_DOMAIN --standalone
