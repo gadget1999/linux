@@ -23,7 +23,7 @@ docker run -d --rm \
  -e "$V2RAY_ARGS" \
  -v /root/.acme.sh:/root/.acme.sh \
  -v /etc/hosts:/etc/hosts \
- -v /root/.acme.sh:/root/.acme.sh \
+ -v $SSR_CERT_PATH:/root/.acme.sh \
  -v /etc/hosts:/etc/hosts \
  -e PASSWORD=$SSR_PASSWORD \
  -e DNS_ADDRS=176.103.130.130,176.103.130.131 \
