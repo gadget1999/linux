@@ -1,13 +1,28 @@
 #!/bin/bash
 
-NOW=$(date +"%Y.%m.%d-%H:%M:%S")
-PROGRAM="${0##*/}"
-LOG=/tmp/$PROGRAM.log
-DEBUG=1
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
 
-source common.sh
+function update_os_centos() {
+ sudo yum -y update
+}
 
-sudo apt-get update
-sudo apt-get -y dist-upgrade
-sudo apt-get -y autoremove
-sudo reboot
+function update_os_debian() {
+ sudo apt-get update
+ sudo apt-get -y dist-upgrade
+ sudo apt-get -y autoremove
+}
+
+case $OS in
+ debian)
+  log "Update system (Debian)"
+  update_os_debian
+  ;;
+ centos)
+  log "Update system (CentOS)"
+  update_os_centos
+  ;;
+ *)
+  log "Unknown system type"
+  ;;
+esac
