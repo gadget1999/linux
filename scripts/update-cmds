@@ -3,9 +3,10 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
+NEED_CONFIRM="yes"
 function copy_file() {
- source=$1
- target=$2
+ local source=$1
+ local target=$2
 
  # copy if target does not exist
  if [ ! -f $target ]; then
@@ -20,26 +21,40 @@ function copy_file() {
  fi
 
  # ask for confirmation if files are different
- md5source=( $(md5sum "$source") )
- md5target=( $(md5sum "$target") )
+ local md5source=( $(md5sum "$source") )
+ local md5target=( $(md5sum "$target") )
  if [ $md5source == $md5target ]; then
 #  debug "Skipping unchanged file: $target"
   return 0
  fi
 
  # file changed, asking for confirmation
- read -p "Overwrite $target (y/n)?" CONT
- if [ "$CONT" = "y" ]; then
+ if [ $NEED_CONFIRM != "yes" ]; then
   log "Updating $target"
   $SUDO cp $source $target
- else
-  return 0;
+  return 0
  fi
+
+ read -p "Overwrite $target (Yes/[No]/All)?" choice
+ case "$choice" in
+  y|Y )
+   log "Updating $target"
+   $SUDO cp $source $target
+   ;;
+  A|a )
+   NEED_CONFIRM="no"
+   log "Updating $target"
+   $SUDO cp $source $target
+   ;;
+  * )
+   return 1
+   ;;
+ esac
 }
 
 function copy_files() {
- files=$1
- folder=$2
+ local files=$1
+ local folder=$2
 
  for filepath in $files; do
   filename=$(basename "$filepath")
