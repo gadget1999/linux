@@ -1,11 +1,7 @@
 #!/bin/bash
 
-NOW=$(date +"%Y.%m.%d-%H:%M:%S")
-PROGRAM="${0##*/}"
-LOG=/tmp/$PROGRAM.log
-DEBUG=1
-
-source common.sh
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
 
 #####################################
 ## Docker helper functions
