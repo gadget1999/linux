@@ -85,5 +85,6 @@ function check_env
    log_error "Invalid ENV variables found: $VAR"
    exit
   fi
+   log "$VAR=${!VAR}"
  done
 }
