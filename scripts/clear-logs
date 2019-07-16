@@ -1,5 +1,13 @@
 #!/bin/bash
 
-sudo rm -f -r /tmp/*.log
-sudo rm -f -r /tmp/*.txt
+function zerofile() {
+ file=$1
 
+ echo "Truncate $file"
+ sudo truncate -s 0 $file
+}
+
+for i in /tmp/*.log /tmp/*.txt;
+do
+ zerofile $i
+done
