@@ -19,7 +19,7 @@ function clean_lock() {
 
  # check if the lock file is orphaned
  debug "Found lock file, check if $app is still running..."
- local running=`pgrep $APP &> /dev/null && echo yes || echo no`
+ local running=`pgrep $app &> /dev/null && echo yes || echo no`
  if [ "$running" == "no" ]; then
   debug "Lock file is orphaned and will be deleted."
   sudo rm $lockfile
@@ -28,7 +28,7 @@ function clean_lock() {
  fi
 }
 
-for files in /tmp/*.lock;
-do
- clean_lock $i
+for filename in /tmp/*.lock; do
+ echo "File: $filename"
+ clean_lock $filename
 done
