@@ -6,5 +6,6 @@ source $CMD_PATH/common.sh
 TASKS=$1
 for TASK in ${TASKS[*]}; do
   log "Starting $TASK..."
-  $CMD_PATH/$TASK
+  ($CMD_PATH/$TASK)&
+  sleep 20
 done
