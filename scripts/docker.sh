@@ -7,9 +7,17 @@ source $CMD_PATH/common.sh
 ## Docker helper functions
 #####################################
 
-function stop_container() {
+function is_container_running() {
   docker ps | grep "$1" &> /dev/null
   if [ $? == 0 ]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+function stop_container() {
+  if [ $(is_container_running $1) == "true" ]; then
     echo "Stopping container: $1"
     docker stop $1
   fi
