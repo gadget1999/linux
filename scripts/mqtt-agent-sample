@@ -5,10 +5,11 @@ source $CMD_PATH/common.sh
 source $CMD_PATH/mqtt.sh
 source $CMD_PATH/firebase.sh
 
+check_mqtt_env
+check_firebase_env
+
 # only one instance can run
 lock
-
-check_mqtt_env
 
 #######################
 # Event Handlers
