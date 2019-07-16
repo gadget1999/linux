@@ -1,0 +1,46 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+source $CMD_PATH/mqtt.sh
+source $CMD_PATH/firebase.sh
+
+# only one instance can run
+lock
+
+check_mqtt_env
+
+#######################
+# Event Handlers
+#######################
+
+function example_switch_action() {
+ local state=$1
+ case $state in
+  on)
+   turn-on-switch &
+   firebase_send switch $1
+   ;;
+  off)
+   turn-off-switch &
+   firebase_send switch $1
+   ;;
+ esac
+}
+
+run_cmd() {
+ local cmd=$1
+ local arg=$2
+
+ log "Received command: $cmd ($arg)"
+ case $cmd in
+  example_switch)
+   example_switch_action $arg
+   ;;
+ esac
+}
+
+#######################
+AGENT_ID=$(hostname)
+firebase_set_agent $AGENT_ID
+start_mqtt_agent $AGENT_ID
