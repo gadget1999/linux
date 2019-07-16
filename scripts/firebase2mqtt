@@ -1,0 +1,36 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+source $CMD_PATH/mqtt.sh
+source $CMD_PATH/firebase.sh
+
+check_firebase_env
+check_mqtt_env
+
+############################### Background ##################################
+# In order to process remote events, Firebase is used as source of events
+# as it's internet facing.
+#
+# However, many IOT applications or devices are connected to local MQTT 
+# server, which is faster and more secure (less exposure).
+#
+# This command is to serve as a Firebase to MQTT bridge
+#############################################################################
+
+lock
+
+#################################
+# Callback Event Handlers
+#################################
+
+function firebase_callback() {
+ local cmd=$1
+ local arg=$2
+ local path=$3
+
+ debug "Received command: $cmd ($arg) (path: $path)"
+ mqtt_send "$MQTT_CMD_BASE/$path" $arg
+}
+
+start_firebase_agent
