@@ -6,15 +6,6 @@ source $CMD_PATH/common.sh
 ##########################
 # MQTT Shell Listener
 
-# Agent is a listener entity, multiple agents can co-exist with each using own topic
-MQTT_AGENT=""
-MQTT_TOPIC=""
-
-function mqtt_set_agent() {
- MQTT_AGENT=$1
- MQTT_TOPIC="$MQTT_CMD_BASE/$MQTT_AGENT"
-}
-
 function mqtt_send() {
  local topic=$1
  local msg=$2
@@ -43,11 +34,28 @@ function mqtt_event_handler()    {
  run_cmd $cmd $arg
 }
 
-mqtt_listen() {
+function mqtt_listen() {
+ local agent=$1
+ local topic="$MQTT_CMD_BASE/$agent"
+
  /usr/bin/mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
-  -t "$MQTT_TOPIC/#" | \
+  -t "$topic/#" | \
  while read -r line ; do
   mqtt_event_handler $line
  done
 }
+
+function start_mqtt_agent {
+ local agent=$1
+
+ # sometimes mqtt connection may drop, due to network conditions
+ while true; do
+  mqtt_listen agent
+
+  log "restarting mqtt listener..."
+  sleep 2
+ done
+}
+
+
