@@ -48,7 +48,7 @@ function event_handler() {
 
 function firebase_listen() {
  # httpie is used to handle streaming events from Firebase
- FB_REQUEST_URL="$FB_BASE_URL/request/.json?auth=$FB_KEY"
+ FB_REQUEST_URL="$FB_BASE_URL/request.json?auth=$FB_KEY"
  /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
   echo "$line" | grep "data: {"
