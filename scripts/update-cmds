@@ -72,6 +72,7 @@ TMP_CMD_FOLDER=/tmp/linux-master/scripts
 
 cd /tmp
 
+rm $TMP_ZIP 2> /dev/null
 wget -q $GITHUB_URL
 unzip -qq -o $TMP_ZIP
 
