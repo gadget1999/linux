@@ -5,7 +5,6 @@ source $CMD_PATH/common.sh
 
 function check_firebase_env {
  check_env "FB_BASE_URL FB_KEY FB_AGENT"
- FB_REQUEST_URL="$FB_BASE_URL/request/$FB_AGENT.json?auth=$FB_KEY"
 }
 
 function firebase_send() {
@@ -49,6 +48,7 @@ function event_handler() {
 
 function firebase_listen() {
  # httpie is used to handle streaming events from Firebase
+ FB_REQUEST_URL="$FB_BASE_URL/request/.json?auth=$FB_KEY"
  /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
   echo "$line" | grep "data: {"
