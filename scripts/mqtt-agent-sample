@@ -28,7 +28,7 @@ function example_switch_action() {
  esac
 }
 
-run_cmd() {
+function mqtt_callback() {
  local cmd=$1
  local arg=$2
 
@@ -40,7 +40,4 @@ run_cmd() {
  esac
 }
 
-#######################
-AGENT_ID=$(hostname)
-firebase_set_agent $AGENT_ID
-start_mqtt_agent $AGENT_ID
+start_mqtt_agent
