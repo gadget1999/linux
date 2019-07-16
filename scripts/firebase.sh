@@ -25,6 +25,10 @@ function trim_str() {
  echo "$str"
 }
 
+# it seems most of time the format is as Google documented:
+# data: {"path":"/host/disable-pihole","data":"4m"}
+# however, when using curl to update firebase, sometimes data is like:
+# data: {"path":"/host","data":{"disable-pihole":"8m"}}
 function event_handler() {
  local json=$2
  local path=$(echo $json | jq '.path')
