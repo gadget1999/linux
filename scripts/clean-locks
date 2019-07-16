@@ -1,0 +1,34 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+# Clean up orphan lock files
+# The reason to use lock files instead of check process name is that 
+# lock files are faster, easier to avoid race conditions
+
+function clean_lock() {
+ local lockfile=$1
+ local filename="$(basename -- "$lockfile")"
+ local app="${filename%.*}"
+ 
+ debug "Checking lock file $lockfile (App: $app) ..."
+ if [ ! -e $lockfile ]; then
+  return
+ fi
+
+ # check if the lock file is orphaned
+ debug "Found lock file, check if $app is still running..."
+ local running=`pgrep $APP &> /dev/null && echo yes || echo no`
+ if [ "$running" == "no" ]; then
+  debug "Lock file is orphaned and will be deleted."
+  sudo rm $lockfile
+ else
+  debug "App is running, so it's normal."
+ fi
+}
+
+for files in /tmp/*.lock;
+do
+ clean_lock $i
+done
