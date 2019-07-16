@@ -53,3 +53,13 @@ function firebase_listen() {
   fi
  done
 }
+
+function start_firebase_agent {
+ # sometimes firebase connection may drop, due to network conditions
+ while true; do
+  firebase_listen
+
+  log "restarting firebase agent..."
+  sleep 2
+ done
+}
