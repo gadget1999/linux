@@ -1,0 +1,14 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+FILENAME=env.conf
+GITHUB_URL="https://github.com/gadget1999/linux/raw/master/scripts/$FILENAME"
+
+cd /tmp
+wget -q $GITHUB_URL
+
+$SUDO vimdiff /tmp/$FILENAME $CMD_PATH/$FILENAME
+
+rm /tmp/$FILENAME
