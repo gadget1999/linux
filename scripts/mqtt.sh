@@ -32,8 +32,8 @@ function mqtt_event_handler()    {
  local cmd=${1##*/}  # get leaf name
  local arg=${2//\"/}  # trim quotation marks
 
- # this run_cmd function is implemented by listener instance
- run_cmd $cmd $arg
+ # this callback function is implemented by listener instance
+ mqtt_callback $cmd $arg
 }
 
 function mqtt_listen() {
