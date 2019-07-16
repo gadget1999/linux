@@ -3,8 +3,4 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
-for TASK in ${REBOOT_TASKS[*]}; do
-  log "Starting $TASK..."
-  ($CMD_PATH/$TASK)&
-  sleep 5
-done
+$CMD_PATH/run-tasks "$REBOOT_TASKS"
