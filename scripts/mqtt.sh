@@ -3,8 +3,9 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
-##########################
-# MQTT Shell Listener
+function check_mqtt_env {
+ check_env "MQTT_SERVER MQTT_PORT MQTT_USER MQTT_PASSWORD MQTT_CMD_BASE"
+}
 
 function mqtt_send() {
  local topic=$1
