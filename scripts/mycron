@@ -1,4 +1,7 @@
 MAILTO=""
 
-@reboot /usr/local/bin/reboot-tasks #start services
-@daily /usr/local/bin/daily-tasks #daily maintenance
+@reboot /usr/local/bin/reboot-tasks
+@hourly /usr/local/bin/hourly-tasks
+@daily /usr/local/bin/daily-tasks
+@weekly /usr/local/bin/weekly-tasks
+@monthly /usr/local/bin/monthly-tasks
