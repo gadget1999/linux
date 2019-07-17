@@ -4,17 +4,20 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 source $CMD_PATH/email.sh
 
-check_env "MAIN_USER DDNS_DOMAIN CERT_CMD CERT_ROOT CERT_METHOD CERT_LOCAL_PORT"
+check_env "DDNS_DOMAIN CERT_CMD CERT_ROOT CERT_METHOD CERT_LOCAL_PORT"
 
-RENEW_CMD_HTTP="$SUDO $CERT_CMD --renew --ecc -d $DDNS_DOMAIN --standalone --httpport $CERT_LOCAL_PORT"
+RENEW_CMD_HTTP="$SUDO $CERT_CMD --renew -d $DDNS_DOMAIN --standalone --httpport $CERT_LOCAL_PORT"
 RENEW_CMD_TLS="$SUDO $CERT_CMD --renew --ecc -d $DDNS_DOMAIN --standalone --alpn --tlsport $CERT_LOCAL_PORT"
+ECC=""
 
 case $CERT_METHOD in
  http)
   RENEW_CMD=$RENEW_CMD_HTTP
+  ECC=""
   ;;
  tls)
   RENEW_CMD=$RENEW_CMD_TLS
+  ECC="_ecc"
   ;;
  *)
   log_error "Unknown certificate renew type: $CERT_METHOD"
@@ -39,7 +42,7 @@ fi
 
 if [ $CERT_STORAGE != "" ]; then
  log "Copying new certificates"
- CERT_PATH="$CERT_ROOT/$DDNS_DOMAIN"_ecc
+ CERT_PATH="$CERT_ROOT/$DDNS_DOMAIN"$ECC
  $SUDO cp $CERT_PATH/fullchain.cer $CERT_STORAGE/fullchain.pem
  $SUDO cp $CERT_PATH/$CERT_DOMAIN.key $CERT_STORAGE/privkey.pem
 fi
