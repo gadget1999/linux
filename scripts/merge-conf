@@ -9,6 +9,12 @@ GITHUB_URL="https://github.com/gadget1999/linux/raw/master/scripts/$FILENAME"
 cd /tmp
 wget -q $GITHUB_URL
 
-$SUDO mcdiff /tmp/$FILENAME $CMD_PATH/$FILENAME
+# prefer vimdiff
+DIFF_CMD=vimdiff
+if ! [ -x "$(command -v $DIFF_CMD)" ]; then
+  DIFF_CMD=mcdiff
+fi
+
+$SUDO $DIFF_CMD /tmp/$FILENAME $CMD_PATH/$FILENAME
 
 rm /tmp/$FILENAME
