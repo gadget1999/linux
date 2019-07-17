@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 source $CMD_PATH/docker.sh
 
-check_env "SSR_PASSWORD DDNS_DOMAIN SSR_CERT_PATH" 
+check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT" 
 
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
@@ -23,7 +23,7 @@ log "Starting container: $CONTAINER"
 docker run -d --rm \
  --name $CONTAINER \
  -e "$V2RAY_ARGS" \
- -v $SSR_CERT_PATH:/root/.acme.sh \
+ -v $CERT_ROOT:/root/.acme.sh \
  -v /etc/hosts:/etc/hosts \
  -e PASSWORD=$SSR_PASSWORD \
  -e DNS_ADDRS=176.103.130.130,176.103.130.131 \
