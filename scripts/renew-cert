@@ -30,8 +30,14 @@ case $CERT_METHOD in
   ;;
 esac
 
+if [ "$ENABLE_JIT_ACCESS" != "" ]; then
+ log "Enable firewall JIT access"
+ $ENABLE_JIT_ACCESS
+fi
+
+log "Begin to renew certificate"
 OUTPUT="$($RENEW_CMD)"
-log "Renew cert: $OUTPUT"
+log "Result: $OUTPUT"
 
 if [[ $OUTPUT != *"Your cert key"* ]]; then
  exit
@@ -50,5 +56,5 @@ if [ "$CERT_STORAGE" != "" ]; then
  log "Copying new certificates to $CERT_STORAGE"
  CERT_PATH="$CERT_ROOT/$DDNS_DOMAIN"$ECC
  $SUDO cp $CERT_PATH/fullchain.cer $CERT_STORAGE/fullchain.pem
- $SUDO cp $CERT_PATH/$CERT_DOMAIN.key $CERT_STORAGE/privkey.pem
+ $SUDO cp $CERT_PATH/$DDNS_DOMAIN.key $CERT_STORAGE/privkey.pem
 fi
