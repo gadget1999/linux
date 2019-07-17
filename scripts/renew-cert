@@ -33,6 +33,7 @@ if [[ $OUTPUT != *"Your cert key"* ]]; then
 fi
 
 if [ "$MAIN_EMAIL" != "" ]; then
+ log "Sending email notification to $MAIN_EMAIL"
  check_email_env
  send_email \
   $MAIN_EMAIL \
@@ -41,7 +42,7 @@ if [ "$MAIN_EMAIL" != "" ]; then
 fi
 
 if [ "$CERT_STORAGE" != "" ]; then
- log "Copying new certificates"
+ log "Copying new certificates to $CERT_STORAGE"
  CERT_PATH="$CERT_ROOT/$DDNS_DOMAIN"$ECC
  $SUDO cp $CERT_PATH/fullchain.cer $CERT_STORAGE/fullchain.pem
  $SUDO cp $CERT_PATH/$CERT_DOMAIN.key $CERT_STORAGE/privkey.pem
