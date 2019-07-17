@@ -26,6 +26,10 @@ function combine_topics
  do
   combine_topics+=" -t $a/# "
  done
+
+ if [ "$combine_topics" == "" ]; then
+  combine_topics="-t #"
+ fi
 }
 
 function mqtt_event_handler()    {
@@ -55,4 +59,21 @@ function start_mqtt_agent {
  done
 }
 
+function start_mqtt_monitoring() {
+ local topics=$1
+ 
+ /usr/bin/mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
+  -u $MQTT_USER -P $MQTT_PASSWORD \
+  $topics | \
+   xargs -d$'\n' -L1 sh -c 'date "+%Y.%m.%d-%H:%M:%S $0"'
+}
 
+function start_mqtt_logging() {
+ local topics=$1
+ 
+ /usr/bin/mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
+  -u $MQTT_USER -P $MQTT_PASSWORD \
+  $topics | \
+   xargs -d$'\n' -L1 sh -c 'date "+%Y.%m.%d-%H:%M:%S $0"' \
+   >> $LOG
+}
