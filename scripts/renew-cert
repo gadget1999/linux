@@ -57,4 +57,5 @@ if [ "$CERT_STORAGE" != "" ]; then
  CERT_PATH="$CERT_ROOT/$DDNS_DOMAIN"$ECC
  $SUDO cp $CERT_PATH/fullchain.cer $CERT_STORAGE/fullchain.pem
  $SUDO cp $CERT_PATH/$DDNS_DOMAIN.key $CERT_STORAGE/privkey.pem
+ ls -l $CERT_STORAGE
 fi
