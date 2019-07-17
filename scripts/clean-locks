@@ -29,6 +29,5 @@ function clean_lock() {
 }
 
 for filename in /tmp/*.lock; do
- echo "File: $filename"
  clean_lock $filename
 done
