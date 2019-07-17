@@ -4,8 +4,11 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
 function check_email_env {
- check_env "SENDGRID_API_KEY FROM_EMAIL FROM_NAME"
+ check_env "SENDGRID_API_KEY"
 }
+
+FROM_EMAIL="$(hostname)@linux.com"
+FROM_NAME="Server-$(hostname)"
 
 function send_email() {
  local mailto=$1
