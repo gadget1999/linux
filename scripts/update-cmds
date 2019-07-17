@@ -36,7 +36,8 @@ function copy_file() {
  fi
 
  echo "================= $target ================="
- diff --color --side-by-side $target $source
+ #diff --color --side-by-side $target $source
+ diff --color $target $source
  read -p "Overwrite $target (Yes/[No]/All)?" choice
  case "$choice" in
   y|Y )
