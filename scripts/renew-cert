@@ -9,6 +9,8 @@ check_env "DDNS_DOMAIN CERT_CMD CERT_ROOT CERT_METHOD CERT_LOCAL_PORT"
 FORCE_RENEW=$1
 if [ "$FORCE_RENEW" == "force" ]; then
  FORCE_RENEW="--force"
+else
+ FORCE_RENEW=""
 fi
 
 RENEW_CMD_HTTP="$SUDO $CERT_CMD --renew $FORCE_RENEW -d $DDNS_DOMAIN --standalone --httpport $CERT_LOCAL_PORT"
