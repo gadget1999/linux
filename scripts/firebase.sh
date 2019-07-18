@@ -68,9 +68,10 @@ function firebase_listen() {
 }
 
 function start_firebase_agent {
+ local endpoint=$1
  # sometimes firebase connection may drop, due to network conditions
  while true; do
-  firebase_listen "Mqtt/request"
+  firebase_listen "$endpoint"
 
   log "restarting firebase agent..."
   sleep 2
