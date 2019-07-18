@@ -1,0 +1,27 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+function list_packages_centos() {
+ expac --timefmt='%Y-%m-%d %T' '%l\t%n'|sort -n
+}
+
+function list_packages_debian() {
+ grep " installed " /var/log/dpkg.log
+}
+
+case $OS in
+ debian)
+  log "List installed packages (Debian)"
+  list_packages_debian
+  ;;
+ centos)
+  log "List installed packages (CentOS)"
+  list_packages_centos
+  ;;
+ *)
+  log_error "Unknown system type"
+  exit 1
+  ;;
+esac
