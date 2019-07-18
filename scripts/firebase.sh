@@ -12,9 +12,11 @@ function firebase_response() {
  local path=$1
  local state=$2
  local msg='{"status":"'"$state $NOW"'"}'
- local fullpath="response/$FB_AGENT/$path"
+ local url="$FB_BASE_URL/response/$FB_AGENT/$path.json?auth=$FB_KEY"
+ local fullpath="/$path"
  
- firebase_send "$fullpath" "$msg"
+ debug "Sending firebase message to [$url]: $msg"
+ /usr/bin/curl -X PATCH -d "$msg" "$url"
 }
 
 function firebase_send() {
@@ -23,7 +25,7 @@ function firebase_send() {
  local url="$FB_BASE_URL/$path.json?auth=$FB_KEY"
 
  debug "Sending firebase message to [$url]: $msg"
- /usr/bin/curl -X PATCH -d "$msg" "$url"
+ /usr/bin/curl -X PUT -d "$msg" "$url"
 }
 
 function trim_str() {
