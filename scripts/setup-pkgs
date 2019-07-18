@@ -3,4 +3,4 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
-PACKAGES="dnsutils htop nano screen socat"
+PACKAGES="dnsutils htop jq nano screen socat"
