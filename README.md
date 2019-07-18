@@ -6,3 +6,4 @@ Functions include:
 * SSL certificate management
 * Firebase functions, and real-time based event listener
 * MQTT functions, and real-time based event listener
+* Azure PowerShell scripts on Linux
