@@ -4,3 +4,26 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
 PACKAGES="dnsutils htop jq nano screen socat"
+
+function setup_packages_centos() {
+ sudo yum install -y $PACKAGES
+}
+
+function setup_packages_debian() {
+ sudo apt-get install -y $PACKAGES
+}
+
+case $OS in
+ debian)
+  log "Installing $PACKAGES (Debian)"
+  setup_packages_debian
+  ;;
+ centos)
+  log "Installing $PACKAGES (CentOS)"
+  setup_packages_centos
+  ;;
+ *)
+  log_error "Unknown system type"
+  exit 1
+  ;;
+esac
