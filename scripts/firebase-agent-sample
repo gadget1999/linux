@@ -1,0 +1,24 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+source $CMD_PATH/firebase.sh
+
+check_firebase_env
+
+lock
+
+#################################
+# Callback Event Handlers
+#################################
+
+function firebase_callback() {
+ local cmd=$1
+ local arg=$2
+ local path=$3
+
+ debug "Received command: $cmd ($arg) (path: $path)"
+ firebase_response "$cmd" "$arg"
+}
+
+start_firebase_agent "request"
