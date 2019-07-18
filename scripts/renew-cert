@@ -34,7 +34,7 @@ esac
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
  log "Enable firewall JIT access"
- $ENABLE_JIT_ACCESS
+ $CMD_PATH/$ENABLE_JIT_ACCESS
 fi
 
 log "Begin to renew certificate"
