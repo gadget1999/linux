@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 
 function list_packages_centos() {
- expac --timefmt='%Y-%m-%d %T' '%l\t%n'|sort -n
+ rpm -qa --qf '%{INSTALLTIME:date}: %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -n
 }
 
 function list_packages_debian() {
