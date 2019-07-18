@@ -23,6 +23,7 @@ case $OS in
   update_os_centos
   ;;
  *)
-  log "Unknown system type"
+  log_error "Unknown system type"
+  exit 1
   ;;
 esac
