@@ -4,13 +4,19 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 source $CMD_PATH/docker.sh
 
-check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT" 
+check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT"
 
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
 
 V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts server;mode=quic;host=$DDNS_DOMAIN"
+CONTAINER_MODE="-d"
+
+if [ "$1" == "debug" ]; then
+ V2RAY_ARGS="$V2RAY_ARGS;loglevel=debug"
+ CONTAINER_MODE="-it"
+fi
 
 log "Stop current container"
 stop_container $CONTAINER
@@ -20,7 +26,7 @@ docker pull $IMAGE
 
 log "Starting container: $CONTAINER"
 
-docker run -d --rm \
+docker run $CONTAINER_MODE --rm \
  --name $CONTAINER \
  -e "$V2RAY_ARGS" \
  -v $CERT_ROOT:/root/.acme.sh \
