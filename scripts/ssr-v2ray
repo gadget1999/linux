@@ -10,13 +10,13 @@ CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
 
-V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts server;mode=quic;host=$DDNS_DOMAIN"
+V2RAY_OPTS="server;mode=quic;host=$DDNS_DOMAIN"
 CONTAINER_MODE="-d"
-
 if [ "$1" == "debug" ]; then
- V2RAY_ARGS="$V2RAY_ARGS;loglevel=debug"
+ V2RAY_OPTS="$V2RAY_OPTS;loglevel=debug"
  CONTAINER_MODE="-it"
 fi
+V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts $V2RAY_OPTS"
 
 log "Stop current container"
 stop_container $CONTAINER
