@@ -8,9 +8,10 @@ check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT"
 
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
-PORT=443
 
+PORT=443
 if [ "$SSR_PORT" != "" ]; then
+ log "Use port: $SSR_PORT"
  PORT=$SSR_PORT
 fi
 
