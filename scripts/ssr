@@ -8,7 +8,12 @@ check_env "SSR_PASSWORD"
 
 CONTAINER="ssr"
 IMAGE="shadowsocks/shadowsocks-libev"
+
 PORT=443
+if [ "$SSR_PORT" != "" ]; then
+ log "Use port: $SSR_PORT"
+ PORT=$SSR_PORT
+fi
 
 log "Stop current container"
 stop_container $CONTAINER
