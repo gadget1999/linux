@@ -10,7 +10,17 @@ CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
 
-V2RAY_OPTS="server;mode=quic;host=$DDNS_DOMAIN"
+case $SSR_MODE in
+ tls)
+  log "Using TLS mode V2Ray"
+  V2RAY_OPTS="server;tls;host=$DDNS_DOMAIN"
+  ;;
+ *)
+  log "Using QUIC mode V2Ray (default)"
+  V2RAY_OPTS="server;mode=quic;host=$DDNS_DOMAIN"
+  ;;
+esac
+
 CONTAINER_MODE="-d"
 if [ "$1" == "debug" ]; then
  V2RAY_OPTS="$V2RAY_OPTS;loglevel=debug"
