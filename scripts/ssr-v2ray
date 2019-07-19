@@ -10,6 +10,10 @@ CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 PORT=443
 
+if [ "$SSR_PORT" != "" ]; then
+ PORT=$SSR_PORT
+fi
+
 case $SSR_MODE in
  tls)
   log "Using TLS mode V2Ray"
