@@ -15,7 +15,7 @@ if [ "$1" == "force" ]; then
 fi
 
 log "Begin to renew certificate: $DDNS_DOMAIN"
-if renew_certificate FORCE_RENEW; then
+if renew_certificate $FORCE_RENEW; then
  exit
 else
  log "Succeeded."
