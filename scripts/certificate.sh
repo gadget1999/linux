@@ -38,12 +38,14 @@ function issue_cert()  {
   cmd="$cmd --keylength ec-384"
  fi
  
- log "Begin to issue certificate: $cmd"
+ debug "CMD: $cmd"
  local output="$($cmd)"
- log "Result: $output"
+ debug "Result: $output"
  
  if [[ $output != *"Your cert key"* ]]; then
-  issue_cert="OK"
+  return 0
+ else
+  return 1
  fi
 }
 
@@ -54,11 +56,13 @@ function renew_cert()  {
   cmd="$cmd --ecc"
  fi
  
- log "Begin to renew certificate: $cmd"
+ debug "CMD: $cmd"
  local output="$($cmd)"
- log "Result: $output"
+ debug "Result: $output"
  
  if [[ $output != *"Your cert key"* ]]; then
-  renew_cert="OK"
+  return 0
+ else
+  return 1
  fi
 }
