@@ -3,47 +3,17 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/common.sh
 source $CMD_PATH/email.sh
-
-check_env "DDNS_DOMAIN CERT_CMD CERT_ROOT CERT_METHOD CERT_LOCAL_PORT"
-
-FORCE_RENEW=""
-if [ "$1" == "force" ]; then
- FORCE_RENEW="--force"
-fi
-
-ECC=""
-if [ "$CERT_FOLDER" != "" ]; then
- ECC="--ecc"
-else
- CERT_FOLDER=$DDNS_DOMAIN
-fi
-
-RENEW_CMD_HTTP="$SUDO $CERT_CMD --renew $FORCE_RENEW $ECC -d $DDNS_DOMAIN --standalone --httpport $CERT_LOCAL_PORT"
-RENEW_CMD_TLS="$SUDO $CERT_CMD --renew $FORCE_RENEW $ECC -d $DDNS_DOMAIN --standalone --alpn --tlsport $CERT_LOCAL_PORT"
-
-case $CERT_METHOD in
- http)
-  RENEW_CMD=$RENEW_CMD_HTTP
-  ;;
- tls)
-  RENEW_CMD=$RENEW_CMD_TLS
-  ;;
- *)
-  log_error "Unknown certificate renew type: $CERT_METHOD"
-  exit 1
-  ;;
-esac
+source $CMD_PATH/certificate.sh
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
  log "Enable firewall JIT access"
  $CMD_PATH/$ENABLE_JIT_ACCESS
 fi
 
-log "Begin to renew certificate"
-OUTPUT="$($RENEW_CMD)"
-log "Result: $OUTPUT"
-
-if [[ $OUTPUT != *"Your cert key"* ]]; then
+log "Begin to renew certificate: $DDNS_DOMAIN"
+if func arg; then
+ log "Succeeded."
+else
  exit
 fi
 
@@ -58,8 +28,7 @@ fi
 
 if [ "$CERT_STORAGE" != "" ]; then
  log "Copying new certificates to $CERT_STORAGE"
- CERT_PATH="$CERT_ROOT/$CERT_FOLDER"
- $SUDO cp $CERT_PATH/fullchain.cer $CERT_STORAGE/fullchain.pem
- $SUDO cp $CERT_PATH/$DDNS_DOMAIN.key $CERT_STORAGE/privkey.pem
+ $SUDO cp $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
+ $SUDO cp $CERT_KEY $CERT_STORAGE/privkey.pem
  ls -l $CERT_STORAGE
 fi
