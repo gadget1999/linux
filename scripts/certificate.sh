@@ -50,7 +50,8 @@ function issue_certificate()  {
 }
 
 function renew_certificate()  {
- local cmd="$SUDO $CERT_CMD --renew -d $DDNS_DOMAIN --standalone $CERT_TRANSPORT"
+ local force=$1
+ local cmd="$SUDO $CERT_CMD --renew $force -d $DDNS_DOMAIN --standalone $CERT_TRANSPORT"
  
  if [ "$CERT_TYPE" == "ecc" ]; then
   cmd="$cmd --ecc"
