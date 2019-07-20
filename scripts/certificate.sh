@@ -31,7 +31,7 @@ case $CERT_METHOD in
   ;;
 esac
 
-function issue_cert()  {
+function issue_certificate()  {
  local cmd="$SUDO $CERT_CMD --issue -d $DDNS_DOMAIN --standalone $CERT_TRANSPORT"
  
  if [ "$CERT_TYPE" == "ecc" ]; then
@@ -49,7 +49,7 @@ function issue_cert()  {
  fi
 }
 
-function renew_cert()  {
+function renew_certificate()  {
  local cmd="$SUDO $CERT_CMD --renew -d $DDNS_DOMAIN --standalone $CERT_TRANSPORT"
  
  if [ "$CERT_TYPE" == "ecc" ]; then
