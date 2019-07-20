@@ -7,7 +7,7 @@ source $CMD_PATH/common.sh
 # Acme.sh based wrapper to handle certificate issue and renew
 ##############################################################
 
-check_env "MAIN_USER CERT_ROOT CERT_TYPE CERT_METHOD CERT_LOCAL_PORT DDNS_DOMAIN"
+check_env "MAIN_USER CERT_ROOT CERT_METHOD CERT_LOCAL_PORT DDNS_DOMAIN"
 
 CERT_CMD=/home/$MAIN_USER/.acme.sh/acme.sh
 
