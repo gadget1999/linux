@@ -15,6 +15,9 @@ if [ "$SSR_PORT" != "" ]; then
  PORT=$SSR_PORT
 fi
 
+if [ "$1" == "tls" ]; then
+ SSR_MODE="tls"
+fi
 case $SSR_MODE in
  tls)
   log "Using TLS mode V2Ray"
