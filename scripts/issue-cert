@@ -1,0 +1,34 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+source $CMD_PATH/email.sh
+source $CMD_PATH/certificate.sh
+
+if [ "$ENABLE_JIT_ACCESS" != "" ]; then
+ log "Enable firewall JIT access"
+ $CMD_PATH/$ENABLE_JIT_ACCESS
+fi
+
+log "Begin to issue certificate: $DDNS_DOMAIN"
+if issue_certificate; then
+ exit
+else
+ log "Succeeded."
+fi
+
+if [ "$MAIN_EMAIL" != "" ]; then
+ log "Sending email notification to $MAIN_EMAIL"
+ check_email_env
+ send_email \
+  $MAIN_EMAIL \
+  "$CERT_DOMAIN certificate issued" \
+  "Enjoy!"
+fi
+
+if [ "$CERT_STORAGE" != "" ]; then
+ log "Copying new certificates to $CERT_STORAGE"
+ $SUDO cp $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
+ $SUDO cp $CERT_KEY $CERT_STORAGE/privkey.pem
+ ls -l $CERT_STORAGE
+fi
