@@ -30,7 +30,8 @@ case $SSR_MODE in
   ;;
 esac
 
-if [ "$CERT_FOLDER" != "" ]; then
+# only use custom path for ECC type as v2ray cannot handle it
+if [ "$CERT_TYPE" == "ecc" ]; then
  CERT_OPTS="cert=$CERT_FULLCHAIN;key=$CERT_KEY"
  V2RAY_OPTS="$V2RAY_OPTS;$CERT_OPTS"
 fi
