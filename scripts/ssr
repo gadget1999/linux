@@ -30,7 +30,7 @@ case $SSR_MODE in
 esac
 
 if [ "$CERT_FOLDER" != "" ]; then
- CERT_OPTS="cert=$CERT_FOLDER/fullchain.cer;key=$CERT_FOLDER/$DDNS_DOMAIN.key"
+ CERT_OPTS="cert=$CERT_ROOT/$CERT_FOLDER/fullchain.cer;key=$CERT_ROOT/$CERT_FOLDER/$DDNS_DOMAIN.key"
  V2RAY_OPTS="$V2RAY_OPTS;$CERT_OPTS"
 fi
 log "V2Ray options: $V2RAY_OPTS"
