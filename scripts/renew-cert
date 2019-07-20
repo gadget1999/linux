@@ -11,7 +11,7 @@ if [ "$ENABLE_JIT_ACCESS" != "" ]; then
 fi
 
 log "Begin to renew certificate: $DDNS_DOMAIN"
-if renew_certificate; then
+if !renew_certificate; then
  log "Succeeded."
 else
  exit
