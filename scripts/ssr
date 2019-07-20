@@ -1,0 +1,59 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+source $CMD_PATH/docker.sh
+
+check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT"
+
+CONTAINER="ssr"
+IMAGE="acrisliu/shadowsocks-libev"
+
+PORT=443
+if [ "$SSR_PORT" != "" ]; then
+ log "Use port: $SSR_PORT"
+ PORT=$SSR_PORT
+fi
+
+if [ "$1" == "tls" ]; then
+ SSR_MODE="tls"
+fi
+case $SSR_MODE in
+ tls)
+  log "Using TLS mode V2Ray"
+  V2RAY_OPTS="server;tls;host=$DDNS_DOMAIN"
+  ;;
+ *)
+  log "Using QUIC mode V2Ray (default)"
+  V2RAY_OPTS="server;mode=quic;host=$DDNS_DOMAIN"
+  ;;
+esac
+
+CONTAINER_MODE="-d"
+if [ "$1" == "debug" ]; then
+ V2RAY_OPTS="$V2RAY_OPTS;loglevel=debug"
+ CONTAINER_MODE="-it"
+fi
+V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts $V2RAY_OPTS"
+
+log "Stop current container"
+stop_container $CONTAINER
+
+log "Pull latest $IMAGE"
+docker pull $IMAGE
+
+log "Starting container: $CONTAINER"
+
+docker run $CONTAINER_MODE --rm \
+ --name $CONTAINER \
+ -e "$V2RAY_ARGS" \
+ -v $CERT_ROOT:/root/.acme.sh \
+ -v /etc/hosts:/etc/hosts \
+ -e PASSWORD=$SSR_PASSWORD \
+ -e DNS_ADDRS=176.103.130.130,176.103.130.131 \
+ -p $PORT:8388 \
+ -p $PORT:8388/udp \
+ $IMAGE
+
+sleep 3
+docker ps
