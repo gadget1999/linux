@@ -11,7 +11,7 @@ if [ "$ENABLE_JIT_ACCESS" != "" ]; then
 fi
 
 log "Begin to renew certificate: $DDNS_DOMAIN"
-if func arg; then
+if renew-cert; then
  log "Succeeded."
 else
  exit
