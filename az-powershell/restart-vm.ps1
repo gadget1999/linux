@@ -3,13 +3,14 @@ param (
 )
 
 . "./logger.ps1"
-$logFile="/tmp/restart-vm.log"
+. "./find-vm.ps1"
+$program=(Get-Item $PSCommandPath).Basename
+$logFile="/tmp/$program.log"
 $logLevel="INFO"
 #$logLevel="DEBUG"
 
-$vm = Get-AzVM -Name $VMName -Status
-if ($vm.PowerState -ne "VM running") {
- Write-Log "VM not running: $VMName" "DEBUG"
+$vm = Find-VM -VMName $VMName
+if ($vm.Name -ine $VMName) {
  Return
 }
 
