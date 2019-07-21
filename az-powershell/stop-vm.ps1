@@ -4,7 +4,8 @@ param (
 
 . "./logger.ps1"
 . "./find-vm.ps1"
-$logFile="/tmp/stop-vm.log"
+$program=(Get-Item $PSCommandPath).Basename
+$logFile="/tmp/$program.log"
 $logLevel="INFO"
 #$logLevel="DEBUG"
 
