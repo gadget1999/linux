@@ -33,8 +33,9 @@ case $SSR_MODE in
 esac
 
 # only use custom path for ECC type as v2ray cannot handle it
+CONTAINER_CERT_ROOT=/root/.acme.sh
 if [ "$CERT_TYPE" == "ecc" ]; then
- CERT_OPTS="cert=$CERT_FULLCHAIN;key=$CERT_KEY"
+ CERT_OPTS="cert=$CONTAINER_CERT_ROOT/$CERT_FULLCHAIN;key=$CONTAINER_CERT_ROOT/$CERT_KEY"
  V2RAY_OPTS="$V2RAY_OPTS;$CERT_OPTS"
 fi
 log "V2Ray options: $V2RAY_OPTS"
@@ -57,7 +58,7 @@ log "Starting container: $CONTAINER"
 docker run $CONTAINER_MODE --rm \
  --name $CONTAINER \
  -e "$V2RAY_ARGS" \
- -v $CERT_ROOT:/root/.acme.sh \
+ -v $CERT_ROOT:$CONTAINER_CERT_ROOT \
  -v /etc/hosts:/etc/hosts \
  -e PASSWORD=$SSR_PASSWORD \
  -e DNS_ADDRS=176.103.130.130,176.103.130.131 \
