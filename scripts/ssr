@@ -5,6 +5,8 @@ source $CMD_PATH/common.sh
 source $CMD_PATH/docker.sh
 source $CMD_PATH/certificate.sh
 
+check_cert_env
+
 check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT"
 
 CONTAINER="ssr"
