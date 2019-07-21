@@ -12,7 +12,7 @@ function check_cert_env() {
 
  CERT_CMD=/home/$MAIN_USER/.acme.sh/acme.sh
 
- CERT_FOLDER=$CERT_ROOT/$DDNS_DOMAIN
+ CERT_FOLDER=$DDNS_DOMAIN
  if [ "$CERT_TYPE" == "ecc" ]; then
   CERT_FOLDER="$CERT_FOLDER"_ecc
  fi
