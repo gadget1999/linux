@@ -5,6 +5,8 @@ source $CMD_PATH/common.sh
 source $CMD_PATH/email.sh
 source $CMD_PATH/certificate.sh
 
+check_cert_env
+
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
  log "Enable firewall JIT access"
  $CMD_PATH/$ENABLE_JIT_ACCESS
