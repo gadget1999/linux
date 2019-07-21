@@ -2,31 +2,43 @@ param (
  [Parameter(Mandatory=$true)][string]$VMName
 )
 
+. "./logger.ps1"
+. "./find-vm.ps1"
+$program=(Get-Item $PSCommandPath).Basename
+$logFile="/tmp/$program.log"
+$logLevel="INFO"
+#$logLevel="DEBUG"
+
 $VMStopped = $false
 
-$vm = Get-AzVM -Name $VMName -Status
+$vm = Find-VM -VMName $VMName
+if ($vm.Name -ine $VMName) {
+ Return
+}
+
 $VMOldSize = $vm.HardwareProfile.VmSize
-Write-Host "Current VM size: $VMOldSize"
+Write-Log "Current VM size: $VMOldSize"
 
 $VMSize = Read-Host -Prompt "Enter the new VM size"
 $VMNewSize = "Standard_" + $VMSize
+Write-Log "New VM size: $VMNewSize"
 
 if ($vm.HardwareProfile.VmSize -like $VMNewSize) {
- Write-Host "Size is the same, no need to change."
+ Write-Log "Size is the same, no need to change." "DEBUG"
  Return
 }
 
 if ($vm.PowerState -eq "VM running") {
- Write-Host "Shutdown VM..."
+ Write-Log "Shutdown VM..." "DEBUG"
  Stop-AzVM -ResourceGroupName $vm.ResourceGroupName -Name $VMName -Force
  $VMStopped = $true
 }
 
 $vm.HardwareProfile.VmSize = $VMNewSize
 Update-AzVM -VM $vm -ResourceGroupName $vm.ResourceGroupName
-Write-Host "Resizing completed."
 
 if ($VMStopped) {
- Write-Host "Starting VM..."
+ Write-Log "Starting VM..." "DEBUG"
  Start-AzVM -ResourceGroupName $vm.ResourceGroupName -Name $VMName
 }
+Write-Log "Resizing completed."
