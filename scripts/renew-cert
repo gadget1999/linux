@@ -34,7 +34,7 @@ fi
 
 if [ "$CERT_STORAGE" != "" ]; then
  log "Copying new certificates to $CERT_STORAGE"
- $SUDO cp $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
- $SUDO cp $CERT_KEY $CERT_STORAGE/privkey.pem
+ $SUDO cp $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
+ $SUDO cp $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem
  ls -l $CERT_STORAGE
 fi
