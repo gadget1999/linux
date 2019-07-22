@@ -1,6 +1,7 @@
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 . "$cmd_path/logger.ps1"
 . "$cmd_path/find-vm.ps1"
+. "$cmd_path/email.ps1"
 
 $program=(Get-Item $PSCommandPath).Basename
 $logFile="/tmp/$program.log"
@@ -10,6 +11,7 @@ function Shutdown-VM([string]$rg, [string]$vm)
 {
  Write-Log "Shutdown idle VM: $rg - $vm"
  Stop-AzVM -ResourceGroupName $rg -Name $vm -Force
+ Send-Email "Idle Azure VM $vm was shutdown" "Saving some Azure cost is always good!"
 }
 
 function Shutdown-IdleVMs
