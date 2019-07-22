@@ -1,10 +1,6 @@
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
-$program=(Get-Item $PSCommandPath).Basename
-
 . "$cmd_path/logger.ps1"
 
-$logFile="/tmp/$program.log"
-$logLevel="INFO"
 #$logLevel="DEBUG"
 
 function Find-VM-In-Subscription([string]$subscriptionId, [string]$vmName)
