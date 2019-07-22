@@ -5,6 +5,6 @@ $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 
 function Send-Email([string]$subject, [string]$body)
 {
- $cmd = "/usr/local/bin/send-email ""$subject"" ""$body"" "
- Invoke-Expression $cmd
+ $cmd = "/home/share/bin/send-email" 
+ Start-Process -FilePath $cmd -ArgumentList ("$subject", "$body")
 }
