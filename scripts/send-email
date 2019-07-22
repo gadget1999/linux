@@ -1,0 +1,13 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+source $CMD_PATH/email.sh
+
+check_email_env
+
+SUBJECT=$1
+BODY=$2
+
+log "Sending email notification to $MAIN_EMAIL"
+send_email $MAIN_EMAIL "$SUBJECT" "$BODY"
