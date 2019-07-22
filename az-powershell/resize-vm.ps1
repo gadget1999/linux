@@ -2,11 +2,12 @@ param (
  [Parameter(Mandatory=$true)][string]$VMName
 )
 
-. "./logger.ps1"
-. "./find-vm.ps1"
+$cmd_path=(Get-Item $PSCommandPath).DirectoryName
+. "$cmd_path/logger.ps1"
+. "$cmd_path/find-vm.ps1"
+
 $program=(Get-Item $PSCommandPath).Basename
 $logFile="/tmp/$program.log"
-$logLevel="INFO"
 #$logLevel="DEBUG"
 
 $VMStopped = $false
