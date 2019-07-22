@@ -78,6 +78,11 @@ cd /tmp
 
 rm $TMP_ZIP 2> /dev/null
 wget -q $GITHUB_URL
+if [ ! -f $TMP_ZIP ]; then
+ log_error "Cannot find downloaded file $TMP_ZIP. Internet or github down?"
+ exit 1
+fi
+
 unzip -qq -o $TMP_ZIP
 
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
