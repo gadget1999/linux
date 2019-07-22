@@ -6,6 +6,8 @@ $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 . "$cmd_path/logger.ps1"
 . "$cmd_path/find-vm.ps1"
 
+$program=(Get-Item $PSCommandPath).Basename
+$logFile="/tmp/$program.log"
 #$logLevel="DEBUG"
 
 $vm = Find-VM -VMName $VMName
