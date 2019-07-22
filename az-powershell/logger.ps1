@@ -1,6 +1,4 @@
 # all logging settins
-$program = $MyInvocation.MyCommand.Name
-$logFile = "/tmp/$program.log"
 $logLevel = "INFO" # ("DEBUG","INFO","WARN","ERROR")
 $logSize = 1mb # 30kb
 $logCount = 10
