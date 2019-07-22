@@ -1,5 +1,10 @@
-. "./logger.ps1"
-$logFile="/tmp/shutdown-vms.log"
+$cmd_path=(Get-Item $PSCommandPath).DirectoryName
+$program=(Get-Item $PSCommandPath).Basename
+
+. "$cmd_path/logger.ps1"
+. "$cmd_path/find-vm.ps1"
+
+$logFile="/tmp/$program.log"
 $logLevel="INFO"
 #$logLevel="DEBUG"
 
