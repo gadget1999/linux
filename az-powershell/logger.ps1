@@ -1,7 +1,6 @@
 # all logging settins
-$path = Get-Location
-$scriptName = $MyInvocation.MyCommand.Name
-$logFile = "$path\$scriptName.log"
+$program = $MyInvocation.MyCommand.Name
+$logFile = "/tmp/$program.log"
 $logLevel = "INFO" # ("DEBUG","INFO","WARN","ERROR")
 $logSize = 1mb # 30kb
 $logCount = 10
