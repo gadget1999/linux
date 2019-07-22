@@ -1,0 +1,11 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/common.sh
+
+check_env "MAIN_USER"
+
+PWSH_DIR=/home/$MAIN_USER
+PWSH_CMD=$PWSH_DIR/$1.ps1
+
+sudo pwsh $PWSH_CMD $2 $3 $4
