@@ -83,12 +83,14 @@ fi
 unzip -qq -o $TMP_ZIP
 
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
-sudo chmod +x $CMD_PATH/*
+$SUDO chmod +x $CMD_PATH/*
 
+$SUDO mkdir $CMD_LIB
 copy_files "$TMP_CMD_FOLDER/lib/*" $CMD_LIB
 
 if [ -x "$(command -v /usr/bin/pwsh)" ]; then
  # only copy scripts when Azure PowerShell is installed
+ $SUDO mkdir $CMD_AZURE
  copy_files "$TMP_CMD_FOLDER/azure/*.ps1" $CMD_AZURE
 fi
 
