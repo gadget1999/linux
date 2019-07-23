@@ -9,7 +9,7 @@ function copy_file() {
  local target=$2
 
  # see if this is a regular file
- if [ -f $source ]; then
+ if [ ! -f $source ]; then
   return 0
  fi
 
@@ -90,12 +90,12 @@ unzip -qq -o $TMP_ZIP
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 $SUDO chmod +x $CMD_PATH/*
 
-$SUDO mkdir $CMD_LIB
+[ ! -d $CMD_LIB ] && $SUDO mkdir $CMD_LIB
 copy_files "$TMP_CMD_FOLDER/lib/*" $CMD_LIB
 
 if [ -x "$(command -v /usr/bin/pwsh)" ]; then
  # only copy scripts when Azure PowerShell is installed
- $SUDO mkdir $CMD_AZURE
+ [ ! -d $CMD_AZURE ] && $SUDO mkdir $CMD_AZURE
  copy_files "$TMP_CMD_FOLDER/azure/*.ps1" $CMD_AZURE
 fi
 
