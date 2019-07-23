@@ -70,7 +70,6 @@ GITHUB_URL="https://github.com/gadget1999/linux/archive/master.zip"
 TMP_ZIP=/tmp/master.zip
 TMP_FOLDER=/tmp/linux-master
 TMP_CMD_FOLDER=/tmp/linux-master/scripts
-TMP_AZURE_FOLDER=/tmp/linux-master/az-powershell
 
 cd /tmp
 
@@ -86,11 +85,11 @@ unzip -qq -o $TMP_ZIP
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 sudo chmod +x $CMD_PATH/*
 
-copy_files "$TMP_AZURE_FOLDER/lib/*" $CMD_LIB
+copy_files "$TMP_CMD_FOLDER/lib/*" $CMD_LIB
 
 if [ -x "$(command -v /usr/bin/pwsh)" ]; then
  # only copy scripts when Azure PowerShell is installed
- copy_files "$TMP_AZURE_FOLDER/*.ps1" $CMD_AZURE
+ copy_files "$TMP_CMD_FOLDER/azure/*.ps1" $CMD_AZURE
 fi
 
 rm -R $TMP_FOLDER
