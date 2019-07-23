@@ -2,6 +2,6 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
-source source $CMD_PATH/lib/docker.sh
+source $CMD_PATH/lib/docker.sh
 
 delete_orphan_images
