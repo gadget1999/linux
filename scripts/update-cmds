@@ -17,7 +17,7 @@ function copy_file() {
  if [ ! -f $target ]; then
   log "Copying $target"
   $SUDO cp $source $target
-  return 0
+  return 1
  fi
 
  # do not overwrite conf files
@@ -37,7 +37,7 @@ function copy_file() {
  if [ $NEED_CONFIRM != "yes" ]; then
   log "Updating $target"
   $SUDO cp $source $target
-  return 0
+  return 1
  fi
 
  echo "================= $target ================="
@@ -48,14 +48,16 @@ function copy_file() {
   y|Y )
    log "Updating $target"
    $SUDO cp $source $target
+   return 1
    ;;
   A|a )
    NEED_CONFIRM="no"
    log "Updating $target"
    $SUDO cp $source $target
+   return 1
    ;;
   * )
-   return 1
+   return 0
    ;;
  esac
 }
@@ -88,6 +90,12 @@ if [ ! -f $TMP_ZIP ]; then
 fi
 
 unzip -qq -o $TMP_ZIP
+
+if copy_file "$TMP_CMD_FOLDER/update-cmds" $CMD_PATH; then
+ log "update-cmds was updated, >>>>>> restarting <<<<<<"
+ $CMD_PATH/update-cmds
+ exit 0
+fi
 
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 $SUDO chmod +x $CMD_PATH/*
