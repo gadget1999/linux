@@ -8,6 +8,11 @@ function copy_file() {
  local source=$1
  local target=$2
 
+ # see if this is a regular file
+ if [ -f $source ]; then
+  return 0
+ fi
+
  # copy if target does not exist
  if [ ! -f $target ]; then
   log "Copying $target"
