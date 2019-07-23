@@ -3,8 +3,6 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-check_env "MAIN_USER"
-
 NEED_CONFIRM="yes"
 function copy_file() {
  local source=$1
@@ -88,9 +86,11 @@ unzip -qq -o $TMP_ZIP
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 sudo chmod +x $CMD_PATH/*
 
+copy_files "$TMP_AZURE_FOLDER/lib/*" $CMD_LIB
+
 if [ -x "$(command -v /usr/bin/pwsh)" ]; then
  # only copy scripts when Azure PowerShell is installed
- copy_files "$TMP_AZURE_FOLDER/*.ps1" /home/$MAIN_USER
+ copy_files "$TMP_AZURE_FOLDER/*.ps1" $CMD_AZURE
 fi
 
 rm -R $TMP_FOLDER
