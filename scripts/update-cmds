@@ -91,12 +91,6 @@ fi
 
 unzip -qq -o $TMP_ZIP
 
-if copy_file "$TMP_CMD_FOLDER/update-cmds" $CMD_PATH/update-cmds; then
- log "update-cmds was updated, >>>>>> restarting <<<<<<"
- $CMD_PATH/update-cmds
- exit 0
-fi
-
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 $SUDO chmod +x $CMD_PATH/*
 
