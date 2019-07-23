@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/common.sh
+source $CMD_PATH/lib/common.sh
 
 function list_packages_centos() {
  rpm -qa --qf '%{INSTALLTIME:date}: %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -n

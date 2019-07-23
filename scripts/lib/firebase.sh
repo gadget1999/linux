@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/common.sh
+source $CMD_PATH/lib/common.sh
 
 function check_firebase_env {
  check_env "FB_BASE_URL FB_KEY FB_AGENT"

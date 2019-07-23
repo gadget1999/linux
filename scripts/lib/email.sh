@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/common.sh
+source $CMD_PATH/lib/common.sh
 
 function check_email_env {
  check_env "SENDGRID_API_KEY"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/common.sh
+source $CMD_PATH/lib/common.sh
 
 /usr/bin/curl -q http://ip.42.pl/short; echo

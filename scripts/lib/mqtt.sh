@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/common.sh
+source $CMD_PATH/lib/common.sh
 
 function check_mqtt_env {
  check_env "MQTT_SERVER MQTT_PORT MQTT_USER MQTT_PASSWORD MQTT_CMD_BASE MQTT_AGENT"

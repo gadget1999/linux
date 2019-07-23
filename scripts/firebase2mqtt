@@ -1,9 +1,9 @@
 #!/bin/bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/common.sh
-source $CMD_PATH/mqtt.sh
-source $CMD_PATH/firebase.sh
+source $CMD_PATH/lib/common.sh
+source source $CMD_PATH/lib/mqtt.sh
+source source $CMD_PATH/lib/firebase.sh
 
 check_firebase_env
 check_mqtt_env
