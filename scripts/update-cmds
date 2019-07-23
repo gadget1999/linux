@@ -75,6 +75,8 @@ GITHUB_URL="https://github.com/gadget1999/linux/archive/master.zip"
 TMP_ZIP=/tmp/master.zip
 TMP_FOLDER=/tmp/linux-master
 TMP_CMD_FOLDER=/tmp/linux-master/scripts
+CMD_LIB=$CMD_PATH/lib
+CMD_AZURE=$CMD_PATH/azure
 
 cd /tmp
 

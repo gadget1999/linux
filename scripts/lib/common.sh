@@ -9,9 +9,6 @@ PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 DEBUG=1
 
-CMD_LIB=$CMD_PATH/lib
-CMD_AZURE=$CMD_PATH/azure
-
 ############# Env checking #############
 
 function check_env
