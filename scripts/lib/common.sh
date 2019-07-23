@@ -5,6 +5,7 @@ source $CMD_PATH/env.conf
 
 # Common variables
 NOW=$(date +"%Y.%m.%d-%H:%M:%S")
+TODAY=$(date +%Y_%m_%d)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 DEBUG=1
