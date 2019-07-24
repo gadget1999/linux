@@ -12,7 +12,7 @@ function firebase_response() {
  local path=$1
  local state=$2
  local msg='{"status":"'"$state $NOW"'"}'
- local url="$FB_BASE_URL/response/$FB_AGENT/$path.json?auth=$FB_KEY"
+ local url="$FB_BASE_URL/$FB_ENDPOINT/response/$FB_AGENT/$path.json?auth=$FB_KEY"
  local fullpath="/$path"
  
  debug "Sending firebase message to [$url]: $msg"
@@ -57,9 +57,8 @@ function event_handler() {
 }
 
 function firebase_listen() {
- local endpoint=$1
  # httpie is used to handle streaming events from Firebase
- FB_REQUEST_URL="$FB_BASE_URL/$endpoint.json?auth=$FB_KEY"
+ FB_REQUEST_URL="$FB_BASE_URL/$FB_ENDPOINT/request.json?auth=$FB_KEY"
  /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
   echo "$line" | grep "data: {"
@@ -70,10 +69,9 @@ function firebase_listen() {
 }
 
 function start_firebase_agent {
- local endpoint=$1
  # sometimes firebase connection may drop, due to network conditions
  while true; do
-  firebase_listen "$endpoint"
+  firebase_listen
 
   log "restarting firebase agent..."
   sleep 2

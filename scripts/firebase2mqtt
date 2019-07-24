@@ -33,4 +33,4 @@ function firebase_callback() {
  mqtt_send "$MQTT_CMD_BASE/$path" $arg
 }
 
-start_firebase_agent "Mqtt/request"
+start_firebase_agent
