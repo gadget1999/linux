@@ -61,8 +61,7 @@ function firebase_listen() {
  FB_REQUEST_URL="$FB_BASE_URL/$FB_ENDPOINT/request.json?auth=$FB_KEY"
  /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
-  echo "$line" | grep "data: {"
-  if [ $? = 0 ]; then
+  if [[ "$line" == *"data: {"* ]]; then
    event_handler $line
   fi
  done
