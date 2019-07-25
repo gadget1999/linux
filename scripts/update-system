@@ -27,3 +27,5 @@ case $OS in
   exit 1
   ;;
 esac
+
+[ "$1" == "reboot" ] && sudo reboot
