@@ -21,4 +21,4 @@ function firebase_callback() {
  firebase_response "$cmd" "$arg"
 }
 
-start_firebase_agent "request"
+start_firebase_agent
