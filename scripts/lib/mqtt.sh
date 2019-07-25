@@ -55,7 +55,7 @@ function start_mqtt_agent {
   mqtt_listen
 
   log "restarting mqtt listener..."
-  sleep 2
+  sleep 10
  done
 }
 

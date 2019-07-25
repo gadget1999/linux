@@ -73,6 +73,6 @@ function start_firebase_agent {
   firebase_listen
 
   log "restarting firebase agent..."
-  sleep 2
+  sleep 30
  done
 }
