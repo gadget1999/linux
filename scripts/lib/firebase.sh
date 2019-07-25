@@ -59,7 +59,8 @@ function event_handler() {
 function firebase_listen() {
  # httpie is used to handle streaming events from Firebase
  FB_REQUEST_URL="$FB_BASE_URL/$FB_ENDPOINT/request.json?auth=$FB_KEY"
- /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
+ /usr/bin/curl -s -N --http2 -H "Accept:text/event-stream" $FB_REQUEST_URL | \
+# /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
   if [[ "$line" == *"data: {"* ]]; then
    event_handler $line
@@ -73,6 +74,6 @@ function start_firebase_agent {
   firebase_listen
 
   log "restarting firebase agent..."
-  sleep 30
+  sleep 10
  done
 }
