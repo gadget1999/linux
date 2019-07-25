@@ -17,7 +17,7 @@ function firebase_callback() {
  local arg=$2
  local path=$3
 
- debug "Received command: $cmd ($arg) (path: $path)"
+ log "Received command: $cmd ($arg) (path: $path)"
  firebase_response "$cmd" "$arg"
 }
 
