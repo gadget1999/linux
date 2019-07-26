@@ -6,6 +6,8 @@ source $CMD_PATH/lib/common.sh
 # Use dropbox to automatically collect important app logs
 check_packages "$CMD_PATH/dropbox"
 
+HOST=$(hostname)
+
 YEAR=$(date +%Y)
 if [ "$YEAR" -lt "2012" ]; then
  log_error "System time (Year: $YEAR) is invalid."
@@ -27,7 +29,7 @@ function upload_log() {
   return
  fi
  
- local remotefile="Logs/$app/$TODAY-$app.txt"
+ local remotefile="Logs/$HOST/$app/$TODAY-$app.txt"
  log "Uploading [$logfile] to dropbox [$remotefile] ..."
  $CMD_PATH/dropbox upload $logfile $remotefile >> $LOG
 }
