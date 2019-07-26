@@ -5,6 +5,7 @@ source $CMD_PATH/lib/common.sh
 
 function check_mqtt_env {
  check_env "MQTT_SERVER MQTT_PORT MQTT_USER MQTT_PASSWORD MQTT_CMD_BASE MQTT_AGENT"
+ check_packages "/usr/bin/mosquitto_pub /usr/bin/mosquitto_sub"
  MQTT_TOPIC="$MQTT_CMD_BASE/$MQTT_AGENT"
 }
 

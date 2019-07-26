@@ -3,6 +3,8 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+check_packages "/usr/bin/unzip"
+
 DIFF_CMD="/usr/bin/diff --color"
 [ -x "$(command -v /usr/bin/colordiff)" ] && DIFF_CMD="/usr/bin/colordiff"
 

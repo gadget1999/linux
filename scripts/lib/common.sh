@@ -12,12 +12,22 @@ DEBUG=1
 
 ############# Env checking #############
 
-function check_env
-{
+function check_env() {
  local VARS=$1
  for VAR in ${VARS[*]}; do
   if [[ ${!VAR} == "" ]]; then
    log_error "Invalid ENV variables found: $VAR"
+   exit
+  fi
+  # debug "$VAR=${!VAR}"
+ done
+}
+
+function check_packages() {
+ local PACKAGES=$1
+ for PACKAGE in ${PACKAGES[*]}; do
+  if [ ! -x "$(command -v $PACKAGE)" ]; then
+   log_error "Required package not found: $PACKAGE"
    exit
   fi
   # debug "$VAR=${!VAR}"

@@ -3,6 +3,8 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+check_packages "/usr/bin/pwsh"
+
 PWSH_DIR=$CMD_PATH/azure
 PWSH_CMD=$PWSH_DIR/$1.ps1
 

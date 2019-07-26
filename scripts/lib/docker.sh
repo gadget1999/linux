@@ -7,6 +7,8 @@ source $CMD_PATH/lib/common.sh
 ## Docker helper functions
 #####################################
 
+check_packages "/usr/bin/docker"
+
 function is_container_running() {
   docker ps | grep "$1" &> /dev/null
   if [ $? == 0 ]; then
