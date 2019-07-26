@@ -13,6 +13,8 @@ function update_os_debian() {
  sudo apt-get -y autoremove
 }
 
+check_os_type
+
 case $OS in
  debian)
   log "Update system (Debian)"

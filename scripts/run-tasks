@@ -5,7 +5,12 @@ source $CMD_PATH/lib/common.sh
 
 TASKS=$1
 for TASK in ${TASKS[*]}; do
-  log "Starting $TASK..."
+ if [[ "$TASK" == *"&" ]]; then
+  log "Starting $TASK (background) ..."
   ($CMD_PATH/$TASK)&
   sleep 20
+ else
+  log "Starting $TASK ..."
+  $CMD_PATH/$TASK
+ fi
 done

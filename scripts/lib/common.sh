@@ -12,6 +12,18 @@ DEBUG=1
 
 ############# Env checking #############
 
+function check_os_type() {
+ [ "$OS" != "" ] && return
+ 
+ if [ -x "$(command -v /usr/bin/apt-get)" ]; then
+  OS="debian"
+  return
+ elif [ -x "$(command -v /usr/bin/yum)" ]; then
+  OS="centos"
+  return
+ fi
+}
+
 function check_env() {
  local VARS=$1
  for VAR in ${VARS[*]}; do
