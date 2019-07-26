@@ -27,9 +27,7 @@ function combine_topics
   combine_topics+=" -t $a/# "
  done
 
- if [ "$combine_topics" == "" ]; then
-  combine_topics="-t #"
- fi
+ [ "$combine_topics" == "" ] && combine_topics="-t #"
 }
 
 function mqtt_event_handler()    {

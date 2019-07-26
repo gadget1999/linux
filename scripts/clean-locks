@@ -13,10 +13,8 @@ function clean_lock() {
  local app="${filename%.*}"
  
  debug "Checking lock file $lockfile (App: $app) ..."
- if [ ! -e $lockfile ]; then
-  return
- fi
-
+ [ ! -e $lockfile ] && return
+ 
  # check if the lock file is orphaned
  debug "Found lock file, check if $app is still running..."
  local running=`pgrep $app &> /dev/null && echo yes || echo no`

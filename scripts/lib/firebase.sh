@@ -48,10 +48,8 @@ function event_handler() {
  cmd=${path##*/}       # get leaf name
  arg=$(trim_str $data)
 
- if [ "x$path" = "x" ]; then
-  return 1
- fi
-
+ [ "$path" == "" ] && return 1
+ 
  # callback function needs to be implemented to handle events
  firebase_callback $cmd $arg $path
 }
@@ -62,9 +60,7 @@ function firebase_listen() {
  /usr/bin/curl -s -N --http2 -H "Accept:text/event-stream" $FB_REQUEST_URL | \
 # /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
-  if [[ "$line" == *"data: {"* ]]; then
-   event_handler $line
-  fi
+  [[ "$line" == *"data: {"* ]] && event_handler $line
  done
 }
 

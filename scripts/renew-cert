@@ -12,9 +12,7 @@ if [ "$ENABLE_JIT_ACCESS" != "" ]; then
  $CMD_PATH/$ENABLE_JIT_ACCESS
 fi
 
-if [ "$1" == "force" ]; then
- FORCE_RENEW="--force"
-fi
+[ "$1" == "force" ] && FORCE_RENEW="--force"
 
 log "Begin to renew certificate: $DDNS_DOMAIN"
 if renew_certificate $FORCE_RENEW; then
