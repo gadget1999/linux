@@ -29,7 +29,7 @@ function upload_log() {
   return
  fi
  
- local remotefile="Logs/$HOST/-$app-/$TODAY-$app.txt"
+ local remotefile="Logs/$HOST/$app/$TODAY-$app.txt"
  log "Uploading [$logfile] to dropbox [$remotefile] ..."
  $CMD_PATH/dropbox upload $logfile $remotefile >> $LOG
 }
