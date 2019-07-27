@@ -138,7 +138,7 @@ function copy_file() {
  [ $md5source == $md5target ] && return 0
  
  # file changed, asking for confirmation
- if [ "$overwrite" -eq "overwrite" ] || [ "$NEED_CONFIRM" -eq "yes" ]; then
+ if [[ "$overwrite" == "overwrite" || "$NEED_CONFIRM" != "yes" ]]; then
   log "Updating $target"
   $SUDO cp $source $target
   return 1
