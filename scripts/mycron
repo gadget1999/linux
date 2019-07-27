@@ -1,9 +1,8 @@
 MAILTO=""
-CMD_PATH=/usr/local/bin
-HOUR_START=0
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-@reboot	$CMD_PATH/reboot-tasks
-0 * * * *	$CMD_PATH/hourly-tasks
-0 $HOUR_START * * *	$CMD_PATH/daily-tasks
-0 $HOUR_START * * SUN	$CMD_PATH/weekly-tasks
-0 $HOUR_START 1 * * $CMD_PATH/monthly-tasks
+@reboot	reboot-tasks
+0 * * * *	hourly-tasks
+0 0 * * *	daily-tasks
+0 0 * * SUN	weekly-tasks
+0 0 1 * *	monthly-tasks
