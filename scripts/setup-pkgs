@@ -3,7 +3,7 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-PACKAGES="dnsutils htop jq nano screen socat"
+PACKAGES="dnsutils htop jq nano screen socat p7zip"
 
 function setup_packages_centos() {
  sudo yum install -y $PACKAGES
