@@ -14,7 +14,7 @@ function mqtt_send() {
  local msg=$2
  local retain=$3
 
- log "Sending MQTT message: $topic $msg $retain"
+ debug "Sending MQTT message: $topic $msg $retain"
  /usr/bin/mosquitto_pub -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
   -t "$topic" -m "$msg" $retain
