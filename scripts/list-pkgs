@@ -11,7 +11,9 @@ function list_packages_debian() {
  grep " installed " /var/log/dpkg.log
 }
 
-case $OS in
+check_os_type
+
+case $OS_TYPE in
  debian)
   log "List installed packages (Debian)"
   list_packages_debian

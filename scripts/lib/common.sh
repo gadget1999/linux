@@ -13,13 +13,13 @@ DEBUG=1
 ############# Env Checking #############
 
 function check_os_type() {
- [ "$OS" != "" ] && return
+ [ "$OS_TYPE" != "" ] && return
  
  if [ -x "$(command -v /usr/bin/apt-get)" ]; then
-  OS="debian"
+  OS_TYPE="debian"
   return
  elif [ -x "$(command -v /usr/bin/yum)" ]; then
-  OS="centos"
+  OS_TYPE="centos"
   return
  fi
 }
