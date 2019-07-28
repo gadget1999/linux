@@ -4,9 +4,13 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 # base
-PACKAGES="dnsutils curl htop mc nano ncdu screen sudo p7zip wget"
-# mqtt, firebase, acme.sh
-PACKAGES="$PACKAGES""jq mosquitto-clients socat"
+PACKAGES="curl deborphan htop mc nano ncdu p7zip screen sudo wget unzip"
+
+# mqtt, firebase, acme.sh, ddns
+PACKAGES="$PACKAGES dnsutils jq mosquitto-clients socat"
+
+# pyload, pyby, pybox
+PACKAGES="$PACKAGES python python-requests python-poster python-mechanize python-openssl"
 
 function setup_packages_centos() {
  sudo yum install -y $PACKAGES
