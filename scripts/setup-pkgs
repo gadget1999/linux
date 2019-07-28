@@ -3,7 +3,10 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-PACKAGES="dnsutils htop jq nano screen socat p7zip"
+# base
+PACKAGES="dnsutils curl htop mc nano ncdu screen sudo p7zip wget"
+# mqtt, firebase, acme.sh
+PACKAGES="$PACKAGES""jq mosquitto-clients socat"
 
 function setup_packages_centos() {
  sudo yum install -y $PACKAGES
