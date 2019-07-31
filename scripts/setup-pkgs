@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 # base
-PACKAGES="curl deborphan htop mc nano ncdu p7zip screen sudo wget unzip"
+PACKAGES="curl deborphan htop mc nano ncdu p7zip procps screen sudo wget unzip"
 
 # mqtt, firebase, acme.sh, ddns
 PACKAGES="$PACKAGES dnsutils jq mosquitto-clients socat"
