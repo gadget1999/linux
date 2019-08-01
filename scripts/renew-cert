@@ -14,11 +14,11 @@ fi
 
 [ "$1" == "force" ] && FORCE_RENEW="--force"
 
-log "Begin to renew certificate: $DDNS_DOMAIN"
+debug "Begin to renew certificate: $DDNS_DOMAIN"
 if renew_certificate $FORCE_RENEW; then
  exit
 else
- log "Succeeded."
+ log "Renew certificate succeeded: $DDNS_DOMAIN"
 fi
 
 if [ "$MAIN_EMAIL" != "" ]; then
