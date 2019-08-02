@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 # Use dropbox to automatically collect important app logs
-check_packages "$CMD_PATH/dropbox"
+check_packages "$CMD_PATH/dropbox /usr/bin/shasum"
 
 YEAR=$(date +%Y)
 if [ "$YEAR" -lt "2012" ]; then
@@ -34,6 +34,5 @@ function upload_log() {
 
 for APP in ${APP_LOGS[*]}; do
  APPLOG="/tmp/$APP.log"
- debug "Checking $APPLOG ..."
  upload_log $APP $APPLOG
 done
