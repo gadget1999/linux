@@ -1,16 +1,22 @@
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 . "$cmd_path/logger.ps1"
-$program=(Get-Item $PSCommandPath).Basename
-$logFile="/tmp/$program.log"
-$logLevel="INFO"
-#$logLevel="DEBUG"
 
 #############################################
 # Copy a managed disk to a VHD
 #############################################
 
-function Copy-Disk-To-VHD([string]$SourceDiskName, [string]$TargetStorageAccountName, [string]$TargetVHDName)
+function Copy-Disk-To-VHD
 {
+ Param
+ (
+  [Parameter(Mandatory=$true, Position=0)]
+  [string] $SourceDiskName,
+  [Parameter(Mandatory=$true, Position=1)]
+  [string] $TargetStorageAccountName,
+  [Parameter(Mandatory=$true, Position=2)]
+  [string] $TargetVHDName
+ )
+
  $sourceDisk=Get-AZDisk -DiskName $SourceDiskName
  if ($sourceDisk.Name -ine $SourceDiskName) {
   Write-Error "Cannot find the managed disk: $SourceDiskName"
@@ -49,25 +55,53 @@ function Copy-Disk-To-VHD([string]$SourceDiskName, [string]$TargetStorageAccount
 
  Write-Log "Generating target VHD SAS..."
  $targetRGName=$targetSA.ResourceGroupName
- $targetSAS = Get-AzStorageAccountKey -ResourceGroupName $targetRGName -Name $TargetStorageAccountName
- $targetContext = New-AzStorageContext -StorageAccountName $TargetStorageAccountName -StorageAccountKey ($targetSAS).Value[0]
- $targetContainerName = 'vhds'
+ $targetSAS=Get-AzStorageAccountKey -ResourceGroupName $targetRGName -Name $TargetStorageAccountName
+ $targetContext=New-AzStorageContext -StorageAccountName $TargetStorageAccountName -StorageAccountKey ($targetSAS).Value[0]
+ $targetContainerName="vhds"
  if (!(Get-AzStorageContainer -Context $targetContext | where {$_.Name -eq $targetContainerName})) {
-  cls
   Write-Log "Generating target VHD container..."
-  New-AzStorageContainer -Context $targetContext -Name $targetContainerName -Permission Off
+  New-AzStorageContainer -Context "$targetContext" -Name $targetContainerName -Permission Off
  }
+ $targetVHDSASUri=New-AzStorageContainerSASToken -Context $targetContext -ExpiryTime(get-date).AddSeconds(3600) `
+   -FullUri -Name "$targetContainerName/$TargetVHDName" -Permission rw
+ Write-Log "Target VHD SAS: $targetVHDSASUri" "DEBUG"
 
- $targetSASUri = New-AzStorageContainerSASToken -Context $targetContext -ExpiryTime(get-date).AddSeconds(3600) `
-  -FullUri -Name "$targetContainerName/$TargetVHDName" -Permission rw
- Write-Log "Target VHD SAS: $targetSASUri" "DEBUG"
-
- Write-Log "Starting AZCopy..."
- .\azcopy copy $sourceDiskSASUri $targetSASUri
+ AzCopyBlob -SourceSASUri $sourceDiskSASUri -TargetSASUri $targetVHDSASUri
+ Read-Host -Prompt "Press Enter after azcopy is done..."
 
  Write-Log "Revoking source disk SAS..."
  Revoke-AzDiskAccess -ResourceGroupName $sourceRGName -DiskName $SourceDiskName
+}
 
- # Final Job Status: Completed
- return $targetSASUri
+function AzCopyBlob
+{
+ Param
+ (
+  [Parameter(Mandatory=$true, Position=0)]
+  [string] $SourceSASUri,
+  [Parameter(Mandatory=$true, Position=1)]
+  [string] $TargetSASUri
+ )
+
+ # It seems something wrong with local azcopy, run it in Cloud Shell out-of-band for now
+ Write-Log "RUN CMD: azcopy copy ""$SourceSASUri"" ""$TargetSASUri"" "
+ return $true
+
+ $AzCopyPath="$cmd_path/azcopy.exe"
+ if((Test-Path $AzCopyPath) -eq $false) {
+  Write-Error "Script is terminating since the provided AzCopyPath does not exist: $AzCopyPath"
+  return $false
+ }
+ 
+ $azCopyCmd=[string]::Format("""{0}"" copy ""{1}"" ""{2}"" ",$AzCopyPath, $SourceSASUri, $TargetSASUri)
+ Write-Log "Starting AzCopy: $AzCopyPath"
+ $output = cmd /c $azCopyCmd 2`>`&1
+ foreach($s in $output) { Write-Host $s }
+
+ if ($LASTEXITCODE -ne 0) {
+  Write-Error "AzCopy failed."
+  return $false
+ }
+
+ return $true
 }

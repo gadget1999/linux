@@ -7,6 +7,7 @@
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 . "$cmd_path/logger.ps1"
 . "$cmd_path/copy-disk.ps1"
+. "$cmd_path/resize-vhd.ps1"
 $program=(Get-Item $PSCommandPath).Basename
 $logFile="/tmp/$program.log"
 $logLevel="INFO"
@@ -26,29 +27,30 @@ if ($sourceDisk.Name -ine $SourceDiskName) {
  Return $false
 }
 
-Write-Log "Creating tmp disk: $tmpDiskName"
 $sourceRGName=$sourceDisk.ResourceGroupName
 $sourceLocation=$sourceDisk.Location
 $tmpDiskName="tmpDisk-$TargetDiskName"
-$diskConfig=New-AzDiskConfig -SourceResourceId $managedDisk.Id -Location $sourceLocation -CreateOption Copy 
+Write-Log "Creating tmp disk: $tmpDiskName"
+$diskConfig=New-AzDiskConfig -SourceResourceId $sourceDisk.Id -Location $sourceLocation -CreateOption Copy 
 $tmpDisk=New-AzDisk -Disk $diskConfig -DiskName $tmpDiskName -ResourceGroupName $sourceRGName
 Read-Host -Prompt "Please attach disk [$tmpDiskName] to a VM and shrink the partition. Press Enter when it's done"
 
-$tmpStorageAccountName="tmpSA-$TargetDiskName"
-Write-Log "Creating tmp target storage account: ..."
+$random=Get-Random
+$tmpStorageAccountName="tmpsa$random"
+Write-Log "Creating tmp target storage account: $tmpStorageAccountName"
 $tmpStorageAccount=New-AzStorageAccount -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName `
   -Location $sourceLocation -SkuName Standard_LRS -Kind StorageV2
 
 $tmpVHDName="tmpVHD-$TargetDiskName.vhd"
-$tmpVHDSASUri=Copy-Disk-To-VHD($SourceDiskName, $tmpStorageAccountName, $tmpVHDName)
-$tmpVHDSASUri=$tmpVHDSASUri[-1]
-if (!$tmpVHDSASUri.startswith("http")) {
- Write-Error "Cannot get the tmp VHD SAS URL."
- Return $false
-}
+Copy-Disk-To-VHD $tmpDiskName $tmpStorageAccountName $tmpVHDName
 
 Write-Log "Shrinking VHD size to $TargetSize GB..."
-.\AzureDiskResizer\WindowsAzureDiskResizer.exe $TargetSize $tmpVHDSASUri
+$tmpSAS=Get-AzStorageAccountKey -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName
+$tmpContext=New-AzStorageContext -StorageAccountName $tmpStorageAccountName -StorageAccountKey ($tmpSAS).Value[0]
+$tmpVHDSASUri=New-AzStorageBlobSASToken -Context $tmpContext -Container "vhds" -Blob "$tmpVHDName" `
+  -ExpiryTime(get-date).AddSeconds(3600) -FullUri -Permission rw
+Resize-VHD -TargetSize $TargetSize -VHDSASUri $tmpVHDSASUri
+Read-Host -Prompt "Press Enter after VHD resizing is done..."
 
 Write-Log "Creating disk [$TargetDiskName] from temp VHD..."
 $diskConfig = New-AzDiskConfig -AccountType Standard_LRS -Location $location -CreateOption Import `
@@ -57,7 +59,7 @@ New-AzDisk -Disk $diskConfig -ResourceGroupName $sourceRGName -DiskName $TargetD
 
 # clean up
 Write-Log "Removing tmp storage account: $tmpStorageAccountName"
-Remove-AzStorageAccount -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName
+#Remove-AzStorageAccount -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName
 
 Write-Log "Removing tmp disk: $tmpDiskName"
-Remove-AzDisk -ResourceGroupName $sourceRGName -DiskName $tmpDiskName
+#Remove-AzDisk -ResourceGroupName $sourceRGName -DiskName $tmpDiskName

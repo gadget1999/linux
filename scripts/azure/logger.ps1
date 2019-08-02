@@ -4,8 +4,16 @@ $logSize = 1mb # 30kb
 $logCount = 10
 # end of settings
 
+$loggingEnabled=$true
 function Write-Log-Line ($line) {
- Add-Content $logFile -Value $Line
+ if ($loggingEnabled) {
+  try { Add-Content $logFile -Value $Line }
+  catch {
+   Write-Host "Failed to write to log file, skipping logging."
+   $loggingEnabled=$false
+  }
+ }
+ 
  Write-Host $Line
 }
 
