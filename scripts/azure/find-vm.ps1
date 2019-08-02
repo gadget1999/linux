@@ -6,7 +6,7 @@ $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 function Find-VM-In-Subscription([string]$subscriptionId, [string]$vmName)
 {
  Set-AzContext -SubscriptionId $subscriptionId
- $VMs = Get-AzVM -Status
+ $VMs = Get-AzVM -Status | Where-Object {$_.Name -ieq "$VMName"}
  foreach($VM in $VMs)
  {
   Write-Log "VM: $($VM.Name) (State: $($VM.PowerState))" "DEBUG"

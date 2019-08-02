@@ -4,13 +4,25 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/env.conf
 
 # Common variables
-NOW=$(date +"%Y.%m.%d-%H:%M:%S")
+NOW=$(date +"%Y_%m_%d-%H_%M_%S")
 TODAY=$(date +%Y_%m_%d)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 DEBUG=1
 
-############# Env checking #############
+############# Env Checking #############
+
+function check_os_type() {
+ [ "$OS_TYPE" != "" ] && return
+ 
+ if [ -x "$(command -v /usr/bin/apt-get)" ]; then
+  OS_TYPE="debian"
+  return
+ elif [ -x "$(command -v /usr/bin/yum)" ]; then
+  OS_TYPE="centos"
+  return
+ fi
+}
 
 function check_env() {
  local VARS=$1
@@ -94,3 +106,74 @@ function should_continue() {
     return 0; # 0 means success (true condition)
   fi
 }
+
+
+############# Files #############
+
+DIFF_CMD="/usr/bin/diff --color"
+[ -x "$(command -v /usr/bin/colordiff)" ] && DIFF_CMD="/usr/bin/colordiff"
+
+NEED_CONFIRM="yes"
+function copy_file() {
+ local source=$1
+ local target=$2
+ local overwrite=$3
+
+ # see if this is a regular file
+ [ ! -f $source ] && return 0
+ 
+ # copy if target does not exist
+ if [ ! -f $target ]; then
+  log "Copying $target"
+  $SUDO cp $source $target
+  return 1
+ fi
+
+ # do not overwrite conf files
+ [[ $target == *".conf" ]] && return 0
+ 
+ # ask for confirmation if files are different
+ local md5source=( $(md5sum "$source") )
+ local md5target=( $(md5sum "$target") )
+ [ $md5source == $md5target ] && return 0
+ 
+ # file changed, asking for confirmation
+ if [[ "$overwrite" == "overwrite" || "$NEED_CONFIRM" != "yes" ]]; then
+  log "Updating $target"
+  $SUDO cp $source $target
+  return 1
+ fi
+
+ echo "================= $target ================="
+ #diff --color --side-by-side $target $source
+ $DIFF_CMD $target $source
+ read -p "Overwrite $target (Yes/[No]/All)?" choice
+ case "$choice" in
+  y|Y )
+   log "Updating $target"
+   $SUDO cp $source $target
+   return 1
+   ;;
+  A|a )
+   NEED_CONFIRM="no"
+   log "Updating $target"
+   $SUDO cp $source $target
+   return 1
+   ;;
+  * )
+   return 0
+   ;;
+ esac
+}
+
+function copy_files() {
+ local files=$1
+ local folder=$2
+
+ for filepath in $files; do
+  filename=$(basename "$filepath")
+  target=$folder/$filename
+  copy_file $filepath $target
+ done
+}
+

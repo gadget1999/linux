@@ -14,11 +14,11 @@ fi
 
 [ "$1" == "force" ] && FORCE_RENEW="--force"
 
-log "Begin to renew certificate: $DDNS_DOMAIN"
+debug "Begin to renew certificate: $DDNS_DOMAIN"
 if renew_certificate $FORCE_RENEW; then
  exit
 else
- log "Succeeded."
+ log "Renew certificate succeeded: $DDNS_DOMAIN"
 fi
 
 if [ "$MAIN_EMAIL" != "" ]; then
@@ -32,7 +32,7 @@ fi
 
 if [ "$CERT_STORAGE" != "" ]; then
  log "Copying new certificates to $CERT_STORAGE"
- $SUDO cp $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
- $SUDO cp $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem
+ copy_file $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem overwrite
+ copy_file $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem overwrite
  ls -l $CERT_STORAGE
 fi

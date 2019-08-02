@@ -8,4 +8,4 @@ check_packages "/usr/bin/pwsh"
 PWSH_DIR=$CMD_PATH/azure
 PWSH_CMD=$PWSH_DIR/$1.ps1
 
-sudo pwsh $PWSH_CMD $2 $3 $4
+(sudo pwsh $PWSH_CMD $2 $3 $4)&

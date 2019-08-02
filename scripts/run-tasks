@@ -3,9 +3,20 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+##################################################
+# Run tasks regularly by default to avoid memory
+# usage spikes. Use &task to start in background.
+##################################################
+
 TASKS=$1
 for TASK in ${TASKS[*]}; do
-  log "Starting $TASK..."
-  ($CMD_PATH/$TASK)&
+ if [[ "$TASK" == "&"* ]]; then
+  task=$(echo "$TASK" | cut -c2-)
+  log "Starting $task (background) ..."
+  ($CMD_PATH/$task)&
   sleep 20
+ else
+  log "Starting $TASK ..."
+  $CMD_PATH/$TASK
+ fi
 done

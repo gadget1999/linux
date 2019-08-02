@@ -3,7 +3,14 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-PACKAGES="dnsutils htop jq nano screen socat"
+# base
+PACKAGES="curl deborphan htop mc nano ncdu p7zip procps screen sudo wget unzip"
+
+# mqtt, firebase, acme.sh, ddns
+PACKAGES="$PACKAGES dnsutils jq mosquitto-clients socat"
+
+# pyload, pyby, pybox
+PACKAGES="$PACKAGES python python-requests python-poster python-mechanize python-openssl"
 
 function setup_packages_centos() {
  sudo yum install -y $PACKAGES
@@ -13,7 +20,9 @@ function setup_packages_debian() {
  sudo apt-get install -y $PACKAGES
 }
 
-case $OS in
+check_os_type
+
+case $OS_TYPE in
  debian)
   log "Installing $PACKAGES (Debian)"
   setup_packages_debian
