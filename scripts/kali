@@ -1,0 +1,24 @@
+!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER_NAME="kali"
+IMAGE_NAME="gadget1999/rpi-kali"
+
+if [ $(is_container_running $CONTAINER_NAME) == "true" ]; then
+ echo "Container is already running: $CONTAINER_NAME"
+ exit 0
+fi
+
+docker pull $IMAGE_NAME
+
+docker run -it --rm \
+ --name $CONTAINER_NAME \
+ -h $CONTAINER_NAME \
+ -v $CONTAINER_NAME-root:/root \
+ -v $CONTAINER_NAME-postgres:/var/lib/postgresql \
+ $IMAGE_NAME
+
+docker ps

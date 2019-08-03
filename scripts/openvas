@@ -1,0 +1,24 @@
+!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER_NAME="openvas"
+IMAGE_NAME="mikesplain/openvas"
+
+if [ $(is_container_running $CONTAINER_NAME) == "true" ]; then
+ echo "Container is already running: $CONTAINER_NAME"
+ exit 0
+fi
+
+docker pull $IMAGE_NAME
+
+docker run -d --rm \
+ --name $CONTAINER_NAME \
+ -h $CONTAINER_NAME \
+ -p 443:443 \
+ -v $CONTAINER_NAME:/var/lib/openvas/mgr/ \
+ $IMAGE_NAME
+
+docker ps
