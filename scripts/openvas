@@ -22,3 +22,5 @@ docker run -d --rm \
  $IMAGE_NAME
 
 docker ps
+
+docker logs -f openvas
