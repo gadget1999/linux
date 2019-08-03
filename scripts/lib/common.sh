@@ -8,6 +8,7 @@ NOW=$(date +"%Y_%m_%d-%H_%M_%S")
 TODAY=$(date +%Y_%m_%d)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
+ENABLE_LOGGING=1
 DEBUG=1
 
 ############# Env Checking #############
@@ -46,31 +47,35 @@ function check_packages() {
  done
 }
 
+function show_usage() {
+ local msg=$1
+
+ echo "${RED}Usage: $0 $msg${NOCOLOR}"
+ exit 1
+}
+
 ############# Logging #############
 
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NOCOLOR=`tput sgr0`
 function log() {
-    local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
-
-    echo "${GREEN}$TIMESTAMP $1${NOCOLOR}"
-    echo "$TIMESTAMP $1" >> $LOG
+ local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
+ echo "${GREEN}$TIMESTAMP $1${NOCOLOR}"
+ [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
 }
 
 function log_error() {
-    local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
-
-    echo "${RED}$TIMESTAMP $1${NOCOLOR}"
-    echo "$TIMESTAMP $1" >> $LOG
+ local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
+ echo "${RED}$TIMESTAMP $1${NOCOLOR}"
+ [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
 }
 
 function debug() {
-    if [ "$DEBUG" == "1" ]; then
-        local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
+ [ "$DEBUG" != "1" ] && return
 
-        echo "$TIMESTAMP $1"
-    fi
+ local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
+ echo "$TIMESTAMP $1"
 }
 
 ############# Locking (single-run) #############

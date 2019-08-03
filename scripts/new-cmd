@@ -3,7 +3,7 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-TEMPLATE=$CMD_PATH/cmd-template
+TEMPLATE=$CMD_PATH/lib/cmd-template
 CMD_FILE=$CMD_PATH/$1
 
 if [ ! -e $CMD_FILE ]; then
