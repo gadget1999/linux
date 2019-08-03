@@ -14,21 +14,6 @@ if ($vm.Name -ine $VMName) {
  Return
 }
 
-
-$TargetRGName = Read-Host -Prompt "Enter the target resource group name"
-$TargetStorageAccountName = Read-Host -Prompt "Enter the target storage account name"
-$TargetStorageAccount = Get-AzStorageAccount -ResourceGroupName $TargetRGName -Name $TargetStorageAccountName
-
-$TargetSAS = Get-AzStorageAccountKey -ResourceGroupName $TargetRGName -Name $TargetStorageAccountName
-$TargetContext = New-AzStorageContext -StorageAccountName $TargetStorageAccountName -StorageAccountKey ($TargetSAS).Value[0]
-$TargetContainerName = 'vhds'
-if (!(Get-AzStorageContainer -Context $TargetContext | where {$_.Name -eq $TargetContainerName})) {
- cls
- Write-Verbose "Container $TargetContainerName not found.  Creating..."
- New-AzStorageContainer -Context $TargetContext -Name $TargetContainerName -Permission Off
-}
-
-$SourceDiskSAS = Read-Host -Prompt "Enter the source disk SAS URI"
-
-$ContainerSASUri = New-AzStorageContainerSASToken -Context $TargetContext -ExpiryTime(get-date).AddSeconds(3600) -FullUri -Name $TargetContainerName -Permission rw
-.\azcopy copy $SourceDiskSAS $ContainerSASUri
+$newdisk=Get-AzDisk -ResourceGroupName $vm.ResourceGroupName -DiskName aks-node1-os
+Set-AzVMOSDisk -VM $vm -ManagedDiskId $newdisk.Id -Name $newdisk.Name
+Update-AzVM -ResourceGroupName MC_AKS-Test_aks-test_eastus -VM $vm

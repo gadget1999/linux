@@ -17,10 +17,6 @@ $logLevel="INFO"
 # Shrink a managed disk to a new managed disk
 ################################################
 
-$SourceDiskName="aks-agentpool-30099824-0_OsDisk_1_4c924b291da545a4b56005c1418022c7"
-$TargetDiskName="aks-os-node1"
-$TargetSize=31
-
 $sourceDisk=Get-AZDisk -DiskName $SourceDiskName
 if ($sourceDisk.Name -ine $SourceDiskName) {
  Write-Error "Cannot find the managed disk: $SourceDiskName"
@@ -47,19 +43,21 @@ Copy-Disk-To-VHD $tmpDiskName $tmpStorageAccountName $tmpVHDName
 Write-Log "Shrinking VHD size to $TargetSize GB..."
 $tmpSAS=Get-AzStorageAccountKey -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName
 $tmpContext=New-AzStorageContext -StorageAccountName $tmpStorageAccountName -StorageAccountKey ($tmpSAS).Value[0]
+$tmpVHD=Get-AzStorageBlob -Context $tmpContext -Container "vhds" -Blob "$tmpVHDName"
 $tmpVHDSASUri=New-AzStorageBlobSASToken -Context $tmpContext -Container "vhds" -Blob "$tmpVHDName" `
   -ExpiryTime(get-date).AddSeconds(3600) -FullUri -Permission rw
 Resize-VHD -TargetSize $TargetSize -VHDSASUri $tmpVHDSASUri
 Read-Host -Prompt "Press Enter after VHD resizing is done..."
 
 Write-Log "Creating disk [$TargetDiskName] from temp VHD..."
+$tmpVHDUri=$tmpVHD.ICloudBlob.Uri.AbsoluteUri
 $diskConfig = New-AzDiskConfig -AccountType Standard_LRS -Location $location -CreateOption Import `
-  -StorageAccountId $tmpStorageAccount.Id -SourceUri $tmpVHDSASUri
+  -StorageAccountId $tmpStorageAccount.Id -SourceUri $tmpVHDUri
 New-AzDisk -Disk $diskConfig -ResourceGroupName $sourceRGName -DiskName $TargetDiskName
 
 # clean up
 Write-Log "Removing tmp storage account: $tmpStorageAccountName"
-#Remove-AzStorageAccount -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName
+Remove-AzStorageAccount -ResourceGroupName $sourceRGName -Name $tmpStorageAccountName
 
 Write-Log "Removing tmp disk: $tmpDiskName"
-#Remove-AzDisk -ResourceGroupName $sourceRGName -DiskName $tmpDiskName
+Remove-AzDisk -ResourceGroupName $sourceRGName -DiskName $tmpDiskName
