@@ -3,6 +3,8 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+[ "$1" == "" ] && show_usage "command-name"
+
 TEMPLATE=$CMD_PATH/cmd-template
 CMD_FILE=$CMD_PATH/$1
 

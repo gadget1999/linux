@@ -3,4 +3,6 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+[ "$1" == "" ] && show_usage "command-name"
+
 sudo rm $CMD_PATH/$1
