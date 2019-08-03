@@ -50,7 +50,7 @@ function check_packages() {
 function show_usage() {
  local msg=$1
 
- echo "${RED}Usage: $0 $msg${NOCOLOR}"
+ echo "${RED}Usage: $PROGRAM $msg${NOCOLOR}"
  exit 1
 }
 
