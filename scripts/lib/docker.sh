@@ -93,6 +93,7 @@ function new_container() {
  if [ $(is_container_running $container_name) != "true" ]; then
   echo_red "The container may not be capable of running at background."
   docker rm $container_name
+  return
  fi
 
  enter_container $container_name
