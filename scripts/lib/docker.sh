@@ -9,6 +9,15 @@ source $CMD_PATH/lib/common.sh
 
 check_packages "/usr/bin/docker"
 
+function container_exists() {
+  docker ps -a | grep "$1" &> /dev/null
+  if [ $? == 0 ]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
 function is_container_running() {
   docker ps | grep "$1" &> /dev/null
   if [ $? == 0 ]; then
@@ -25,11 +34,35 @@ function stop_container() {
   fi
 }
 
+function enter_container() {
+ local container_name=$1
+ 
+ if [ $(is_container_running $container_name) != "true" ]; then
+  echo_red "Container is not running: $container_name"
+  return
+ fi
+
+ echo_green ">>> Now inside of container: $container_name"
+ docker exec -it $container_name \
+  bash -c 'cd; bash -l'
+ echo_green ">>> Now back to host"
+}
+
 function new_container() {
  local container_name=$1
  local imange_name=$2
  local keep=$3
  local container_host="$container_name"
+
+ if [ $(is_container_running $container_name) == "true" ]; then
+  enter_container $container_name
+  return
+ fi
+
+ if [ $(container_exists $container_name) == "true" ]; then
+  echo_red "Container (stopped) already exists: $container_name"
+  return
+ fi
 
  echo_green "Update image: $imange_name"
  docker pull $imange_name
@@ -56,15 +89,13 @@ function new_container() {
  echo_green "Start container (at background): $container_name"
  docker_options="-d $docker_options"
  docker run $docker_options $imange_name
- if [ $(is_container_running $1) != "true" ]; then
+ sleep 3
+ if [ $(is_container_running $container_name) != "true" ]; then
   echo_red "The container may not be capable of running at background."
   docker rm $container_name
  fi
 
- echo_green ">>> Now inside of container: $container_name"
- docker exec -it $container_name \
-  bash -c 'cd; bash -l'
- echo_green ">>> Now back to host"
+ enter_container $container_name
 }
 
 function backup_container()    {
