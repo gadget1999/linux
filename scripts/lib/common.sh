@@ -8,7 +8,7 @@ NOW=$(date +"%Y_%m_%d-%H_%M_%S")
 TODAY=$(date +%Y_%m_%d)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
-ENABLE_LOGGING=0
+ENABLE_LOGGING=1
 DEBUG=1
 
 ############# Env Checking #############
@@ -59,15 +59,24 @@ function show_usage() {
 RED=`tput setaf 1`
 GREEN=`tput setaf 2`
 NOCOLOR=`tput sgr0`
+
+function echo_red() {
+ echo "${RED}$1${NOCOLOR}"
+}
+
+function echo_green() {
+ echo "${GREEN}$1${NOCOLOR}"
+}
+
 function log() {
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
- echo "${GREEN}$TIMESTAMP $1${NOCOLOR}"
+ echo_green "$TIMESTAMP $1"
  [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
 }
 
 function log_error() {
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
- echo "${RED}$TIMESTAMP $1${NOCOLOR}"
+ echo_red "$TIMESTAMP $1"
  [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
 }
 

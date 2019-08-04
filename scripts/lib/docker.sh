@@ -26,28 +26,45 @@ function stop_container() {
 }
 
 function new_container() {
- local CONTAINER_NAME=$1
- local IMAGE_NAME=$2
- local KEEP=$3
+ local container_name=$1
+ local imange_name=$2
+ local keep=$3
+ local container_host="$container_name"
 
- DELETE_AFTER="--rm"
- [ "$KEEP" == "keep" ] && DELETE_AFTER=""
+ echo_green "Update image: $imange_name"
+ docker pull $imange_name
 
- CONTAINER_HOST="$CONTAINER_NAME"
+ local docker_options="--log-driver none
+  -v /etc/localtime:/etc/localtime
+  -v $container_name-root:/root
+  --tmpfs /tmp
+  --name $container_name
+  -h $container_host
+  "
 
- log "Update image: $IMAGE_NAME"
- docker pull $IMAGE_NAME
+ if [ "$keep" != "keep" ]; then
+  # create a one-time use temp container
+  echo_green ">>> Now inside of container (one-time use): $container_name"
+  docker_options="-it --rm $docker_options"
+  docker run $docker_options $imange_name \
+   bash -c 'cd; bash -l'
+  echo_green ">>> Now back to host"
+  return
+ fi
 
- log "Start container"
- docker run -it $DELETE_AFTER \
-  --log-driver none \
-  -v /etc/localtime:/etc/localtime \
-  -v $CONTAINER_NAME-root:/root \
-  --tmpfs /tmp \
-  --name $CONTAINER_NAME \
-  -h $CONTAINER_HOST \
-  $IMAGE_NAME \
+ # if need to keep container, need to keep it running at background
+ echo_green "Start container (at background): $container_name"
+ docker_options="-d $docker_options"
+ docker run $docker_options $imange_name
+ if [ $(is_container_running $1) != "true" ]; then
+  echo_red "The container may not be capable of running at background."
+  docker rm $container_name
+ fi
+
+ echo_green ">>> Now inside of container: $container_name"
+ docker exec -it $container_name \
   bash -c 'cd; bash -l'
+ echo_green ">>> Now back to host"
 }
 
 function backup_container()    {
