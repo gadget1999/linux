@@ -25,6 +25,31 @@ function stop_container() {
   fi
 }
 
+function new_container() {
+ local CONTAINER_NAME=$1
+ local IMAGE_NAME=$2
+ local KEEP=$3
+
+ DELETE_AFTER="--rm"
+ [ "$KEEP" == "keep" ] && DELETE_AFTER=""
+
+ CONTAINER_HOST="$CONTAINER_NAME"
+
+ log "Update image: $IMAGE_NAME"
+ docker pull $IMAGE_NAME
+
+ log "Start container"
+ docker run -it $DELETE_AFTER \
+  --log-driver none \
+  -v /etc/localtime:/etc/localtime \
+  -v $CONTAINER_NAME-root:/root \
+  --tmpfs /tmp \
+  --name $CONTAINER_NAME \
+  -h $CONTAINER_HOST \
+  $IMAGE_NAME \
+  bash -c 'cd; bash -l'
+}
+
 function backup_container()    {
   local container=$1
   local filename="$2-container-$container.tar"
