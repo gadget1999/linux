@@ -2,6 +2,7 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
+ENABLE_LOGGING=1
 
 sudo cat /var/log/auth.log | grep 'sshd.*Invalid' > $LOG
 cat $LOG

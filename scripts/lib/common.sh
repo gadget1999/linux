@@ -8,7 +8,7 @@ NOW=$(date +"%Y_%m_%d-%H_%M_%S")
 TODAY=$(date +%Y_%m_%d)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
-ENABLE_LOGGING=1
+ENABLE_LOGGING=0
 DEBUG=1
 
 ############# Env Checking #############

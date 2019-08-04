@@ -2,6 +2,7 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
+ENABLE_LOGGING=1
 
 check_env "DDNS_DOMAIN DDNS_KEY"
 
