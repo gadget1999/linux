@@ -42,7 +42,7 @@ function enter_container() {
   return
  fi
 
- echo_green ">>> Now inside of container: $container_name"
+ echo_red ">>> Now in container: $container_name"
  docker exec -it $container_name \
   bash -c 'cd; bash -l'
  echo_green ">>> Now back to host"
@@ -77,7 +77,7 @@ function new_container() {
 
  if [ "$keep" != "keep" ]; then
   # create a one-time use temp container
-  echo_green ">>> Now inside of container (one-time use): $container_name"
+  echo_red ">>> Now inside of container (one-time use): $container_name"
   docker_options="-it --rm $docker_options"
   docker run $docker_options $imange_name \
    bash -c 'cd; bash -l'
