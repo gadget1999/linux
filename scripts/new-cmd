@@ -11,7 +11,7 @@ CMD_FILE=$CMD_PATH/$1
 if [ ! -e $CMD_FILE ]; then
  $SUDO cp $TEMPLATE $CMD_FILE
  $SUDO chmod +x $CMD_FILE
- $SUDO nano $CMD_FILE
+ $SUDO nano -c $CMD_FILE
 else
-    debug "Command [$1] already exists."
+ debug "Command [$1] already exists."
 fi
