@@ -28,15 +28,32 @@ function is_container_running() {
 }
 
 function stop_container() {
-  if [ $(is_container_running $1) == "true" ]; then
-    echo "Stopping container: $1"
-    docker stop $1
-  fi
+ local container_name=$1
+ [ $(is_container_running $container_name) != "true" ] && return
+
+ echo_green "Stopping container: $container_name"
+ docker stop $container_name
 }
 
+function start_container() {
+ local container_name=$1
+ [ $(is_container_running $container_name) == "true" ] && return
+
+ if [ $(container_exists $container_name) != "true" ]; then
+  echo_red "Container does not exist: $container_name"
+  return
+ fi
+
+ echo_green "Starting container: $container_name"
+ docker start $container_name
+ sleep 3
+}
+
+# enter an existing container
 function enter_container() {
  local container_name=$1
- 
+
+ start_container $container_name 
  if [ $(is_container_running $container_name) != "true" ]; then
   echo_red "Container is not running: $container_name"
   return
@@ -48,20 +65,15 @@ function enter_container() {
  echo_green ">>> Now back to host"
 }
 
-function new_container() {
+# create a temp container
+function new_tmp_container() {
  local container_name=$1
  local imange_name=$2
- local keep=$3
- local extra_options=$4
+ local extra_options=$3
  local container_host="$container_name"
 
- if [ $(is_container_running $container_name) == "true" ]; then
-  enter_container $container_name
-  return
- fi
-
  if [ $(container_exists $container_name) == "true" ]; then
-  echo_red "Container (stopped) already exists: $container_name"
+  echo_red "Container already exists: $container_name"
   return
  fi
 
@@ -77,7 +89,6 @@ function new_container() {
   -h $container_host
   $extra_options"
 
- if [ "$keep" != "keep" ]; then
   # create a one-time use temp container
   echo_red ">>> Now inside of container (one-time use): $container_name"
   docker_options="-it --rm $docker_options"
@@ -85,9 +96,34 @@ function new_container() {
    bash -c 'cd; bash -l'
   echo_green ">>> Now back to host"
   return
+}
+
+# create a long running container
+function new_container() {
+ local container_name=$1
+ local imange_name=$2
+ local keep=$3
+ local extra_options=$4
+ local container_host="$container_name"
+
+ if [ $(container_exists $container_name) == "true" ]; then
+  echo_red "Container already exists: $container_name"
+  return
  fi
 
- # if need to keep container, need to keep it running at background
+ echo_green "Update image: $image_name"
+ docker pull $imange_name
+
+ [ "$extra_options" == "" ] && $extra_options="-v $container_name-root:/root"
+ [ "$keep" != "keep" ] && $extra_options="--rm $extra_options"
+
+ local docker_options="--log-driver none
+  -v /etc/localtime:/etc/localtime  
+  --tmpfs /tmp
+  --name $container_name
+  -h $container_host
+  $extra_options"
+
  echo_green "Start container (at background): $container_name"
  docker_options="-d $docker_options"
  docker run $docker_options $imange_name
@@ -97,8 +133,6 @@ function new_container() {
   docker rm $container_name
   return
  fi
-
- enter_container $container_name
 }
 
 function backup_container()    {
