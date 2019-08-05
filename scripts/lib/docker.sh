@@ -52,6 +52,7 @@ function new_container() {
  local container_name=$1
  local imange_name=$2
  local keep=$3
+ local extra_options=$4
  local container_host="$container_name"
 
  if [ $(is_container_running $container_name) == "true" ]; then
@@ -64,16 +65,17 @@ function new_container() {
   return
  fi
 
- echo_green "Update image: $imange_name"
+ echo_green "Update image: $image_name"
  docker pull $imange_name
 
+ [ "$extra_options" == "" ] && $extra_options="-v $container_name-root:/root"
+
  local docker_options="--log-driver none
-  -v /etc/localtime:/etc/localtime
-  -v $container_name-root:/root
+  -v /etc/localtime:/etc/localtime  
   --tmpfs /tmp
   --name $container_name
   -h $container_host
-  "
+  $extra_options"
 
  if [ "$keep" != "keep" ]; then
   # create a one-time use temp container
