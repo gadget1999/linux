@@ -75,14 +75,6 @@ function color_echo() {
  echo -e "${color}$msg${NOCOLOR}"
 }
 
-function echo_red() {
- color_echo red "$1"
-}
-
-function echo_green() {
- color_echo green "$1"
-}
-
 function log() {
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
  color_echo green "$TIMESTAMP $1"
