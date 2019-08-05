@@ -36,7 +36,7 @@ if [ "$CERT_TYPE" == "ecc" ]; then
  CERT_OPTS="cert=$CONTAINER_CERT_ROOT/$CERT_FULLCHAIN;key=$CONTAINER_CERT_ROOT/$CERT_KEY"
  V2RAY_OPTS="$V2RAY_OPTS;$CERT_OPTS"
 fi
-log "V2Ray options: $V2RAY_OPTS"
+debug "V2Ray options: $V2RAY_OPTS"
 
 CONTAINER_MODE="-d"
 if [ "$1" == "debug" ]; then

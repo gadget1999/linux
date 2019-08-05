@@ -56,27 +56,42 @@ function show_usage() {
 
 ############# Logging #############
 
-RED="\e[0;31m"
-GREEN="\e[0;32m"
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
 NOCOLOR="\e[m"
 
+function color_echo() {
+ local color=$1
+ local msg=$2
+
+ case $color in
+  (green|GREEN)		color="$GREEN";;
+  (red|RED)			color="$RED";;
+  (yellow|YELLOW)	color="$YELLOW";;
+  (*)				color="$NOCOLOR";;
+ esac
+ 
+ echo -e "${color}$msg${NOCOLOR}"
+}
+
 function echo_red() {
- echo -e "${RED}$1${NOCOLOR}"
+ color_echo red "$1"
 }
 
 function echo_green() {
- echo -e "${GREEN}$1${NOCOLOR}"
+ color_echo green "$1"
 }
 
 function log() {
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
- echo_green "$TIMESTAMP $1"
+ color_echo green "$TIMESTAMP $1"
  [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
 }
 
 function log_error() {
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
- echo_red "$TIMESTAMP $1"
+ color_echo red "$TIMESTAMP $1"
  [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
 }
 
@@ -84,7 +99,7 @@ function debug() {
  [ "$DEBUG" != "1" ] && return
 
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
- echo "$TIMESTAMP $1"
+ color_echo yellow "$TIMESTAMP $1"
 }
 
 ############# Locking (single-run) #############
