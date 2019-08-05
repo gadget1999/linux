@@ -59,10 +59,10 @@ function enter_container() {
   return
  fi
 
- echo_red ">>> Now in container: $container_name"
+ #echo_red ">>> Now in container: $container_name"
  docker exec -it $container_name \
   bash -c 'cd; bash -l'
- echo_green ">>> Now back to host"
+ #echo_green ">>> Now back to host"
 }
 
 # create a temp container
@@ -90,11 +90,11 @@ function new_tmp_container() {
   $extra_options"
 
   # create a one-time use temp container
-  echo_red ">>> Now inside of container (one-time use): $container_name"
+  #echo_red ">>> Now inside of container (one-time use): $container_name"
   docker_options="-it --rm $docker_options"
   docker run $docker_options $image_name \
    bash -c 'cd; bash -l'
-  echo_green ">>> Now back to host"
+  #echo_green ">>> Now back to host"
 }
 
 # create a long running container
