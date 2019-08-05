@@ -56,16 +56,16 @@ function show_usage() {
 
 ############# Logging #############
 
-RED=`tput setaf 1`
-GREEN=`tput setaf 2`
-NOCOLOR=`tput sgr0`
+RED="\e[0;31m"
+GREEN="\e[0;32m"
+NOCOLOR="\e[m"
 
 function echo_red() {
- echo "${RED}$1${NOCOLOR}"
+ echo -e "${RED}$1${NOCOLOR}"
 }
 
 function echo_green() {
- echo "${GREEN}$1${NOCOLOR}"
+ echo -e "${GREEN}$1${NOCOLOR}"
 }
 
 function log() {
