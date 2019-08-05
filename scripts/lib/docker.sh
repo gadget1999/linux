@@ -36,7 +36,7 @@ function stop_container() {
 }
 
 function start_container() {
- local container_name=$1
+ local container_name=$1 
  [ $(is_container_running $container_name) == "true" ] && return
 
  if [ $(container_exists $container_name) != "true" ]; then
@@ -68,7 +68,7 @@ function enter_container() {
 # create a temp container
 function new_tmp_container() {
  local container_name=$1
- local imange_name=$2
+ local image_name=$2
  local extra_options=$3
  local container_host="$container_name"
 
@@ -78,11 +78,11 @@ function new_tmp_container() {
  fi
 
  echo_green "Update image: $image_name"
- docker pull $imange_name
+ docker pull $image_name
 
- [ "$extra_options" == "" ] && $extra_options="-v $container_name-root:/root"
+ [ "$extra_options" == "" ] && extra_options="--log-driver none -v $container_name-root:/root"
 
- local docker_options="--log-driver none
+ local docker_options="
   -v /etc/localtime:/etc/localtime  
   --tmpfs /tmp
   --name $container_name
@@ -92,16 +92,15 @@ function new_tmp_container() {
   # create a one-time use temp container
   echo_red ">>> Now inside of container (one-time use): $container_name"
   docker_options="-it --rm $docker_options"
-  docker run $docker_options $imange_name \
+  docker run $docker_options $image_name \
    bash -c 'cd; bash -l'
   echo_green ">>> Now back to host"
-  return
 }
 
 # create a long running container
 function new_container() {
  local container_name=$1
- local imange_name=$2
+ local image_name=$2
  local keep=$3
  local extra_options=$4
  local container_host="$container_name"
@@ -112,12 +111,12 @@ function new_container() {
  fi
 
  echo_green "Update image: $image_name"
- docker pull $imange_name
+ docker pull $image_name
 
- [ "$extra_options" == "" ] && $extra_options="-v $container_name-root:/root"
- [ "$keep" != "keep" ] && $extra_options="--rm $extra_options"
+ [ "$extra_options" == "" ] && extra_options="--log-driver none -v $container_name-root:/root"
+ [ "$keep" != "keep" ] && extra_options="--rm $extra_options"
 
- local docker_options="--log-driver none
+ local docker_options="
   -v /etc/localtime:/etc/localtime  
   --tmpfs /tmp
   --name $container_name
@@ -126,7 +125,7 @@ function new_container() {
 
  echo_green "Start container (at background): $container_name"
  docker_options="-d $docker_options"
- docker run $docker_options $imange_name
+ docker run $docker_options $image_name
  sleep 3
  if [ $(is_container_running $container_name) != "true" ]; then
   echo_red "The container may not be capable of running at background."
@@ -221,4 +220,3 @@ function delete_orphan_volumes()    {
   docker volume list --quiet --filter=dangling=true | \
     xargs --no-run-if-empty docker rmi
 }
-
