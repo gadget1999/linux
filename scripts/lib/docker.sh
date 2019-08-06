@@ -36,7 +36,7 @@ function stop_container() {
 }
 
 function start_container() {
- local container_name=$1 
+ local container_name=$1
  [ $(is_container_running $container_name) == "true" ] && return
 
  if [ $(container_exists $container_name) != "true" ]; then
@@ -53,7 +53,7 @@ function start_container() {
 function enter_container() {
  local container_name=$1
 
- start_container $container_name 
+ start_container $container_name
  if [ $(is_container_running $container_name) != "true" ]; then
   color_echo red "Container is not running: $container_name"
   return
@@ -69,7 +69,8 @@ function enter_container() {
 function new_tmp_container() {
  local container_name=$1
  local image_name=$2
- local extra_options=$3
+ local -n extra_options=$3 # use an array to avoid space/quote issues
+ local container_cmd=$4
  local container_host="$container_name"
 
  if [ $(container_exists $container_name) == "true" ]; then
@@ -77,24 +78,32 @@ function new_tmp_container() {
   return
  fi
 
+ if [ "$container_cmd" == "entrypoint" ]; then
+  container_cmd=()
+ else
+  container_cmd=(bash -c 'cd; bash -l')
+ fi
+
  debug "Update image: $image_name"
  docker pull $image_name
 
- [ "$extra_options" == "" ] && extra_options="--log-driver none -v $container_name-root:/root"
-
- local docker_options="
-  -v /etc/localtime:/etc/localtime  
+ local docker_options=(
+  run -it --rm
+  -v /etc/localtime:/etc/localtime
+  -v $container_name-root:/root
   --tmpfs /tmp
   --name $container_name
   -h $container_host
-  $extra_options"
+  "${extra_options[@]}"
+  $image_name
+  "${container_cmd[@]}"
+  )
 
-  # create a one-time use temp container
-  #color_echo red ">>> Now inside of container (one-time use): $container_name"
-  docker_options="-it --rm $docker_options"
-  docker run $docker_options $image_name \
-   bash -c 'cd; bash -l'
-  #debug ">>> Now back to host"
+ # create a one-time use temp container
+ #color_echo red ">>> Now inside of container (one-time use): $container_name"
+ #test-args "${docker_options[@]}"
+ docker "${docker_options[@]}"
+ #debug ">>> Now back to host"
 }
 
 # create a long running container
@@ -102,7 +111,7 @@ function new_container() {
  local container_name=$1
  local image_name=$2
  local keep=$3
- local extra_options=$4
+ local -n extra_options=$4 # use an array to avoid space/quote issues
  local container_host="$container_name"
 
  if [ $(container_exists $container_name) == "true" ]; then
@@ -113,19 +122,22 @@ function new_container() {
  debug "Update image: $image_name"
  docker pull $image_name
 
- [ "$extra_options" == "" ] && extra_options="--log-driver none -v $container_name-root:/root"
- [ "$keep" != "keep" ] && extra_options="--rm $extra_options"
+ [ "$keep" != "keep" ] && extra_options=(--rm "${extra_options[@]}")
 
- local docker_options="
-  -v /etc/localtime:/etc/localtime  
+ local docker_options=(
+  run -d
+  -v /etc/localtime:/etc/localtime
+  -v $container_name-root:/root
   --tmpfs /tmp
   --name $container_name
   -h $container_host
-  $extra_options"
+  "${extra_options[@]}"
+  $image_name
+  )
 
  debug "Start container (at background): $container_name"
- docker_options="-d $docker_options"
- docker run $docker_options $image_name
+ #test-args "${docker_options[@]}"
+ docker "${docker_options[@]}"
  sleep 3
  if [ $(is_container_running $container_name) != "true" ]; then
   color_echo red "The container may not be capable of running at background."
