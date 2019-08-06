@@ -56,20 +56,18 @@ function show_usage() {
 
 ############# Logging #############
 
-RED="\e[31m"
-GREEN="\e[32m"
-YELLOW="\e[33m"
-NOCOLOR="\e[m"
-
 function color_echo() {
  local color=$1
  local msg=$2
 
  case $color in
-  (green|GREEN)		color="$GREEN";;
-  (red|RED)			color="$RED";;
-  (yellow|YELLOW)	color="$YELLOW";;
-  (*)				color="$NOCOLOR";;
+  (red|RED)			color="\e[31m";;
+  (green|GREEN)		color="\e[32m";;
+  (yellow|YELLOW)	color="\e[33m";;
+  (purple|PURPLE)	color="\e[35m";;
+  (cyan|CYAN)		color="\e[36m";;
+  (orange|ORANGE)	color="\e[91m";;
+  (*)				color="\e[m";;
  esac
  
  echo -e "${color}$msg${NOCOLOR}"
