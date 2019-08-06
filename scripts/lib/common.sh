@@ -15,7 +15,7 @@ DEBUG=1
 
 function check_os_type() {
  [ "$OS_TYPE" != "" ] && return
- 
+
  if [ -x "$(command -v /usr/bin/apt-get)" ]; then
   OS_TYPE="debian"
   return
@@ -50,7 +50,7 @@ function check_packages() {
 function show_usage() {
  local msg=$1
 
- echo "${RED}Usage: $PROGRAM $msg${NOCOLOR}"
+ color_echo red "Usage: $PROGRAM $msg"
  exit 1
 }
 
