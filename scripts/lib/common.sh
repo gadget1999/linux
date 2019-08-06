@@ -56,6 +56,8 @@ function show_usage() {
 
 ############# Logging #############
 
+NOCOLOR="\e[m"
+
 function color_echo() {
  local color=$1
  local msg=$2
@@ -67,7 +69,7 @@ function color_echo() {
   (purple|PURPLE)	color="\e[35m";;
   (cyan|CYAN)		color="\e[36m";;
   (orange|ORANGE)	color="\e[91m";;
-  (*)				color="\e[m";;
+  (*)				color="$NOCOLOR";;
  esac
  
  echo -e "${color}$msg${NOCOLOR}"
