@@ -3,6 +3,6 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-ls -c $CMD_PATH
+ls -C --color=auto $CMD_PATH
 
 
