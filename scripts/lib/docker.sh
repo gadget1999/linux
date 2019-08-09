@@ -163,9 +163,9 @@ function backup_container()    {
 
 function backup_volume()    {
   local volume=$1
-  local filename="$2-vol-$volume.tar"
+  local filename="/tmp/vol-$volume-$NOW.tar"
 
-  log "Exporting docker volume [$volume] to: $filename..."
+  debug "Exporting docker volume [$volume] to: $filename..."
   docker run -d -v $volume:/backup --name "backup-$volume" busybox
   docker cp backup-$volume:/backup /tmp/backup-$volume
   tar -C /tmp/backup-$volume -cvf $filename .
@@ -174,9 +174,9 @@ function backup_volume()    {
 
   # verify if the docker image backup is valid
   if ! tar tf $filename &> /dev/null; then
-    log "Volume backup failed."
+    debug "Volume backup failed."
   else
-    log "Volume backup succeeded."
+    debug "Volume backup succeeded: $filename"
   fi
 }
 
@@ -184,25 +184,25 @@ function restore_volume()    {
   local volume=$2
   local filename=$1
 
-  log "Create docker volume [$volume]"
+  debug "Create docker volume [$volume]"
   docker volume create $volume
 
-  log "Extracting backup content..."
+  debug "Extracting backup content..."
   mkdir /tmp/restore-$volume
   cp $filename /tmp/restore-$volume/restore-$volume.tar
   cd /tmp/restore-$volume
   tar -xvf restore-$volume.tar
   rm  restore-$volume.tar
 
-  log "Restoring volume content..."
+  debug "Restoring volume content..."
   docker run -d -v $volume:/restore --name "restore-$volume" busybox
   docker cp /tmp/restore-$volume/. restore-$volume:/restore
   docker rm restore-$volume
 
-  log "List restored content"
+  debug "List restored content"
   docker run -it --rm -v $volume:/restore busybox ls -alR /restore
 
-  log "Clean up resources"
+  debug "Clean up resources"
   sudo rm -rf /tmp/restore-$volume
 }
 

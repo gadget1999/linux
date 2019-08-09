@@ -5,8 +5,11 @@ source $CMD_PATH/lib/common.sh
 
 check_packages "/usr/bin/pwsh"
 
-PWSH_DIR=$CMD_PATH/azure
-PWSH_CMD=$PWSH_DIR/$1.ps1
+# usage: az cmdlet args
 
-# no longer run at background as cannot get input
+CMDLET="$1"
+
+PWSH_DIR=$CMD_PATH/azure
+PWSH_CMD=$PWSH_DIR/$CMDLET.ps1
+
 sudo pwsh $PWSH_CMD $2 $3 $4
