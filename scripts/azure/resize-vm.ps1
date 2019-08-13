@@ -1,5 +1,6 @@
 param (
- [Parameter(Mandatory=$true)][string]$VMName
+ [Parameter(Mandatory=$true)][string]$VMName,
+ [Parameter(Mandatory=$false)][string]$VMSize
 )
 
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
@@ -20,7 +21,9 @@ if ($vm.Name -ine $VMName) {
 $VMOldSize = $vm.HardwareProfile.VmSize
 Write-Log "Current VM size: $VMOldSize"
 
-$VMSize = Read-Host -Prompt "Enter the new VM size"
+if (!$VMSize) {
+ $VMSize = Read-Host -Prompt "Enter the new VM size"
+}
 $VMNewSize = "Standard_" + $VMSize
 Write-Log "New VM size: $VMNewSize"
 
