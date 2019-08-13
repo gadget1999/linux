@@ -1,3 +1,7 @@
+param (
+ [Parameter(Mandatory=$false)][switch]$DryRun
+)
+
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
 . "$cmd_path/logger.ps1"
 . "$cmd_path/find-vm.ps1"
@@ -9,6 +13,10 @@ $logFile="/tmp/$program.log"
 
 function Shutdown-VM([string]$rg, [string]$vm)
 {
+ if ($DryRun) {
+  Write-Host "(DryRun) Shutdown idle VM: $rg - $vm"
+ }
+
  Write-Log "Shutdown idle VM: $rg - $vm"
  Stop-AzVM -ResourceGroupName $rg -Name $vm -Force
  Send-Email "Idle Azure VM $vm was shutdown" "Saving some Azure cost is always good!"
