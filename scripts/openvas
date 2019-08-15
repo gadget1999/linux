@@ -6,10 +6,11 @@ source $CMD_PATH/lib/docker.sh
 
 CONTAINER_NAME="openvas"
 IMAGE_NAME="mikesplain/openvas"
-EXTRA_OPTS="-v $CONTAINER_NAME:/var/lib/openvas/mgr/
-  -p 443:443
-  "
+EXTRA_OPTS=(
+ -v $CONTAINER_NAME:/var/lib/openvas/mgr/
+ -p 443:443
+ )
 
-new_container $CONTAINER_NAME $IMAGE_NAME discard "$EXTRA_OPTS"
+new_container $CONTAINER_NAME $IMAGE_NAME discard EXTRA_OPTS
 
 docker logs -f openvas
