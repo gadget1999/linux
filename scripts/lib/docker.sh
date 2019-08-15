@@ -9,8 +9,9 @@ source $CMD_PATH/lib/common.sh
 
 check_packages "/usr/bin/docker"
 
+# need to match pattern of end-of-line 'pattern$'
 function container_exists() {
-  docker ps -a | grep "$1" &> /dev/null
+  docker ps -a | grep " $1$" &> /dev/null
   if [ $? == 0 ]; then
     echo "true"
   else
@@ -19,7 +20,7 @@ function container_exists() {
 }
 
 function is_container_running() {
-  docker ps | grep "$1" &> /dev/null
+  docker ps | grep " $1$" &> /dev/null
   if [ $? == 0 ]; then
     echo "true"
   else
