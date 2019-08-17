@@ -10,19 +10,11 @@ import http.server
 from base64 import b64decode
 
 # Logging Setup
-logging.basicConfig(filename='web-server.log', level=logging.DEBUG)
+logging.basicConfig(filename='/tmp/py-web-server.log', level=logging.INFO)
 logger = logging.getLogger()
 
-# initiate the parser
-parser = argparse.ArgumentParser()
-parser.add_argument("--port", "-p", help="set the port of web server")
-parser.add_argument("--key", "-k", help="set the authentication key")
-parser.add_argument("--cert", "-c", help="set the TLS certificate path")
-parser.add_argument("--root", "-r", help="set the root folder")
-args = parser.parse_args()
-
 class BasicAuthHandler(http.server.SimpleHTTPRequestHandler):
-    key = args.key
+    key = ''
 
     def do_HEAD(self):
         '''Send Headers'''
@@ -73,14 +65,22 @@ class BasicAuthHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
 
+    # Initialize the arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", "-p", help="set the port of web server")
+    parser.add_argument("--key", "-k", help="set the authentication key")
+    parser.add_argument("--cert", "-c", help="set the TLS certificate path")
+    parser.add_argument("--root", "-r", help="set the root folder")
+    args = parser.parse_args()
+
     # Create Handler Instance
     handler = BasicAuthHandler
-
     handler.server_version = ' Python HTTPS Server v1.0 '
     handler.sys_version = ''
+    handler.key = args.key
 
     # SimpleHTTPServer Setup
-    port = args.port
+    port = int(args.port)
     httpd = http.server.HTTPServer(('0.0.0.0', port), handler)
 
     cert = args.cert
