@@ -10,7 +10,7 @@ import http.server
 from base64 import b64decode
 
 # Logging Setup
-logging.basicConfig(filename='/tmp/py-web-server.log', level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 
 class BasicAuthHandler(http.server.SimpleHTTPRequestHandler):
