@@ -5,3 +5,4 @@
 /.vs
 /scripts/azure/AzureDiskResizer
 /scripts/azure/azcopy.exe
+*.log
