@@ -1,0 +1,35 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "SFTP_USER SFTP_PASSWORD MAIN_USER"
+
+CONTAINER="sftp"
+IMAGE="atmoz/sftp:alpine"
+
+ROOT_FOLDER=/download/sftp
+PORT=24786
+
+debug "Stop current container"
+stop_container $CONTAINER
+
+USER_CONF=/tmp/atmos-sftp.conf
+echo "$SFTP_USER:$SFTP_PASSWORD:::share" > $USER_CONF
+
+SSH_KEY=/home/$MAIN_USER/.container_sftp_key
+
+EXTRA_OPTS=(
+ -v $USER_CONF:/etc/sftp/users.conf:ro
+ -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key
+ -v $ROOT_FOLDER:/home/$SFTP_USER/share
+ -p $PORT:22
+ -p $PORT:8388/udp
+ )
+
+if [ "$1" != "debug" ]; then
+ new_container $CONTAINER $IMAGE discard EXTRA_OPTS
+else
+ new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
+fi
