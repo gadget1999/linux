@@ -10,7 +10,8 @@ source $CMD_PATH/lib/common.sh
 function check_cert_env() {
  check_env "MAIN_USER CERT_ROOT CERT_LOCAL_PORT DDNS_DOMAIN"
 
- CERT_CMD=/home/$MAIN_USER/.acme.sh/acme.sh
+ CERT_ROOT_FOLDER=/home/$MAIN_USER/.acme.sh
+ CERT_CMD=$CERT_ROOT_FOLDER/acme.sh
  CERT_FOLDER=$DDNS_DOMAIN
  [ "$CERT_TYPE" == "ecc" ] && CERT_FOLDER="$CERT_FOLDER"_ecc
  CERT_FULLCHAIN="$CERT_FOLDER/fullchain.cer"

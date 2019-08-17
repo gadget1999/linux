@@ -2,7 +2,30 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/certificate.sh
 
-mkdir /tmp/web
-cd /tmp/web
-sudo python -m SimpleHTTPServer $1
+check_env "WEB_SERVER_KEY"
+
+PORT=$1
+[ "$PORT" == "" ] && PORT=24786
+
+ROOT_FOLDER=$2
+if [ "$ROOT_FOLDER" == "" ]; then
+ ROOT_FOLDER=/download/web
+elif [ "$ROOT_FOLDER" == "." ]; then
+ ROOT_FOLDER=$(pwd)
+fi
+
+# create TLS cert
+check_cert_env
+CERT="/tmp/$DDNS_DOMAIN.pem"
+cat $CERT_ROOT_FOLDER/$CERT_FULLCHAIN > $CERT
+cat $CERT_ROOT_FOLDER/$CERT_KEY >> $CERT
+
+debug "Starting web server on port $PORT (root:$ROOT_FOLDER)"
+cd $ROOT_FOLDER
+sudo python3 $CMD_PATH/lib/web-server.py \
+ -p $PORT \
+ -r $ROOT_FOLDER \
+ -k $WEB_SERVER_KEY \
+ -c $CERT

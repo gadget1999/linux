@@ -1,0 +1,30 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+URL=$1
+[ "$1" == "" ] && show_usage "URL [debug]"
+
+CMD=/usr/local/bin/youtube-dl
+if [ -x "$(command -v $CMD)" ]; then
+ debug "Update youtube-dl"
+ sudo pip3 install --upgrade youtube_dl
+else
+ debug "Install youtube-dl"
+ sudo pip3 install youtube-dl
+fi
+
+TARGET="/download/web"
+[ ! -d $TARGET ] && mkdir $TARGET
+cd $TARGET
+
+if [ "$2" == "debug" ]; then
+ $CMD -v $URL
+else
+ $CMD $URL
+fi
+
+
