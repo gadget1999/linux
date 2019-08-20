@@ -1,0 +1,56 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+CMD="/usr/local/bin/bypy"
+check_packages "$CMD"
+
+export LANG="C.UTF-8"
+
+lock
+
+function download_BaiduPan() {
+ local remote_root=$1
+ local local_root=$2
+
+ # in case file name has space, it could cause list to split
+ # using IFS to fix it
+ IFS=$'\n'
+ # use sed to strip out header line
+ local items=($(bypy ls $remote_root | sed "1 d" | cut -d '|' -f 2))
+ unset IFS
+ for item in "${items[@]}"; do
+  local path="$remote_root/$item"
+  log "Dowloading $path"
+
+  $CMD -d --chunk 1MB --move \
+   download "$path" "$local_root"
+ done
+}
+
+function upload_BaiduPan() {
+ local local_root=$1
+ local remote_root=$2
+
+ # in case file name has space, it could cause list to split
+ # using IFS to fix it
+ IFS=$'\n'
+ local items=($(ls -1 $local_root))
+ unset IFS
+ for item in "${items[@]}"; do
+  local path="$local_root/$item"
+  log "Uploading $path"
+
+  $CMD -d --chunk 1MB --move \
+   upload "$path" "$remote_root"
+ done
+}
+
+LOCAL_WORK_FOLDER=/download
+
+LOCAL_DOWNLOAD=$LOCAL_WORK_FOLDER/sftp
+download_BaiduPan "/Downloads" "$LOCAL_DOWNLOAD"
+
+LOCAL_UPLOAD=$LOCAL_WORK_FOLDER/box/down
+upload_BaiduPan $LOCAL_UPLOAD Uploads
