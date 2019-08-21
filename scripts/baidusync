@@ -1,12 +1,14 @@
 #!/bin/bash
 
+export LANG="C.UTF-8"
+
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+check_env "BAIDU_DOWNLOAD BAIDU_UPLOAD"
+
 CMD="/usr/local/bin/bypy"
 check_packages "$CMD"
-
-export LANG="C.UTF-8"
 
 lock
 
@@ -25,7 +27,7 @@ function download_BaiduPan() {
   log "Dowloading $path"
 
   $CMD -d --chunk 1MB --move \
-   download "$path" "$local_root"
+   download "$path" "$local_root/$item"
  done
 }
 
@@ -43,14 +45,10 @@ function upload_BaiduPan() {
   log "Uploading $path"
 
   $CMD -d --chunk 1MB --move \
-   upload "$path" "$remote_root"
+   upload "$path" "$remote_root/$item"
  done
 }
 
-LOCAL_WORK_FOLDER=/download
+download_BaiduPan "Downloads" "$BAIDU_DOWNLOAD"
 
-LOCAL_DOWNLOAD=$LOCAL_WORK_FOLDER/sftp
-download_BaiduPan "/Downloads" "$LOCAL_DOWNLOAD"
-
-LOCAL_UPLOAD=$LOCAL_WORK_FOLDER/box/down
-upload_BaiduPan $LOCAL_UPLOAD Uploads
+upload_BaiduPan $BAIDU_UPLOAD Uploads
