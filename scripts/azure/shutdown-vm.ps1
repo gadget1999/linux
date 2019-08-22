@@ -1,5 +1,6 @@
 param (
  [Parameter(Mandatory=$false)][switch]$DryRun
+ [Parameter(Mandatory=$false)][int]$IdleLimit=15
 )
 
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
@@ -38,14 +39,10 @@ function Shutdown-IdleVMs
    $cpu=$metric.Data.Maximum
    if ($cpu -ne $null)
    {
-    if ($cpu -lt 20)
+    Write-Log "VM [$($VM.Name)] maximum CPU in last hour: $cpu%"
+    if ($cpu -lt $IdleLimit)
     {
-     Write-Log "VM max CPU in last hour: $cpu%" "INFO"
      Shutdown-VM $VM.ResourceGroupName $VM.Name
-    }
-    else
-    {
-     Write-Log "VM max CPU in last hour: $cpu%" "DEBUG"
     }
    }
   }
