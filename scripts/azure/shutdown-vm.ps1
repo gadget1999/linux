@@ -1,6 +1,6 @@
 param (
- [Parameter(Mandatory=$false)][switch]$DryRun
- [Parameter(Mandatory=$false)][int]$IdleLimit=15
+ [Parameter(Mandatory=$false)][switch]$DryRun,
+ [Parameter(Mandatory=$false)][int]$IdleLimit=10
 )
 
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
@@ -16,6 +16,7 @@ function Shutdown-VM([string]$rg, [string]$vm)
 {
  if ($DryRun) {
   Write-Host "(DryRun) Shutdown idle VM: $rg - $vm"
+  Return
  }
 
  Write-Log "Shutdown idle VM: $rg - $vm"
