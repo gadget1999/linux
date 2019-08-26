@@ -1,6 +1,6 @@
 param (
  [Parameter(Mandatory=$false)][switch]$DryRun,
- [Parameter(Mandatory=$false)][int]$IdleLimit=10
+ [Parameter(Mandatory=$false)][int]$IdleLimit=0
 )
 
 $cmd_path=(Get-Item $PSCommandPath).DirectoryName
