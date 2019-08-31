@@ -13,3 +13,6 @@ PWSH_DIR=$CMD_PATH/azure
 PWSH_CMD=$PWSH_DIR/$CMDLET.ps1
 
 sudo pwsh $PWSH_CMD $2 $3 $4
+
+# seems PowerShell will leave some trash behind
+sudo rm /tmp/*.pwsh
