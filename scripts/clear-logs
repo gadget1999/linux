@@ -2,6 +2,7 @@
 
 function zerofile() {
  file=$1
+ [ ! -e "$file" ] && return
 
  echo "Truncate $file"
  sudo truncate -s 0 $file
