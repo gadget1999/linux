@@ -5,11 +5,12 @@ source $CMD_PATH/lib/common.sh
 ENABLE_LOGGING=1
 
 check_env "DDNS_DOMAIN DDNS_KEY"
+check_packages "/usr/bin/getent"
 
 $CMD_PATH/wait-internet
 
 PUBLIC_IP=$($CMD_PATH/public-ip)
-DNS_IP=$(getent hosts $DDNS_DOMAIN | cut -d ' ' -f 1)
+DNS_IP=$(/usr/bin/getent hosts $DDNS_DOMAIN | cut -d ' ' -f 1)
 
 debug "Public IP: $PUBLIC_IP, DNS IP: $DNS_IP"
 if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
