@@ -9,13 +9,17 @@ check_packages "/usr/bin/getent /usr/bin/curl"
 
 $CMD_PATH/wait-internet
 
-PUBLIC_IP=$(/usr/bin/curl -s http://ip.42.pl/short)
+PUBLIC_IP=$(/usr/bin/curl -s ifconfig.me)
 DNS_IP=$(/usr/bin/getent hosts $DDNS_DOMAIN | cut -d ' ' -f 1)
+
+if [ "$PUBLIC_IP" == "" ] || [ "$DNS_IP" == "" ]; then
+ log_error "Failed to get IPs. (Public: $PUBLIC_IP, DNS: $DNS_IP)"
+ #exit 1
+fi
 
 debug "Public IP: $PUBLIC_IP, DNS IP: $DNS_IP"
 if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
- debug "No need to update DDNS"
- exit
+ exit 0
 fi
 
 log "Updating DDNS ..."
