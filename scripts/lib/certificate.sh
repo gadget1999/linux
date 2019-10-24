@@ -16,12 +16,12 @@ function check_cert_env() {
  [ "$CERT_TYPE" == "ecc" ] && CERT_FOLDER="$CERT_FOLDER"_ecc
  CERT_FULLCHAIN="$CERT_FOLDER/fullchain.cer"
  CERT_KEY="$CERT_FOLDER/$DDNS_DOMAIN.key"
- CERT_TRANSPORT="--httpport $CERT_LOCAL_PORT"
+ CERT_TRANSPORT="--standalone --httpport $CERT_LOCAL_PORT"
  [ "$CERT_METHOD" == "tls" ] && CERT_TRANSPORT="--alpn --tlsport $CERT_LOCAL_PORT"
 }
 
 function issue_certificate()  {
- local cmd="$SUDO $CERT_CMD --issue -d $DDNS_DOMAIN --standalone $CERT_TRANSPORT"
+ local cmd="$SUDO $CERT_CMD --issue -d $DDNS_DOMAIN $CERT_TRANSPORT"
  
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --keylength ec-384"
  
@@ -38,7 +38,7 @@ function issue_certificate()  {
 
 function renew_certificate()  {
  local force=$1
- local cmd="$SUDO $CERT_CMD --renew $force -d $DDNS_DOMAIN --standalone $CERT_TRANSPORT"
+ local cmd="$SUDO $CERT_CMD --renew $force -d $DDNS_DOMAIN $CERT_TRANSPORT"
  
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --ecc"
   
