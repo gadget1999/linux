@@ -29,7 +29,6 @@ if !(copy_file $TMP_CMD_FOLDER/update-cmds $CMD_PATH/update-cmds); then
 fi
 
 copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
-$SUDO chmod +x $CMD_PATH/*
 
 [ ! -d $CMD_LIB ] && $SUDO mkdir $CMD_LIB
 copy_files "$TMP_CMD_FOLDER/lib/*" $CMD_LIB
@@ -45,6 +44,8 @@ if [ -x "$(command -v /usr/bin/adb)" ]; then
  # only copy scripts when Android ADB is installed
  copy_files "$TMP_CMD_FOLDER/android/*" $CMD_PATH
 fi
+
+$SUDO chmod +x $CMD_PATH/*
 
 rm -R $TMP_FOLDER
 rm $TMP_ZIP
