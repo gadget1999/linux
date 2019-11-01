@@ -42,10 +42,8 @@ if [ -x "$(command -v /usr/bin/pwsh)" ]; then
 fi
 
 if [ -x "$(command -v /usr/bin/adb)" ]; then
- CMD_ANDROID=$CMD_PATH/android
  # only copy scripts when Android ADB is installed
- [ ! -d $CMD_ANDROID ] && $SUDO mkdir $CMD_ANDROID
- copy_files "$TMP_CMD_FOLDER/android/*" $CMD_ANDROID
+ copy_files "$TMP_CMD_FOLDER/android/*" $CMD_PATH
 fi
 
 rm -R $TMP_FOLDER
