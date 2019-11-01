@@ -7,10 +7,13 @@ source $CMD_PATH/lib/common.sh
 
 APKs=$1
 
-log "Processing APKs in $APKs"
-
+#log "Processing APKs in $APKs"
 while read -r line; do
-  log "Uninstalling $line";
-  # redirect the input otherwise main file will be read by adb
-  adb shell pm uninstall -k --user 0 $line < /dev/null
+ log "Uninstalling $line";
+
+ # redirect the input otherwise main file will be read by adb
+ adb shell pm uninstall -k --user 0 $line < /dev/null
 done < "$APKs"
+
+# Note: if uninstalled something by mistake, use following to undo
+# adb shell cmd package install-existing $line
