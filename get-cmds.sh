@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 [ -f /usr/local/bin/update-cmds ] && exit 0
 

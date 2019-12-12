@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
