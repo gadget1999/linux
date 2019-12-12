@@ -1,0 +1,27 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+# check if aapt exists
+aapt_bin=aapt-arm-pie
+aapt_phone=/data/local/tmp/$aapt_bin
+aapt_url="https://github.com/Calsign/APDE/raw/master/APDE/src/main/assets/aapt-binaries/aapt-arm-pie"
+if [ "$(adb shell ls $aapt_phone)" != "$aapt_phone" ]; then
+ log "aapt not found on the phone, downloading..."
+ wget -O /tmp/$aapt_bin $aapt_url
+
+ log "push aapt to phone"
+ adb push /tmp/$aapt_bin /data/local/tmp
+ adb shell chmod 0755 $aapt_phone
+fi
+
+for pkg in $(adb shell pm list packages -f | cut -d':' -f2); do
+ name="${pkg##*=}"
+ apk="${pkg%=*}"
+
+ title=$(adb shell /data/local/tmp/aapt-arm-pie d badging $apk | awk -F: '
+     $1 == "application-label" {print $2}')
+
+ [ "$title" != "" ] && log "$title ($name)"
+done
