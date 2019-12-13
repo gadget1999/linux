@@ -17,14 +17,16 @@ lock
 
 function example_switch_action() {
  local state=$1
+ local tag="switch"
+ 
  case $state in
   on)
    turn-on-switch &
-   firebase_send switch $1
+   firebase_send $tag $1
    ;;
   off)
    turn-off-switch &
-   firebase_send switch $1
+   firebase_send $tag $1
    ;;
  esac
 }
