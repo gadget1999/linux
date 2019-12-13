@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 
 function check_firebase_env {
  check_env "FB_BASE_URL FB_KEY FB_AGENT"
- check_packages "/usr/bin/curl /usr/bin/jq"
+ check_packages "curl jq"
 }
 
 function firebase_response() {
