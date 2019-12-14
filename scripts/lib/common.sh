@@ -131,8 +131,8 @@ function should_continue() {
 
 ############# Files #############
 
-DIFF_CMD="/usr/bin/diff --color"
-[ -x "$(command -v /usr/bin/colordiff)" ] && DIFF_CMD="/usr/bin/colordiff"
+DIFF_CMD="diff --color"
+[ -x "$(command -v colordiff)" ] && DIFF_CMD="colordiff"
 
 NEED_CONFIRM="yes"
 function copy_file() {
