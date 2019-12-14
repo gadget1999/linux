@@ -3,7 +3,7 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-check_packages "/usr/bin/pgrep"
+check_packages "pgrep"
 
 # Clean up orphan lock files
 # The reason to use lock files instead of check process name is that 

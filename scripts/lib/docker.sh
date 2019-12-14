@@ -7,7 +7,7 @@ source $CMD_PATH/lib/common.sh
 ## Docker helper functions
 #####################################
 
-check_packages "/usr/bin/docker"
+check_packages "docker"
 
 # need to match pattern of end-of-line 'pattern$'
 function container_exists() {
