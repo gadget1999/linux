@@ -15,7 +15,7 @@ function mqtt_send() {
  local retain=$3
 
  debug "Sending MQTT message: $topic $msg $retain"
- /usr/bin/mosquitto_pub -h $MQTT_SERVER -p $MQTT_PORT \
+ mosquitto_pub -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
   -t "$topic" -m "$msg" $retain
 }
@@ -40,7 +40,7 @@ function mqtt_event_handler()    {
 }
 
 function mqtt_listen() {
- /usr/bin/mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
+ mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
   -t "$MQTT_TOPIC/#" | \
  while read -r line ; do
@@ -61,7 +61,7 @@ function start_mqtt_agent {
 function start_mqtt_monitoring() {
  local topics=$1
  
- /usr/bin/mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
+ mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
   $topics | \
    xargs -d$'\n' -L1 sh -c 'date "+%Y.%m.%d-%H:%M:%S $0"'
@@ -70,7 +70,7 @@ function start_mqtt_monitoring() {
 function start_mqtt_logging() {
  local topics=$1
  
- /usr/bin/mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
+ mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
   $topics | \
    xargs -d$'\n' -L1 sh -c 'date "+%Y.%m.%d-%H:%M:%S $0"' \

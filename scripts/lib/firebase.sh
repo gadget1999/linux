@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 function check_firebase_env {
- check_env "FB_BASE_URL FB_KEY FB_AGENT"
+ check_env "FB_BASE_URL FB_KEY FB_ENDPOINT FB_AGENT"
  check_packages "curl jq"
 }
 
@@ -17,7 +17,7 @@ function firebase_response() {
  local fullpath="/$path"
  
  debug "Sending firebase message to [$url]: $msg"
- /usr/bin/curl -X PATCH -d "$msg" "$url"
+ curl -X PATCH -d "$msg" "$url"
 }
 
 function firebase_send() {
@@ -26,7 +26,7 @@ function firebase_send() {
  local url="$FB_BASE_URL/$path.json?auth=$FB_KEY"
 
  debug "Sending firebase message to [$url]: $msg"
- /usr/bin/curl -X PUT -d "$msg" "$url"
+ curl -X PUT -d "$msg" "$url"
 }
 
 function trim_str() {
@@ -58,7 +58,7 @@ function event_handler() {
 function firebase_listen() {
  # httpie is used to handle streaming events from Firebase
  FB_REQUEST_URL="$FB_BASE_URL/$FB_ENDPOINT/request.json?auth=$FB_KEY"
- /usr/bin/curl -s -N --http2 -H "Accept:text/event-stream" $FB_REQUEST_URL | \
+ curl -s -N --http2 -H "Accept:text/event-stream" $FB_REQUEST_URL | \
 # /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
   [[ "$line" == *"data: {"* ]] && event_handler $line

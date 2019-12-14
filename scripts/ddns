@@ -5,12 +5,21 @@ source $CMD_PATH/lib/common.sh
 ENABLE_LOGGING=1
 
 check_env "DDNS_DOMAIN DDNS_KEY"
-check_packages "/usr/bin/getent curl"
+
+check_os_type
+if [ "$OS_TYPE" == "entware" ]; then
+  PACKAGES="nslookup curl"
+  DNS_IP=$(nslookup $DDNS_DOMAIN | tail -n1 | awk '/^Address 1: / { print $3 }')
+else
+  PACKAGES="getent curl"
+  DNS_IP=$(/usr/bin/getent hosts $DDNS_DOMAIN | cut -d ' ' -f 1)
+fi
+
+check_packages "$PACKAGES"
 
 $CMD_PATH/wait-internet
 
-PUBLIC_IP=$(/usr/bin/curl -s ifconfig.me)
-DNS_IP=$(/usr/bin/getent hosts $DDNS_DOMAIN | cut -d ' ' -f 1)
+PUBLIC_IP=$(curl -s ifconfig.me)
 
 if [ "$PUBLIC_IP" == "" ] || [ "$DNS_IP" == "" ]; then
  log_error "Failed to get IPs. (Public: $PUBLIC_IP, DNS: $DNS_IP)"
