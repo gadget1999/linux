@@ -3,12 +3,22 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+function list_packages_debian() {
+ grep " installed " /var/log/dpkg.log
+}
+
 function list_packages_centos() {
  rpm -qa --qf '%{INSTALLTIME:date}: %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort -n
 }
 
-function list_packages_debian() {
- grep " installed " /var/log/dpkg.log
+function list_packages_entware() {
+ local flash_time=$(opkg info busybox | grep '^Installed-Time: ')
+ 
+ for i in $(opkg list-installed | cut -d' ' -f1); do
+  if [ "$(opkg info $i | grep '^Installed-Time: ')" != "$flash_time" ]; then
+   echo $i
+  fi
+ done
 }
 
 check_os_type
@@ -21,6 +31,10 @@ case $OS_TYPE in
  centos)
   log "List installed packages (CentOS)"
   list_packages_centos
+  ;;
+ entware)
+  log "List installed packages (Entware)"
+  list_packages_entware
   ;;
  *)
   log_error "Unknown system type"

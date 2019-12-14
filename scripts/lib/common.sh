@@ -18,9 +18,15 @@ function check_os_type() {
 
  if [ -x "$(command -v /usr/bin/apt-get)" ]; then
   OS_TYPE="debian"
+  MAIN_BIN="/usr/bin"
   return
  elif [ -x "$(command -v /usr/bin/yum)" ]; then
   OS_TYPE="centos"
+  MAIN_BIN="/usr/bin"
+  return
+ elif [ -x "$(command -v /opt/bin/opkg)" ]; then
+  OS_TYPE="entware"
+  MAIN_BIN="/opt/bin"
   return
  fi
 }
