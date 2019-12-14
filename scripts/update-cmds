@@ -5,6 +5,19 @@ source $CMD_PATH/lib/common.sh
 
 check_packages "/usr/bin/unzip"
 
+function conditional_copy() {
+ local condition="$1"
+ local src_folder=$2
+ local dst_folder=$3
+
+ # condition is to test if the command exists
+ [ ! -x "$(command -v $condition)" ] && return
+
+ log "Found command: $condition. Will copy related files."
+ [ ! -d $dst_folder ] && $SUDO mkdir $dst_folder
+ copy_files "$src_folder/*" $dst_folder
+}
+
 GITHUB_URL="https://github.com/gadget1999/linux/archive/master.zip"
 TMP_ZIP=/tmp/master.zip
 TMP_FOLDER=/tmp/linux-master
@@ -33,17 +46,10 @@ copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 [ ! -d $CMD_LIB ] && $SUDO mkdir $CMD_LIB
 copy_files "$TMP_CMD_FOLDER/lib/*" $CMD_LIB
 
-if [ -x "$(command -v /usr/bin/pwsh)" ]; then
- CMD_AZURE=$CMD_PATH/azure
- # only copy scripts when Azure PowerShell is installed
- [ ! -d $CMD_AZURE ] && $SUDO mkdir $CMD_AZURE
- copy_files "$TMP_CMD_FOLDER/azure/*.ps1" $CMD_AZURE
-fi
-
-if [ -x "$(command -v /usr/bin/adb)" ]; then
- # only copy scripts when Android ADB is installed
- copy_files "$TMP_CMD_FOLDER/android/*" $CMD_PATH
-fi
+conditional_copy pwsh $TMP_CMD_FOLDER/azure $CMD_PATH/azure
+conditional_copy adb $TMP_CMD_FOLDER/android $CMD_PATH
+conditional_copy docker $TMP_CMD_FOLDER/docker $CMD_PATH
+conditional_copy mosquitto_sub $TMP_CMD_FOLDER/mqtt $CMD_PATH
 
 $SUDO chmod +x $CMD_PATH/*
 
