@@ -12,14 +12,21 @@ IMAGE="gadget1999/rpi-nook-weather"
 debug "Stop current container"
 stop_container $CONTAINER
 
+WORK_DIR=/download/nook
 EXTRA_OPTS=(
  -e DARKSKY_API_KEY=$DARKSKY_API_KEY
  -e GPS_COORDINATES=$DARKSKY_LOCATION
+ -v $WORK_DIR/quotes:/quotes
  -p $DARKSKY_PORT:8080
  )
 
 if [ "$1" != "debug" ]; then
  new_container $CONTAINER $IMAGE discard EXTRA_OPTS
 else
+ EXTRA_OPTS=(${EXTRA_OPTS[@]}
+  -v $WORK_DIR/templates:/templates
+  -v $WORK_DIR/static:/static
+  -v $WORK_DIR/server.py:/server.py  
+ )
  new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
 fi
