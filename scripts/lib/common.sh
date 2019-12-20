@@ -204,3 +204,15 @@ function copy_files() {
  done
 }
 
+function conditional_copy() {
+ local condition="$1"
+ local src_folder=$2
+ local dst_folder=$3
+
+ # condition is to test if the command exists
+ [ ! -x "$(command -v $condition)" ] && return
+
+ #debug "Found command: $condition. Will copy related files to $dst_folder."
+ [ ! -d $dst_folder ] && $SUDO mkdir $dst_folder
+ copy_files "$src_folder/*" $dst_folder
+}
