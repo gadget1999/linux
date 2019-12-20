@@ -11,10 +11,10 @@ URL=$1
 CMD=/usr/local/bin/youtube-dl
 if [ -x "$(command -v $CMD)" ]; then
  debug "Update youtube-dl"
- sudo pip3 install --upgrade youtube_dl
+ $SUDO pip3 install --upgrade youtube_dl
 else
  debug "Install youtube-dl"
- sudo pip3 install youtube-dl
+ $SUDO pip3 install youtube-dl
 fi
 
 TARGET="/download/web"

@@ -2,6 +2,6 @@
 
 cd /tmp
 wget https://raw.githubusercontent.com/Microsoft/OMS-Agent-for-Linux/master/installer/scripts/onboard_agent.sh
-sudo sh onboard_agent.sh --purge
-sudo /etc/opt/microsoft/omsagent
-sudo /var/opt/microsoft/omsagent
+$SUDO sh onboard_agent.sh --purge
+$SUDO /etc/opt/microsoft/omsagent
+$SUDO /var/opt/microsoft/omsagent

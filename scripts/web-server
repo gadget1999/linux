@@ -24,7 +24,7 @@ cat $CERT_ROOT_FOLDER/$CERT_KEY >> $CERT
 
 debug "Starting web server on port $PORT (root:$ROOT_FOLDER)"
 cd $ROOT_FOLDER
-sudo python3 $CMD_PATH/lib/web-server.py \
+$SUDO python3 $CMD_PATH/lib/web-server.py \
  -p $PORT \
  -r $ROOT_FOLDER \
  -k $WEB_SERVER_KEY \

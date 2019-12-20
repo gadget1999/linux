@@ -5,4 +5,4 @@ source $CMD_PATH/lib/common.sh
 
 [ "$1" == "" ] && show_usage "command-name"
 
-sudo rm $CMD_PATH/$1
+$SUDO rm $CMD_PATH/$1

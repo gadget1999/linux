@@ -22,7 +22,7 @@ function clean_lock() {
  local running=`pgrep -f $app &> /dev/null && echo yes || echo no`
  if [ "$running" == "no" ]; then
   debug "Lock file is orphaned and will be deleted."
-  sudo rm $lockfile
+  $SUDO rm $lockfile
  else
   debug "App is running, so it's normal."
  fi

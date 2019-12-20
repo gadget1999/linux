@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 # base
-PACKAGES="curl deborphan htop mc nano ncdu p7zip procps screen sudo wget unzip"
+PACKAGES="curl deborphan htop mc nano ncdu p7zip procps screen $SUDO wget unzip"
 
 # mqtt, firebase, acme.sh, ddns
 PACKAGES="$PACKAGES dnsutils jq mosquitto-clients socat"
@@ -13,11 +13,11 @@ PACKAGES="$PACKAGES dnsutils jq mosquitto-clients socat"
 PACKAGES="$PACKAGES python python-requests python-poster python-mechanize python-openssl"
 
 function setup_packages_centos() {
- sudo yum install -y $PACKAGES
+ $SUDO yum install -y $PACKAGES
 }
 
 function setup_packages_debian() {
- sudo apt-get install -y $PACKAGES
+ $SUDO apt-get install -y $PACKAGES
 }
 
 check_os_type

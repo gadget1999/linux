@@ -171,7 +171,7 @@ function backup_volume()    {
   docker cp backup-$volume:/backup /tmp/backup-$volume
   tar -C /tmp/backup-$volume -cvf $filename .
   docker rm backup-$volume
-  sudo rm -rf /tmp/backup-$volume
+  $SUDO rm -rf /tmp/backup-$volume
 
   # verify if the docker image backup is valid
   if ! tar tf $filename &> /dev/null; then
@@ -204,7 +204,7 @@ function restore_volume()    {
   docker run -it --rm -v $volume:/restore busybox ls -alR /restore
 
   debug "Clean up resources"
-  sudo rm -rf /tmp/restore-$volume
+  $SUDO rm -rf /tmp/restore-$volume
 }
 
 function squash_image()    {
