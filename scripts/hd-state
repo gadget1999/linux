@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+DEBUG=1
+
+# Specify any drives you want to ignore; separate multiple drives by spaces; e.g. "sda sdb"
+IGNORE_DRIVES=""
+
+SUDO="sudo"
+SHIM_DIR="/tmp"
+
+check_package "hdparm"
+
+# Find all removable USB drives, so we can ignore them later,
+# see http://unix.stackexchange.com/questions/40143/how-to-know-if-dev-sdx-is-a-connected-usb-or-hdd
+REMOVABLE_DRIVES=""
+debug "Getting list of removable drives..."
+for _device in /sys/block/s*; do
+ _disk=$(echo "$_device" | cut -f4 -d/)
+ debug "checking $_device ($_disk)..."
+ if [ -f $_device/removable ] && [ $(<$_device/removable) -gt 0 ]; then
+  debug "found removable disk: $_device ($_disk)"
+  REMOVABLE_DRIVES="$REMOVABLE_DRIVES $_disk"
+ fi
+done
+
+# Create a file on the ramdisk and cycle it to test for disk activity
+if [ -f $SHIM_DIR/diskstats_1 ] ; then
+ debug "saving old shm1 file..."
+ $SUDO mv $SHIM_DIR/diskstats_1 $SHIM_DIR/diskstats_2
+# cat $SHIM_DIR/diskstats_2
+fi
+debug "creating new shm1 file..."
+$SUDO cat /proc/diskstats > $SHIM_DIR/diskstats_1
+#cat $SHIM_DIR/diskstats_1
+
+# Append detected removable drives to manually ignored drives
+IGNORE_DRIVES="$IGNORE_DRIVES $REMOVABLE_DRIVES"
+debug "list of ignored drives: $IGNORE_DRIVES"
+
+# Loop through all the array disks and spin down the idle disks. Will find all drives sda -> sdz AND sd$
+for disk in `find /dev/ -regex '/dev/sd[a-z]+' | cut -d/ -f3`
+do
+ # Skip removable USB drives and those the user wants to ignore
+ if [[ $IGNORE_DRIVES =~ $disk ]]; then
+  continue
+ fi
+
+ # Skip SSDs
+ if [[ $(cat /sys/block/$disk/queue/rotational) -eq 0 ]]; then
+  continue
+ fi
+
+ # Check if drive exists
+ if [ -e /dev/$disk ]; then
+  debug "checking disk: /dev/$disk..."
+
+  # Check if drive is currently spinning
+  if [ "$($SUDO hdparm -C /dev/$disk | grep state)" = " drive state is:  active/idle" ]; then
+   log "/dev/$disk running"
+
+   # Check if drive has been non idle since last run
+   if [ "$(diff $SHIM_DIR/diskstats_1 $SHIM_DIR/diskstats_2 | grep $disk )" =  "" ]; then
+    log "/dev/$disk should spin-down"
+    $SUDO hdparm -y /dev/$disk
+   fi
+  else
+   log "/dev/$disk ...."
+  fi
+ fi
+done
