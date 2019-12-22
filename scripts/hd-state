@@ -39,7 +39,8 @@ $SUDO cat /proc/diskstats > $SHIM_DIR/diskstats_1
 IGNORE_DRIVES="$IGNORE_DRIVES $REMOVABLE_DRIVES"
 debug "list of ignored drives: $IGNORE_DRIVES"
 
-# Loop through all the array disks and spin down the idle disks. Will find all drives sda -> sdz AND sd$
+# Loop through all the array disks and spin down the idle disks.
+# Will find all drives sda -> sdz AND sdaa -> sdaz...
 for disk in `find /dev/ -regex '/dev/sd[a-z]+' | cut -d/ -f3`
 do
  # Skip removable USB drives and those the user wants to ignore
