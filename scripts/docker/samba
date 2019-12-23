@@ -18,9 +18,9 @@ EXTRA_OPTS=(
  -p 137:137/udp
  -p 138:138/udp
  -v $SAMBA_LOCAL_PATH:/$SAMBA_SHARE
- -s "$SAMBA_SHARE;/$SAMBA_SHARE"
- -n
- -u "$SAMBA_USER;$SAMBA_PASSWORD"
+ -e SHARE="$SAMBA_SHARE;/$SAMBA_SHARE"
+ -e USER="$SAMBA_USER;$SAMBA_PASSWORD"
+ -e RECYCLE
  )
 
 if [ "$1" != "debug" ]; then
