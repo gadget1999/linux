@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD"
+
+CONTAINER="samba"
+IMAGE="gadget1999/rpi-samba"
+
+echo "Stop current container"
+stop_container $CONTAINER
+
+EXTRA_OPTS=(
+ -p 139:139
+ -p 455:455
+ -p 137:137/udp
+ -p 138:138/udp
+ -v $SAMBA_LOCAL_PATH:/$SAMBA_SHARE
+ -s "$SAMBA_SHARE;/$SAMBA_SHARE"
+ -n
+ -u "$SAMBA_USER;$SAMBA_PASSWORD"
+ )
+new_container $CONTAINER $IMAGE discard EXTRA_OPTS        
