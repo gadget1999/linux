@@ -22,4 +22,9 @@ EXTRA_OPTS=(
  -n
  -u "$SAMBA_USER;$SAMBA_PASSWORD"
  )
-new_container $CONTAINER $IMAGE discard EXTRA_OPTS        
+
+if [ "$1" != "debug" ]; then
+ new_container $CONTAINER $IMAGE discard EXTRA_OPTS
+else
+ new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
+fi
