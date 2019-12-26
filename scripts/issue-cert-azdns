@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/email.sh
+source $CMD_PATH/lib/certificate.sh
+
+check_cert_env
+
+check_env "AZDNS_DOMAIN AZDNS_TENANTID AZDNS_SUBSCRIPTIONID AZDNS_APPID AZDNS_CLIENTSECRET"
+
+export AZUREDNS_TENANTID="$AZDNS_TENANTID"
+export AZUREDNS_SUBSCRIPTIONID="$AZDNS_SUBSCRIPTIONID"
+export AZUREDNS_APPID="$AZDNS_APPID"
+export AZUREDNS_CLIENTSECRET="$AZDNS_CLIENTSECRET"
+
+log "Begin to issue certificate: $AZDNS_HOST"
+if issue_certificate_azdns; then
+ exit
+else
+ log "Succeeded."
+fi
