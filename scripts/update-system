@@ -4,13 +4,13 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 function update_os_debian() {
- $SUDO apt-get update
- $SUDO apt-get -y dist-upgrade
- $SUDO apt-get -y autoremove
+ sudo apt-get update
+ sudo apt-get -y dist-upgrade
+ sudo apt-get -y autoremove
 }
 
 function update_os_centos() {
- $SUDO yum -y update
+ sudo yum -y update
 }
 
 function update_os_entware() {
@@ -39,4 +39,4 @@ case $OS_TYPE in
   ;;
 esac
 
-[ "$1" == "reboot" ] && $SUDO reboot
+[ "$1" == "reboot" ] && sudo reboot
