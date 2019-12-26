@@ -37,7 +37,7 @@ function issue_certificate()  {
 }
 
 function issue_certificate_azdns()  {
- local cmd="$SUDO $CERT_CMD --issue --dns dns_azure -d $AZDNS_DOMAIN -d *.$AZDNS_DOMAIN $
+ local cmd="$SUDO $CERT_CMD --issue --dns dns_azure -d $AZDNS_DOMAIN -d *.$AZDNS_DOMAIN "
 
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --keylength ec-384"
 
