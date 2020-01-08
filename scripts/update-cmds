@@ -2,6 +2,8 @@
 
 CMD_PATH=$(dirname "$0")
 
+[ -f $CMD_PATH/env.conf ] && source $CMD_PATH/env.conf
+
 ################################################################
 # move some common functions here to reduce dependency
 ################################################################
