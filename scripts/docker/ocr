@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+[ "$1" == "" ] && show_usage "image-url"
+
+IMAGE_NAME="vimagick/tesseract"
+#IMAGE_NAME="jitesoft/tesseract-ocr"
+OCR_CMD=""
+#IMAGE_NAME="gnkm/alpine-tesseract-jpn"
+#OCR_CMD="tesseract"
+
+IN_URL=$1
+IN_Filename="In-$NOW.jpg"
+OUT_Filename="Out-$NOW"
+
+debug "Downloading file $IN_URL to $IN_Filename"
+wget $IN_URL -O /tmp/$IN_Filename
+
+debug "Starting OCR"
+#docker pull gnkm/alpine-tesseract-jpn
+docker run --rm -v /tmp:/data -w /data \
+ $IMAGE_NAME \
+ $OCR_CMD $IN_Filename $OUT_Filename
+
+debug ">>>>> OCR Results <<<<<"
+cat /tmp/$OUT_Filename.txt

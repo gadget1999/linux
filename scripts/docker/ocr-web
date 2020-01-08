@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER="ocr"
+IMAGE="ricktorzynski/ocr-tesseract-docker"
+
+echo "Stop current container"
+stop_container $CONTAINER
+
+EXTRA_OPTS=(
+ -p 57257:5000
+ )
+
+new_container $CONTAINER $IMAGE discard EXTRA_OPTS
