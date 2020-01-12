@@ -843,7 +843,7 @@ function db_download_file
         fi
         local sha_dst=$(db_sha_local "$FILE_DST")
         if [[ $sha_src == $sha_dst && $sha_src != "ERR" ]]; then
-            print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
+#            print "> Skipping file \"$FILE_SRC\", file exists with the same hash\n"
             return
         fi
     fi
