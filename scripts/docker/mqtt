@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "MQTT_CONFIG_PATH MQTT_SSL_PATH"
+check_env "MQTT_CONFIG_PATH CERT_STORAGE"
 
 CONTAINER="mqtt"
 IMAGE="gadget1999/rpi-mqtt"
@@ -16,7 +16,7 @@ EXTRA_OPTS=(
  -p 1883:1883
  -p 8883:8883
  -v $MQTT_CONFIG_PATH:/config/mosquitto
- -v $MQTT_SSL_PATH:/config/letsencrypt
+ -v $CERT_STORAGE:/config/letsencrypt
  )
 
 ENTRYPOINT_OPTS=(

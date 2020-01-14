@@ -175,8 +175,8 @@ function new_stateless_container() {
   )
 
  debug "Start container (at background): $container_name"
- #test-args "${docker_options[@]} ${entrypoint[@]}"
- docker "${docker_options[@]} ${entrypoint[@]}"
+ #test-args "${docker_options[@]}" "${entrypoint[@]}"
+ docker "${docker_options[@]}" "${entrypoint[@]}"
  sleep 3
  if [ $(is_container_running $container_name) != "true" ]; then
   color_echo red "The container may not be capable of running at background."
