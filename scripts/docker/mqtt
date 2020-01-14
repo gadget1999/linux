@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "MQTT_CONFIG_PATH MQTT_SSL_PATH"
+
+CONTAINER="mqtt"
+IMAGE="gadget1999/rpi-mqtt"
+
+echo "Stop current container"
+stop_container $CONTAINER
+
+EXTRA_OPTS=(
+ -p 1883:1883
+ -p 8883:8883
+ -v $MQTT_CONFIG_PATH:/config/mosquitto
+ -v $MQTT_SSL_PATH:/config/letsencrypt
+ )
+
+ENTRYPOINT_OPTS=(
+ /usr/sbin/mosquitto -c /config/mosquitto/mosquitto.conf
+ )
+
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT_OPTS
