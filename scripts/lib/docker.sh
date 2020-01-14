@@ -164,7 +164,7 @@ function new_stateless_container() {
  docker pull $image_name
 
  local docker_options=(
-  run -d --init --log-driver none
+  run -d --init --log-driver none --rm
   -v /etc/localtime:/etc/localtime:ro
   -v $container_name-root:/root
   --tmpfs /tmp
