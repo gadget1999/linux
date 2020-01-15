@@ -32,7 +32,7 @@ esac
 [ "$1" == "debug" ] && V2RAY_OPTS="$V2RAY_OPTS;loglevel=debug"
 
 # only use custom path for ECC type as v2ray cannot handle it
-CONTAINER_CERT_ROOT=/root/.acme.sh
+CONTAINER_CERT_ROOT=/config/.acme.sh
 if [ "$CERT_TYPE" == "ecc" ]; then
  CERT_OPTS="cert=$CONTAINER_CERT_ROOT/$CERT_FULLCHAIN;key=$CONTAINER_CERT_ROOT/$CERT_KEY"
  V2RAY_OPTS="$V2RAY_OPTS;$CERT_OPTS"
