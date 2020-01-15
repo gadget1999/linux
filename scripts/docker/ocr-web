@@ -12,6 +12,7 @@ stop_container $CONTAINER
 
 EXTRA_OPTS=(
  -p 57257:5000
+ -u $MAIN_USER_ID
  )
 
 ENTRYPOINT=()

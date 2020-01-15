@@ -13,6 +13,7 @@ stop_container $CONTAINER
 EXTRA_OPTS=(
  -v $CONTAINER-root:/root
  -v $CONTAINER-postgres:/var/lib/postgresql
+ -u $MAIN_USER_ID
  )
 
 ENTRYPOINT=()

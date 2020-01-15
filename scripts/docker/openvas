@@ -10,6 +10,7 @@ IMAGE="mikesplain/openvas"
 EXTRA_OPTS=(
  -v $CONTAINER:/var/lib/openvas/mgr/
  -p 443:443
+ -u $MAIN_USER_ID
  )
 
 ENTRYPOINT=()

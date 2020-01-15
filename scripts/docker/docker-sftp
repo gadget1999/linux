@@ -22,10 +22,11 @@ SSH_KEY=/home/$MAIN_USER/.container_sftp_key
 
 EXTRA_OPTS=(
  -v $USER_CONF:/etc/sftp/users.conf:ro
- -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key
+ -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key:ro
  -v $ROOT_FOLDER:/home/$SFTP_USER/share
  -p $PORT:22
  -p $PORT:8388/udp
+ -u $MAIN_USER_ID
  )
 
 ENTRYPOINT=()

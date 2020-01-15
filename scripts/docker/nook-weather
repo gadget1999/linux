@@ -16,8 +16,9 @@ WORK_DIR=/download/nook
 EXTRA_OPTS=(
  -e DARKSKY_API_KEY=$DARKSKY_API_KEY
  -e GPS_COORDINATES=$DARKSKY_LOCATION
- -v $WORK_DIR/quotes:/quotes
+ -v $WORK_DIR/quotes:/quotes:ro
  -p $DARKSKY_PORT:8080
+ -u $MAIN_USER_ID
  )
 
 ENTRYPOINT=()
