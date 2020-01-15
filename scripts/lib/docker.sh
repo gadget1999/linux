@@ -66,6 +66,69 @@ function enter_container() {
  #debug ">>> Now back to host"
 }
 
+#####################################
+## Creating containers
+#####################################
+
+DEBUG_DOCKER_ARGS=0
+
+function new_container2() {
+ [ $# != 6 ] && fatal_error "Invalid number of arguments used."
+
+ local container_name=$1
+ local image_name=$2
+ local stateless=$3
+ local background=$4
+ local -n extra_options=$5 # use an array to avoid space/quote issues
+ local -n entrypoint_options=$6
+
+ local container_host="$container_name"
+ [ "$stateless" == "stateless" ] && extra_options=(--rm "${extra_options[@]}")
+
+ if [ "$background" == "background" ]; then
+  extra_options=(-d "${extra_options[@]}")
+ else
+  extra_options=(-it "${extra_options[@]}")
+ fi
+
+ if [ "$(container_exists $container_name)" == "true" ]; then
+  # for non-stateless containers, stop if already exists
+  if [ "$stateless" != "stateless" ]; then
+   color_echo red "Container already exists: $container_name"
+   return
+  fi
+  # for stateless containers, stop first
+  debug "Stop current container: $container_name"
+  stop_container $container_name
+ fi
+
+ debug "Update image: $image_name"
+ docker pull $image_name
+
+ local docker_options=(
+  run -d --init
+  -v /etc/localtime:/etc/localtime:ro
+  -v $container_name-root:/root
+  --tmpfs /tmp
+  --name $container_name
+  -h $container_host
+  "${extra_options[@]}"
+  $image_name
+  "${entrypoint_options[@]}"
+  )
+
+ [ "$DEBUG_DOCKER_ARGS" != 0 ] && test-args "${docker_options[@]}"
+
+ debug "Start container (at $background): $container_name"
+ docker "${docker_options[@]}"
+
+ sleep 3
+ if [ $(is_container_running $container_name) != "true" ]; then
+  color_echo red "The container may not be capable of running at background."
+  return
+ fi
+}
+
 # create a temp container
 function new_tmp_container() {
  local container_name=$1
@@ -139,44 +202,6 @@ function new_container() {
  debug "Start container (at background): $container_name"
  #test-args "${docker_options[@]}"
  docker "${docker_options[@]}"
- sleep 3
- if [ $(is_container_running $container_name) != "true" ]; then
-  color_echo red "The container may not be capable of running at background."
-  docker rm $container_name
-  return
- fi
-}
-
-# create a long running stateless container
-function new_stateless_container() {
- local container_name=$1
- local image_name=$2
- local -n extra_options=$3 # use an array to avoid space/quote issues
- local -n entrypoint=$4    # entrypoint with arguments
- local container_host="$container_name"
-
- if [ $(container_exists $container_name) == "true" ]; then
-  color_echo red "Container already exists: $container_name"
-  return
- fi
-
- debug "Update image: $image_name"
- docker pull $image_name
-
- local docker_options=(
-  run -d --init --log-driver none --rm
-  -v /etc/localtime:/etc/localtime:ro
-  -v $container_name-root:/root
-  --tmpfs /tmp
-  --name $container_name
-  -h $container_host
-  "${extra_options[@]}"
-  $image_name
-  )
-
- debug "Start container (at background): $container_name"
- #test-args "${docker_options[@]}" "${entrypoint[@]}"
- docker "${docker_options[@]}" "${entrypoint[@]}"
  sleep 3
  if [ $(is_container_running $container_name) != "true" ]; then
   color_echo red "The container may not be capable of running at background."

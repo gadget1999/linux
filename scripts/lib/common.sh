@@ -101,6 +101,11 @@ function debug() {
  color_echo yellow "$TIMESTAMP $1"
 }
 
+function fatal_error() {
+ color_echo red "$1"
+ exit 1
+}
+
 ############# Locking (single-run) #############
 
 LOCKFILE=/tmp/$PROGRAM.lock

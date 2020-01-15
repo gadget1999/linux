@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER="openvpn"
+IMAGE="kylemanna/openvpn"
+
+EXTRA_OPTS=(
+ -p 43268:1194/tcp
+ --cap-add=NET_ADMIN
+ -v $CONTAINER:/etc/$CONTAINER
+ )
+
+ENTRYPOINT=()
+
+new_container2 $CONTAINER $IMAGE stateless background EXTRA_OPTS ENTRYPOINT
