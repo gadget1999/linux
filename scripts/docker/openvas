@@ -15,6 +15,7 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=()
 
-new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 
 docker logs -f openvas

@@ -40,9 +40,6 @@ fi
 #debug "V2Ray options: $V2RAY_OPTS"
 V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts $V2RAY_OPTS"
 
-debug "Stop current container"
-stop_container $CONTAINER
-
 EXTRA_OPTS=(
  -e "$V2RAY_ARGS"
  -v $CERT_ROOT:$CONTAINER_CERT_ROOT:ro
@@ -55,8 +52,5 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=()
 
-if [ "$1" != "debug" ]; then
- new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
-else
- new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
-fi
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT

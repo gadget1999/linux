@@ -25,8 +25,5 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=()
 
-if [ "$1" != "debug" ]; then
- new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
-else
- new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
-fi
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
