@@ -14,4 +14,5 @@ EXTRA_OPTS=(
  -p 56291:8888
  -v $CONTAINER:/etc/$CONTAINER
  )
-new_container $CONTAINER $IMAGE discard EXTRA_OPTS
+
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS

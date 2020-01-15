@@ -4,21 +4,15 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-CONTAINER_NAME="kali"
-IMAGE_NAME="gadget1999/rpi-kali"
+CONTAINER="kali"
+IMAGE="gadget1999/rpi-kali"
 
-if [ $(is_container_running $CONTAINER_NAME) == "true" ]; then
- echo "Container is already running: $CONTAINER_NAME"
- exit 0
-fi
+echo "Stop current container"
+stop_container $CONTAINER
 
-docker pull $IMAGE_NAME
+EXTRA_OPTS=(
+ -v $CONTAINER-root:/root
+ -v $CONTAINER-postgres:/var/lib/postgresql
+ )
 
-docker run -it --rm \
- --name $CONTAINER_NAME \
- -h $CONTAINER_NAME \
- -v $CONTAINER_NAME-root:/root \
- -v $CONTAINER_NAME-postgres:/var/lib/postgresql \
- $IMAGE_NAME
-
-docker ps
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS

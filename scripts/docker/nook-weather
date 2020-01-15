@@ -21,7 +21,7 @@ EXTRA_OPTS=(
  )
 
 if [ "$1" != "debug" ]; then
- new_container $CONTAINER $IMAGE discard EXTRA_OPTS
+ new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
 else
  EXTRA_OPTS=(${EXTRA_OPTS[@]}
   -v $WORK_DIR/templates:/templates
