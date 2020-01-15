@@ -12,6 +12,8 @@ EXTRA_OPTS=(
  -p 443:443
  )
 
-new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
+ENTRYPOINT=()
+
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 
 docker logs -f openvas

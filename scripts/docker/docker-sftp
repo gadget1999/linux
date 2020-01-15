@@ -9,13 +9,13 @@ check_env "SFTP_USER SFTP_PASSWORD MAIN_USER"
 CONTAINER="sftp"
 IMAGE="atmoz/sftp:alpine"
 
-ROOT_FOLDER=/download/sftp
+ROOT_FOLDER="/download/sftp"
 PORT=24786
 
 debug "Stop current container"
 stop_container $CONTAINER
 
-USER_CONF=/tmp/atmos-sftp.conf
+USER_CONF="/tmp/atmos-sftp.conf"
 echo "$SFTP_USER:$SFTP_PASSWORD:::share" > $USER_CONF
 
 SSH_KEY=/home/$MAIN_USER/.container_sftp_key
@@ -28,8 +28,10 @@ EXTRA_OPTS=(
  -p $PORT:8388/udp
  )
 
+ENTRYPOINT=()
+
 if [ "$1" != "debug" ]; then
- new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
+ new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 else
  new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
 fi

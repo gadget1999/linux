@@ -22,8 +22,10 @@ EXTRA_OPTS=(
  -e SHARE="$SAMBA_SHARE:/$SAMBA_SHARE:rw:$SAMBA_USER"
  )
 
+ENTRYPOINT=()
+
 if [ "$1" != "debug" ]; then
- new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
+ new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 else
  new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
 fi

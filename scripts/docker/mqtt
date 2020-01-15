@@ -19,8 +19,8 @@ EXTRA_OPTS=(
  -v $CERT_STORAGE:/config/letsencrypt
  )
 
-ENTRYPOINT_OPTS=(
+ENTRYPOINT=(
  /usr/sbin/mosquitto -c /config/mosquitto/mosquitto.conf
  )
 
-new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT_OPTS
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT

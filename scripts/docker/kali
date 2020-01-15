@@ -15,4 +15,6 @@ EXTRA_OPTS=(
  -v $CONTAINER-postgres:/var/lib/postgresql
  )
 
-new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
+ENTRYPOINT=()
+
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT

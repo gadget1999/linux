@@ -21,8 +21,10 @@ EXTRA_OPTS=(
  -p $PORT:8388/udp
  )
 
+ENTRYPOINT=()
+
 if [ "$1" != "debug" ]; then
- new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
+ new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 else
  new_tmp_container $CONTAINER $IMAGE EXTRA_OPTS entrypoint
 fi

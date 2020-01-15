@@ -15,4 +15,6 @@ EXTRA_OPTS=(
  -v $CONTAINER:/etc/$CONTAINER
  )
 
-new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS
+ENTRYPOINT=()
+
+new_stateless_container $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
