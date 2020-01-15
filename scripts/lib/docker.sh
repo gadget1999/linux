@@ -73,7 +73,7 @@ function enter_container() {
 DEBUG_DOCKER=0
 
 function new_container() {
- [ $# != 6 ] && fatal_error "Invalid number of arguments used."
+ [ $# != 6 ] && fatal_error "Invalid number of arguments used: $#"
 
  local container_name=$1
  local image_name=$2
@@ -137,12 +137,11 @@ function new_container() {
 function new_container_service() {
  local container_name=$1
  local image_name=$2
- local -n extra_options=$3 # use an array to avoid space/quote issues
- local -n entrypoint_options=$4
+ local -n extra_args=$3 # use an array to avoid space/quote issues
+ local -n entrypoint_args=$4
 
  # container services are background stateless containers
- new_container $container_name $image_name stateless background \
-  $extra_options $entrypoint_options
+ new_container $container_name $image_name stateless background extra_args entrypoint_args
 }
 
 function backup_container()    {
