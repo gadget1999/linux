@@ -61,8 +61,7 @@ function enter_container() {
  fi
 
  #color_echo red ">>> Now in container: $container_name"
- docker exec -it $container_name \
-  bash -c 'cd; bash -l'
+ docker exec -it $container_name sh
  #debug ">>> Now back to host"
 }
 
