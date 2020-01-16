@@ -21,8 +21,9 @@ function check_cert_env() {
 }
 
 function issue_certificate()  {
- local cmd="$SUDO $CERT_CMD --issue -d $DDNS_DOMAIN $CERT_TRANSPORT"
- 
+ local cmd="$CERT_CMD --issue -d $DDNS_DOMAIN $CERT_TRANSPORT"
+
+ [ "$MAIN_USER" == "root" ] && cmd="sudo $cmd" 
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --keylength ec-384"
  
  debug "CMD: $cmd"
@@ -37,8 +38,9 @@ function issue_certificate()  {
 }
 
 function issue_certificate_azdns()  {
- local cmd="$SUDO $CERT_CMD --issue --dns dns_azure -d $AZDNS_DOMAIN -d *.$AZDNS_DOMAIN "
+ local cmd="$CERT_CMD --issue --dns dns_azure -d $AZDNS_DOMAIN -d *.$AZDNS_DOMAIN "
 
+ [ "$MAIN_USER" == "root" ] && cmd="sudo $cmd" 
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --keylength ec-384"
 
  debug "CMD: $cmd"
@@ -47,8 +49,9 @@ function issue_certificate_azdns()  {
 
 function renew_certificate()  {
  local force=$1
- local cmd="$SUDO $CERT_CMD --renew $force -d $DDNS_DOMAIN $CERT_TRANSPORT"
+ local cmd="$CERT_CMD --renew $force -d $DDNS_DOMAIN $CERT_TRANSPORT"
  
+ [ "$MAIN_USER" == "root" ] && cmd="sudo $cmd" 
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --ecc"
   
  debug "CMD: $cmd"
