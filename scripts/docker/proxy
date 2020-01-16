@@ -7,9 +7,6 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="tinyproxy"
 IMAGE="vimagick/tinyproxy"
 
-echo "Stop current container"
-stop_container $CONTAINER
-
 EXTRA_OPTS=(
  -p 56291:8888
  -v $CONTAINER:/etc/$CONTAINER

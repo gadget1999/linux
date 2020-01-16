@@ -12,9 +12,6 @@ IMAGE="atmoz/sftp:alpine"
 ROOT_FOLDER="/download/sftp"
 PORT=24786
 
-debug "Stop current container"
-stop_container $CONTAINER
-
 USER_CONF="/tmp/atmos-sftp.conf"
 echo "$SFTP_USER:$SFTP_PASSWORD:::share" > $USER_CONF
 

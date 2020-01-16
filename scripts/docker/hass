@@ -1,0 +1,26 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "CONTAINER_CONFIG_ROOT CERT_STORAGE"
+
+CONTAINER="hass"
+IMAGE="gadget1999/rpi-homeassistant"
+
+HOST_PATH=$CONTAINER_CONFIG_ROOT/$CONTAINER
+EXTRA_OPTS=(
+  -p 14104:8123
+  -v $HOST_PATH/config:/config/homeassistant:ro
+  -v $HOST_PATH/bin:/bin:ro
+  -v $CERT_STORAGE:/config/letsencrypt
+ )
+
+ENTRYPOINT=(
+ hass -c /config/homeassistant
+   --log-file /tmp/hass.log
+ )
+
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT

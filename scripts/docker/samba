@@ -9,9 +9,6 @@ check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD"
 CONTAINER="samba"
 IMAGE="gadget1999/rpi-samba"
 
-echo "Stop current container"
-stop_container $CONTAINER
-
 EXTRA_OPTS=(
  -p 139:139
  -p 445:445
@@ -20,7 +17,6 @@ EXTRA_OPTS=(
  -v "$SAMBA_LOCAL_PATH:/$SAMBA_SHARE"
  -e USER="$SAMBA_USER:$SAMBA_PASSWORD"
  -e SHARE="$SAMBA_SHARE:/$SAMBA_SHARE:rw:$SAMBA_USER"
- -u $MAIN_USER_ID
  )
 
 ENTRYPOINT=()

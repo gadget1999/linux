@@ -9,9 +9,6 @@ check_env "DARKSKY_API_KEY DARKSKY_PORT DARKSKY_LOCATION"
 CONTAINER="nook"
 IMAGE="gadget1999/rpi-nook-weather"
 
-debug "Stop current container"
-stop_container $CONTAINER
-
 WORK_DIR=/download/nook
 EXTRA_OPTS=(
  -e DARKSKY_API_KEY=$DARKSKY_API_KEY

@@ -4,18 +4,15 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "MQTT_CONFIG_PATH CERT_STORAGE"
+check_env "CONTAINER_CONFIG_ROOT CERT_STORAGE"
 
 CONTAINER="mqtt"
 IMAGE="gadget1999/rpi-mqtt"
 
-echo "Stop current container"
-stop_container $CONTAINER
-
 EXTRA_OPTS=(
  -p 1883:1883
  -p 8883:8883
- -v $MQTT_CONFIG_PATH:/config/mosquitto:ro
+ -v $CONTAINER_CONFIG_ROOT/$CONTAINER:/config/mosquitto:ro
  -v $CERT_STORAGE:/config/letsencrypt:ro
  -u $MAIN_USER_ID
  )
