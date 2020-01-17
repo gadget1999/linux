@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_env "BOX_DOWNLOAD BOX_UPLOAD"
+check_packages "rclone"
+
+lock
+
+DL_SPEED=500k
+UP_SPEED=50k
+
+# download to local and then remove remote files
+function download_Box() {
+ local remote_root=$1
+ local local_root=$2
+
+ rclone move "Box:$remote_root" "$local_root" -c -P --bwlimit $DL_SPEED
+}
+
+function upload_Box() {
+ local local_root=$1
+ local remote_root=$2
+
+ rclone move "$local_root" "Box:$remote_root" -c -P --bwlimit $UP_SPEED
+}
+
+download_Box "down" "$BAIDU_DOWNLOAD"
+
+upload_Box "$BAIDU_UPLOAD" "up"
