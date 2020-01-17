@@ -26,6 +26,6 @@ function upload_Box() {
  rclone move "$local_root" "Box:$remote_root" -c -P --bwlimit $UP_SPEED
 }
 
-download_Box "down" "$BAIDU_DOWNLOAD"
+download_Box "down" "$BOX_DOWNLOAD"
 
-upload_Box "$BAIDU_UPLOAD" "up"
+upload_Box "$BOX_UPLOAD" "up"
