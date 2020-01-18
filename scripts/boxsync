@@ -16,14 +16,18 @@ function download_Box() {
  local remote_root=$1
  local local_root=$2
 
- rclone move "Box:$remote_root" "$local_root" -c -P --bwlimit $DL_SPEED
+ rclone move "Box:$remote_root" "$local_root" \
+  -c -P --bwlimit $DL_SPEED \
+  --delete-empty-src-dirs
 }
 
 function upload_Box() {
  local local_root=$1
  local remote_root=$2
 
- rclone move "$local_root" "Box:$remote_root" -c -P --bwlimit $UP_SPEED
+ rclone move "$local_root" "Box:$remote_root" \
+  -c -P --bwlimit $UP_SPEED \
+  --delete-empty-src-dirs
 }
 
 download_Box "down" "$BOX_DOWNLOAD"
