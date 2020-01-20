@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+[ $# != 2 ] && show_usage "folder days"
+
+FOLDER=$1
+DAYS=$2
+
+sudo find $FOLDER -type f -mtime +$DAYS -print -delete
