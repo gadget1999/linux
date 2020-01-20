@@ -5,7 +5,7 @@ function zerofile() {
  [ ! -e "$file" ] && return
 
  echo "Truncate $file"
- $SUDO truncate -s 0 $file
+ sudo truncate -s 0 $file
 }
 
 for i in /tmp/*.log /tmp/*.txt;
