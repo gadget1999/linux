@@ -9,6 +9,7 @@ check_env "DARKSKY_API_KEY DARKSKY_PORT DARKSKY_LOCATION"
 CONTAINER="nook"
 IMAGE="gadget1999/rpi-nook-weather"
 
+MAX_RAM="100m"
 WORK_DIR=/download/nook
 EXTRA_OPTS=(
  -e DARKSKY_API_KEY=$DARKSKY_API_KEY
@@ -16,6 +17,7 @@ EXTRA_OPTS=(
  -v $WORK_DIR/quotes:/quotes:ro
  -p $DARKSKY_PORT:8080
  -u $MAIN_USER_ID
+ -m $MAX_RAM
  )
 
 ENTRYPOINT=()

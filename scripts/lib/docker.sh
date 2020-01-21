@@ -28,6 +28,16 @@ function is_container_running() {
   fi
 }
 
+function delete_container() {
+ local container_name=$1
+
+ stop_container $container_name
+ [ $(container_exists $container_name) != "true" ] && return
+
+ debug "Deleting container: $container_name"
+ docker rm $container_name
+}
+
 function stop_container() {
  local container_name=$1
  [ $(is_container_running $container_name) != "true" ] && return
@@ -84,6 +94,9 @@ function new_container() {
  # override to foreground if in DEBUG mode
  [ "$DEBUG_DOCKER" != "0" ] && background="foreground"
 
+ # if need to restart, set to stateful (docker run --restart conflicts with --rm)
+ [ "${extra_args[@]}" in  *"--restart"* ] && stateless="stateful"
+
  local container_host="$container_name"
  [ "$stateless" == "stateless" ] && extra_options=(--rm "${extra_options[@]}")
 
@@ -139,8 +152,25 @@ function new_container_service() {
  local -n extra_args=$3 # use an array to avoid space/quote issues
  local -n entrypoint_args=$4
 
+ # by default, services are backgroun stateless containers
+ local stateless="stateless"
+ local background="background"
+
+ if [ "$DEBUG_DOCKER" != "0" ]; then
+  # override to foreground if in DEBUG mode
+  background="foreground"
+ else
+  # if it's service, best to restart until stopped
+  extra_options=("${extra_options[@]}" --restart unless-stopped)
+  # docker run --restart conflicts with --rm, so set to stateful
+  stateless="stateful"
+ fi
+
+ # delete existing container (assuming service containers do not need to persist)
+ delete_container $container_name
+
  # container services are background stateless containers
- new_container $container_name $image_name stateless background extra_args entrypoint_args
+ new_container $container_name $image_name $stateless $background extra_args entrypoint_args
 }
 
 function backup_container()    {
