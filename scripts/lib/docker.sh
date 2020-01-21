@@ -190,7 +190,7 @@ function backup_container()    {
 
 function backup_volume()    {
   local volume=$1
-  local filename="$2-vol-$volume.tar"
+  local filename="vol-$volume.tar"
 
   debug "Exporting docker volume [$volume] to: $filename..."
   docker run -d -v $volume:/backup --name "backup-$volume" busybox
@@ -231,6 +231,13 @@ function restore_volume()    {
 
   debug "Clean up resources"
   $SUDO rm -rf /tmp/restore-$volume
+}
+
+function check_volume()    {
+  local volume=$1
+
+  debug "Listing volume content..."
+  docker run -it --rm -v $volume:/ busybox ls -alR /
 }
 
 function squash_image()    {
