@@ -95,7 +95,7 @@ function new_container() {
  [ "$DEBUG_DOCKER" != "0" ] && background="foreground"
 
  # if need to restart, set to stateful (docker run --restart conflicts with --rm)
- [ "${extra_args[@]}" in  *"--restart"* ] && stateless="stateful"
+ case "${extra_args[@]}" in  *"--restart"*) stateless="stateful" ;; esac
 
  local container_host="$container_name"
  [ "$stateless" == "stateless" ] && extra_options=(--rm "${extra_options[@]}")
@@ -161,7 +161,7 @@ function new_container_service() {
   background="foreground"
  else
   # if it's service, best to restart until stopped
-  extra_options=("${extra_options[@]}" --restart unless-stopped)
+  extra_args=("${extra_args[@]}" --restart unless-stopped)
   # docker run --restart conflicts with --rm, so set to stateful
   stateless="stateful"
  fi
