@@ -40,6 +40,7 @@ fi
 #debug "V2Ray options: $V2RAY_OPTS"
 V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts $V2RAY_OPTS"
 
+MAX_RAM="100m"
 EXTRA_OPTS=(
  -e "$V2RAY_ARGS"
  -v $CERT_ROOT:$CONTAINER_CERT_ROOT:ro
@@ -48,6 +49,7 @@ EXTRA_OPTS=(
  -p $PORT:8388
  -p $PORT:8388/udp
  -u $MAIN_USER_ID
+ -m $MAX_RAM
  )
 
 ENTRYPOINT=()

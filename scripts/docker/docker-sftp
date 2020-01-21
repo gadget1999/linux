@@ -17,6 +17,7 @@ echo "$SFTP_USER:$SFTP_PASSWORD:::share" > $USER_CONF
 
 SSH_KEY=/home/$MAIN_USER/.container_sftp_key
 
+MAX_RAM="100m"
 EXTRA_OPTS=(
  -v $USER_CONF:/etc/sftp/users.conf:ro
  -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key:ro
@@ -24,6 +25,7 @@ EXTRA_OPTS=(
  -p $PORT:22
  -p $PORT:8388/udp
  -u $MAIN_USER_ID
+ -m $MAX_RAM
  )
 
 ENTRYPOINT=()

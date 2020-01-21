@@ -12,11 +12,13 @@ IMAGE="shadowsocks/shadowsocks-libev"
 
 PORT=8443
 
+MAX_RAM="100m"
 EXTRA_OPTS=(
  -e PASSWORD=$SSR_PASSWORD
  -p $PORT:8388
  -p $PORT:8388/udp
  -u $MAIN_USER_ID
+ -m $MAX_RAM
  )
 
 ENTRYPOINT=()

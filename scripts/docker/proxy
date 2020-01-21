@@ -7,10 +7,12 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="tinyproxy"
 IMAGE="vimagick/tinyproxy"
 
+MAX_RAM="50m"
 EXTRA_OPTS=(
  -p 56291:8888
  -v $CONTAINER:/etc/$CONTAINER
  -u $MAIN_USER_ID
+ -m $MAX_RAM
  )
 
 ENTRYPOINT=()

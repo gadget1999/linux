@@ -10,12 +10,14 @@ CONTAINER="hass"
 IMAGE="gadget1999/rpi-homeassistant"
 
 HOST_PATH=$CONTAINER_CONFIG_ROOT/$CONTAINER
+MAX_RAM="100m"
 EXTRA_OPTS=(
   -p 14104:8123
   -v $HOST_PATH/config:/config/homeassistant:ro
   -v $HOST_PATH/bin:/cmd:ro
   -v $CERT_STORAGE:/config/letsencrypt
   -u $MAIN_USER_ID
+  -m $MAX_RAM
  )
 
 ENTRYPOINT=(
