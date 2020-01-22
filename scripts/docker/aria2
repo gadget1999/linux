@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "ARIA2_ACCOUNT ARIA2_PASSWORD ARIA2_PORT ARIA2_RPC_KEY ARIA2_ROOT"
+
+CONTAINER="aria2"
+IMAGE="wahyd4/aria2-ui:arm32"
+
+MAX_RAM="50m"
+EXTRA_OPTS=(
+ -p $ARIA2_PORT:443
+ -e PUID=$MAIN_USER_ID
+ -e PGID=$MAIN_USER_ID
+ -e ENABLE_AUTH=true
+ -e RPC_SECRET=$ARIA2_RPC_KEY
+ -e ARIA2_SSL=true
+ -e ARIA2_USER=$ARIA2_ACCOUNT
+ -e ARIA2_PWD=$ARIA2_PASSWORD
+ -e ARIA2_EXTERNAL_PORT=$ARIA2_PORT
+ -v $ARIA2_ROOT:/data
+ -v $CERT_STORAGE:/app/conf/key
+ -m $MAX_RAM
+ )
+
+ENTRYPOINT=()
+
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
