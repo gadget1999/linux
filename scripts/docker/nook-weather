@@ -24,10 +24,15 @@ ENTRYPOINT=()
 
 if [ "$1" == "debug" ]; then
  DEBUG_DOCKER=1
- EXTRA_OPTS=(${EXTRA_OPTS[@]}
+ ENTRYPOINT=(sleep infinity)
+ EXTRA_OPTS=(
+  -e DARKSKY_API_KEY=$DARKSKY_API_KEY
+  -e GPS_COORDINATES=$DARKSKY_LOCATION
+  -v $WORK_DIR/quotes:/quotes:ro
+  -p $DARKSKY_PORT:8080
   -v $WORK_DIR/templates:/templates
   -v $WORK_DIR/static:/static
-  -v $WORK_DIR/server.py:/server.py  
+  -v $WORK_DIR/server.py:/server.py
  )
 fi
 
