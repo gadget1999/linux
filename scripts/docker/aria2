@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "ARIA2_ACCOUNT ARIA2_PASSWORD ARIA2_PORT ARIA2_RPC_KEY ARIA2_ROOT"
+check_env "ARIA2_ACCOUNT ARIA2_PASSWORD ARIA2_PORT ARIA2_RPC_KEY ARIA2_ROOT CERT_STORAGE"
 
 CONTAINER="aria2"
 IMAGE="wahyd4/aria2-ui:arm32"
