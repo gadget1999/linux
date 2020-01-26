@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "HOST_DOWNLOAD_ROOT CONTAINER_CONFIG_ROOT CERT_STORAGE"
+
+CONTAINER="pyload"
+IMAGE="linuxserver/pyload:arm32v7-latest"
+
+MAX_RAM="100m"
+EXTRA_OPTS=(
+ -p 14102:8000
+ -v "$HOST_DOWNLOAD_ROOT/$CONTAINER:/downloads"
+ -v "$CONTAINER_CONFIG_ROOT/$CONTAINER:/config"
+ -e PUID=$MAIN_USER_ID
+ -e PGID=$MAIN_USER_ID
+ -m $MAX_RAM
+ )
+
+ENTRYPOINT=()
+
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
