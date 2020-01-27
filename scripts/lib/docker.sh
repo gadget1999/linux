@@ -237,7 +237,7 @@ function check_volume()    {
   local volume=$1
 
   debug "Listing volume content..."
-  docker run -it --rm -v $volume:/ busybox ls -alR /
+  docker run -it --rm -v $volume:/vol busybox sh
 }
 
 function squash_image()    {

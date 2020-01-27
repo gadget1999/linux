@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "HOST_DOWNLOAD_ROOT"
+check_env "HOST_DOWNLOAD_ROOT CERT_STORAGE"
 
 CONTAINER="pyload"
 IMAGE="pyload"
@@ -14,6 +14,8 @@ EXTRA_OPTS=(
  -p 14102:8000
  -v "$HOST_DOWNLOAD_ROOT/$CONTAINER:/downloads"
  -v $CONTAINER:/home
+ -v $CERT_STORAGE:/ssl:ro
+ -u $MAIN_USER_ID
  -m $MAX_RAM
  )
 
