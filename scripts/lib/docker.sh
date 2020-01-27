@@ -190,7 +190,7 @@ function backup_container()    {
 
 function backup_volume()    {
   local volume=$1
-  local filename="vol-$volume.tar"
+  local filename="$2-vol-$volume.tar"
 
   debug "Exporting docker volume [$volume] to: $filename..."
   docker run -d -v $volume:/backup --name "backup-$volume" busybox
