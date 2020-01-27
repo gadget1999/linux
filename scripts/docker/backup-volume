@@ -6,6 +6,6 @@ source $CMD_PATH/lib/docker.sh
 
 BACKUP_ROOT_FOLDER="/tmp"
 
-[ "$#" -ne 1 ] && show_usage "volume-name"
+[ "$#" -ne 2 ] && show_usage "volume-name file-path"
 
-backup_volume $1
+backup_volume $1 $2
