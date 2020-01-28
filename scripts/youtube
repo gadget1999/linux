@@ -2,29 +2,29 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
-#ENABLE_LOGGING=0
-#DEBUG=0
 
-URL=$1
+check_env "HOST_DOWNLOAD_ROOT"
+
 [ "$1" == "" ] && show_usage "URL [debug]"
 
+URL=$1
+
 CMD=/usr/local/bin/youtube-dl
-if [ -x "$(command -v $CMD)" ]; then
- debug "Update youtube-dl"
- $SUDO pip3 install --upgrade youtube_dl
-else
+if [ ! -x "$(command -v $CMD)" ]; then
  debug "Install youtube-dl"
- $SUDO pip3 install youtube-dl
+ sudo pip3 install youtube-dl
 fi
 
-TARGET="/download/web"
+TARGET="$HOST_DOWNLOAD_ROOT/Youtube"
 [ ! -d $TARGET ] && mkdir $TARGET
 cd $TARGET
 
+SPEEDLIMIT=600K
+FULL_CMD="$CMD -r $SPEEDLIMIT"
 if [ "$2" == "debug" ]; then
- $CMD -v $URL
+ debug "Update youtube-dl"
+ sudo pip3 install --upgrade youtube_dl
+ $FULL_CMD -v $URL
 else
- $CMD $URL
+ $FULL_CMD $URL
 fi
-
-
