@@ -19,12 +19,12 @@ TARGET="$HOST_DOWNLOAD_ROOT/Youtube"
 [ ! -d $TARGET ] && mkdir $TARGET
 cd $TARGET
 
-SPEEDLIMIT=600K
-FULL_CMD="$CMD -r $SPEEDLIMIT"
+[ "$DOWNLOAD_SPEED_LIMIT" != "" ] && CMD="$CMD -r $DOWNLOAD_SPEED_LIMIT"
+
 if [ "$2" == "debug" ]; then
  debug "Update youtube-dl"
  sudo pip3 install --upgrade youtube_dl
- $FULL_CMD -v $URL
+ $CMD -v $URL
 else
- $FULL_CMD $URL
+ $CMD $URL
 fi
