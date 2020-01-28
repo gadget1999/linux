@@ -173,6 +173,47 @@ function new_container_service() {
  new_container $container_name $image_name $stateless $background extra_args entrypoint_args
 }
 
+function new_container_vm() {
+ local container_name=$1
+ local image_name=$2
+ local -n extra_args=$3 # use an array to avoid space/quote issues
+ local -n entrypoint_args=$4
+
+ # container vm should be backgroun and stateful
+ local stateless="stateful"
+ local background="background"
+
+ if [ "$DEBUG_DOCKER" != "0" ]; then
+  # override to foreground if in DEBUG mode
+  background="foreground"
+ else
+  # if it's service, best to restart until stopped
+  extra_args=("${extra_args[@]}" --restart unless-stopped)
+  # docker run --restart conflicts with --rm, so set to stateful
+  stateless="stateful"
+ fi
+
+ # do not delete existing container vm (vm needs to persist its state)
+ #delete_container $container_name
+
+ # container services are background stateless containers
+ new_container $container_name $image_name $stateless $background extra_args entrypoint_args
+}
+
+function container_cli() {
+ local container_name=$1
+ local image_name=$2
+ local -n extra_args=$3 # use an array to avoid space/quote issues
+ local -n entrypoint_args=$4
+
+ # container cli is just CLI in a container, should be foreground and stateless
+ local stateless="stateless"
+ local background="foreground"
+
+ # container services are background stateless containers
+ new_container $container_name $image_name $stateless $background extra_args entrypoint_args
+}
+
 function backup_container()    {
   local container=$1
   local filename="$2-container-$container.tar"
@@ -236,8 +277,8 @@ function restore_volume()    {
 function check_volume()    {
   local volume=$1
 
-  debug "Listing volume content..."
-  docker run -it --rm -v $volume:/vol busybox sh
+  debug "Mounting volume to a temporary container..."
+  docker run -it --rm -v $volume:/vol alpine sh
 }
 
 function squash_image()    {
