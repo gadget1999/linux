@@ -34,7 +34,7 @@ class AzureVM:
   def Start(self):
     status = self.GetStatus()
     if (status in {VM_STATUS_RUNNING, VM_STATUS_STARTING}):
-      print(f"Skipping... (VM status: {status})")
+      #print(f"Skipping... (VM status: {status})")
       return
 
     print(f"Starting VM [{self.name}]...")
@@ -53,7 +53,7 @@ class AzureVM:
   def Stop(self):
     status = self.GetStatus()
     if (status in {VM_STATUS_DEALLOCATED, VM_STATUS_DEALLOCATING}):
-      print(f"Skipping... (VM status: {status})")
+      #print(f"Skipping... (VM status: {status})")
       return
 
     print(f"Stopping VM [{self.name}]...")
@@ -138,6 +138,12 @@ class AzureCLI:
         self.__load_virtual_machines(subscription.Id)
     return self._virtual_machines
 
+  def find_virtual_machine(self, vm_name):
+    for vm in self.virtual_machines:
+      if (vm.name.lower() == vm_name.lower()):
+        return vm
+    return None
+
   def API_call(self, url, data=None, headers=None):
     if (self._access_token is not None):
       headers = { "Authorization": f"Bearer {self._access_token}" }
@@ -159,15 +165,37 @@ class AzureCLI:
 # CLI interface
 ########################################
 
-def restart(vm_name):
-  target_vm = next(filter(lambda x: x.name == vm_name, vm_cli.virtual_machines))
-  if (target_vm is not None):
-    target_vm.Restart()
+def restart(vm_names):
+  for vm_name in vm_names:
+    target_vm = vm_cli.find_virtual_machine(vm_name)
+    if (target_vm is not None):
+      print(f"Restarting VM: {vm_name}")
+      target_vm.Restart()
+    else:
+      print(f"VM was not found: {vm_name}")
+
+def start(vm_names):
+  for vm_name in vm_names:
+    target_vm = vm_cli.find_virtual_machine(vm_name)
+    if (target_vm is not None):
+      print(f"Starting VM: {vm_name}")
+      target_vm.Start()
+    else:
+      print(f"VM was not found: {vm_name}")
+
+def stop(vm_names):
+  for vm_name in vm_names:
+    target_vm = vm_cli.find_virtual_machine(vm_name)
+    if (target_vm is not None):
+      print(f"Stopping VM: {vm_name}")
+      target_vm.Stop()
+    else:
+      print(f"VM was not found: {vm_name}")
 
 def get_parser():
-  parser = argparse.ArgumentParser('Azure VM CLI')
-  parser.add_argument('--restart', '-r', type=restart,
-                        help='Restart a VM')
+  parser = argparse.ArgumentParser('azvm')
+  parser.add_argument('cmd', help='Command for VM(s)')
+  parser.add_argument('names', nargs='+', help='Command for VM(s)')
   return parser
 
 TENANT = os.environ['AZURE_TENANT_ID']
@@ -177,4 +205,10 @@ vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
 
 if __name__ == "__main__":
   parser = get_parser()
-  args = parser.parse_args(args)
+  args = parser.parse_args()
+  if (args.cmd == 'restart'):
+    restart(args.names)
+  if (args.cmd == 'start'):
+    start(args.names)
+  if (args.cmd == 'stop'):
+    stop(args.names)
