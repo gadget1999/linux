@@ -8,4 +8,8 @@ check_env "AZURE_TENANT_ID AZURE_APP_ID AZURE_APP_KEY"
 
 # usage: azvm cmd args
 
+export AZURE_TENANT_ID
+export AZURE_APP_ID
+export AZURE_APP_KEY
+
 python3 $CMD_PATH/python/azure-vm.py

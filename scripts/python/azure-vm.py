@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import time
@@ -153,16 +154,27 @@ class AzureCLI:
     response = requests.post(url, data=data, headers=headers, timeout=60)
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), "API returned error: {response.status_code}"
-
-if __name__ == "__main__":
-  TENANT = os.environ['AZURE_TENANT_ID']
-  APP_ID = os.environ['AZURE_APP_ID']
-  APP_KEY = os.environ['AZURE_APP_KEY']
-  vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
-  for vm in vm_cli.virtual_machines:
-    vm.ShowSummary()
   
-  target_vm_name = "linux4hk"
-  target_vm = next(filter(lambda x: x.name == target_vm_name, vm_cli.virtual_machines))
+########################################
+# CLI interface
+########################################
+
+def restart(vm_name):
+  target_vm = next(filter(lambda x: x.name == vm_name, vm_cli.virtual_machines))
   if (target_vm is not None):
     target_vm.Restart()
+
+def get_parser():
+  parser = argparse.ArgumentParser('Azure VM CLI')
+  parser.add_argument('--restart', '-r', type=restart,
+                        help='Restart a VM')
+  return parser
+
+TENANT = os.environ['AZURE_TENANT_ID']
+APP_ID = os.environ['AZURE_APP_ID']
+APP_KEY = os.environ['AZURE_APP_KEY']
+vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
+
+if __name__ == "__main__":
+  parser = get_parser()
+  args = parser.parse_args(args)
