@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "python3"
+check_env "AZURE_TENANT_ID AZURE_APP_ID AZURE_APP_KEY"
+
+# usage: azvm cmd args
+
+python3 $CMD_PATH/python/azure-vm.py
