@@ -200,7 +200,7 @@ def list_vms(args):
   logger.debug("Listing all virtual machines...")
   for vm in vm_cli.virtual_machines:
     status = vm.GetStatus()
-    print(f"{vm.name:15}{vm.os:10}{vm.location:15}{vm.size:10}{status}")
+    print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
 
 def stop_idle(args):
   logger.debug("Shutdown idle Windows virtual machines...")
