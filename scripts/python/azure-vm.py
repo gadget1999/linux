@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import re
 import time
@@ -10,6 +11,7 @@ class AzureSubscription:
     self.Name = subscription_name
     self.Id = subscription_id
 
+VM_STATUS_STOPPED = "PowerState/stopped"
 VM_STATUS_DEALLOCATED = "PowerState/deallocated"
 VM_STATUS_DEALLOCATING = "PowerState/deallocating"
 VM_STATUS_RUNNING = "PowerState/running"
@@ -34,40 +36,40 @@ class AzureVM:
   def Start(self):
     status = self.GetStatus()
     if (status in {VM_STATUS_RUNNING, VM_STATUS_STARTING}):
-      #print(f"Skipping... (VM status: {status})")
+      logger.debug(f"Skipping... (VM status: {status})")
       return
 
-    print(f"Starting VM [{self.name}]...")
+    logger.info(f"Starting VM [{self.name}]...")
     API_URL = f"{AZURE_API_ENDPOINT}/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Compute/virtualMachines/{self.name}/start?api-version=2019-07-01"
     self._azure_cli.API_call_post(API_URL)
 
     # check if operation completed
     for _ in range(30):
       if (self.GetStatus() == VM_STATUS_RUNNING):
-        print("Completed.")
+        logger.info("Completed.")
         break
       time.sleep(10)
     else:
-      print("Operation timed out")
+      logger.error("Operation timed out")
 
   def Stop(self):
     status = self.GetStatus()
     if (status in {VM_STATUS_DEALLOCATED, VM_STATUS_DEALLOCATING}):
-      #print(f"Skipping... (VM status: {status})")
+      logger.debug(f"Skipping... (VM status: {status})")
       return
 
-    print(f"Stopping VM [{self.name}]...")
+    logger.info(f"Stopping VM [{self.name}]...")
     API_URL = f"{AZURE_API_ENDPOINT}/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Compute/virtualMachines/{self.name}/deallocate?api-version=2019-07-01"
     self._azure_cli.API_call_post(API_URL)
 
     # check if operation completed
     for _ in range(30):
       if (self.GetStatus() == VM_STATUS_DEALLOCATED):
-        print("Completed.")
+        logger.info("Completed.")
         break
       time.sleep(10)
     else:
-      print("Operation timed out")
+      logger.error("Operation timed out")
 
   def Restart(self):
     self.Stop()
@@ -165,39 +167,87 @@ class AzureCLI:
 # CLI interface
 ########################################
 
-def restart(vm_names):
-  for vm_name in vm_names:
+def restart(args):
+  for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
-      print(f"Restarting VM: {vm_name}")
+      logger.info(f"Restarting VM: {vm_name}")
       target_vm.Restart()
     else:
-      print(f"VM was not found: {vm_name}")
+      logger.error(f"VM was not found: {vm_name}")
 
-def start(vm_names):
-  for vm_name in vm_names:
+def start(args):
+  for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
-      print(f"Starting VM: {vm_name}")
+      logger.info(f"Starting VM: {vm_name}")
       target_vm.Start()
     else:
-      print(f"VM was not found: {vm_name}")
+      logger.error(f"VM was not found: {vm_name}")
 
-def stop(vm_names):
-  for vm_name in vm_names:
+def stop(args):
+  for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
-      print(f"Stopping VM: {vm_name}")
+      logger.info(f"Stopping VM: {vm_name}")
       target_vm.Stop()
     else:
-      print(f"VM was not found: {vm_name}")
+      logger.error(f"VM was not found: {vm_name}")
+
+def list_vms(args):
+  logger.info("List of all virtual machines:")
+  return
+
+def stop_idle(args):
+  logger.info("Shutdown idle Windows virtual machines...")
+  for vm in vm_cli.virtual_machines:
+    if vm.os == "Windows":
+      status = vm.GetStatus()
+      if (status == VM_STATUS_STOPPED):
+        vm.Stop()
 
 def get_parser():
   parser = argparse.ArgumentParser('azvm')
-  parser.add_argument('cmd', help='Command for VM(s)')
-  parser.add_argument('names', nargs='+', help='Command for VM(s)')
+  subparsers = parser.add_subparsers(title='commands')
+
+  list_parser = subparsers.add_parser('list', help='List virtual machines')
+  list_parser.set_defaults(func=list_vms)
+
+  stop_idle_parser = subparsers.add_parser('stop-idle', help='Shutdown idle virtual machines')
+  stop_idle_parser.set_defaults(func=stop_idle)
+
+  start_parser = subparsers.add_parser('start', help='Start virtual machines')
+  start_parser.add_argument('names', nargs='+', help='Virtual machines names')
+  start_parser.set_defaults(func=start)
+
+  stop_parser = subparsers.add_parser('stop', help='Stop virtual machines')
+  stop_parser.add_argument('names', nargs='+', help='Virtual machines names')
+  stop_parser.set_defaults(func=stop)
+
+  restart_parser = subparsers.add_parser('restart', help='Restart virtual machines')
+  restart_parser.add_argument('names', nargs='+', help='Virtual machines names')
+  restart_parser.set_defaults(func=restart)
   return parser
 
+#################################
+# Program starts
+#################################
+
+LOGFILE = "/tmp/azure-vm.log"
+logger = logging.getLogger("")
+def init_logger():
+  logger.setLevel(logging.INFO)
+  formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
+
+  fileHandler = logging.handlers.RotatingFileHandler(LOGFILE)
+  fileHandler.setFormatter(formatter)
+  logger.addHandler(fileHandler)
+
+  consoleHandler = logging.StreamHandler()
+  consoleHandler.setFormatter(formatter)
+  logger.addHandler(consoleHandler)
+
+init_logger()
 TENANT = os.environ['AZURE_TENANT_ID']
 APP_ID = os.environ['AZURE_APP_ID']
 APP_KEY = os.environ['AZURE_APP_KEY']
@@ -206,9 +256,4 @@ vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
 if __name__ == "__main__":
   parser = get_parser()
   args = parser.parse_args()
-  if (args.cmd == 'restart'):
-    restart(args.names)
-  if (args.cmd == 'start'):
-    start(args.names)
-  if (args.cmd == 'stop'):
-    stop(args.names)
+  args.func(args)
