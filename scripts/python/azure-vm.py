@@ -168,38 +168,40 @@ class AzureCLI:
 ########################################
 
 def restart(args):
+  logger.debug(f"CMD - Restarting virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
-      logger.info(f"Restarting VM: {vm_name}")
       target_vm.Restart()
     else:
       logger.error(f"VM was not found: {vm_name}")
 
 def start(args):
+  logger.debug(f"CMD - Starting virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
-      logger.info(f"Starting VM: {vm_name}")
       target_vm.Start()
     else:
       logger.error(f"VM was not found: {vm_name}")
 
 def stop(args):
+  logger.debug(f"CMD - Stopping virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
-      logger.info(f"Stopping VM: {vm_name}")
       target_vm.Stop()
     else:
       logger.error(f"VM was not found: {vm_name}")
 
 def list_vms(args):
-  logger.info("List of all virtual machines:")
-  return
+  logger.debug("Listing all virtual machines...")
+  for vm in vm_cli.virtual_machines:
+    status = vm.GetStatus()
+    print(f"{vm.name}\t({vm.os}, {vm.size}):\t{status}")
 
 def stop_idle(args):
-  logger.info("Shutdown idle Windows virtual machines...")
+  logger.debug("Shutdown idle Windows virtual machines...")
   for vm in vm_cli.virtual_machines:
     if vm.os == "Windows":
       status = vm.GetStatus()
@@ -237,14 +239,18 @@ LOGFILE = "/tmp/azure-vm.log"
 logger = logging.getLogger("")
 def init_logger():
   logger.setLevel(logging.INFO)
+  if "DEBUG" in os.environ:
+    logger.setLevel(logging.DEBUG)
   formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
 
   fileHandler = logging.handlers.RotatingFileHandler(LOGFILE)
   fileHandler.setFormatter(formatter)
+  fileHandler.setLevel(logging.INFO)
   logger.addHandler(fileHandler)
 
   consoleHandler = logging.StreamHandler()
   consoleHandler.setFormatter(formatter)
+  consoleHandler.setLevel(logging.DEBUG)
   logger.addHandler(consoleHandler)
 
 init_logger()
