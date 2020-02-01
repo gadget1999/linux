@@ -11,11 +11,11 @@ class AzureSubscription:
     self.Name = subscription_name
     self.Id = subscription_id
 
-VM_STATUS_STOPPED = "PowerState/stopped"
-VM_STATUS_DEALLOCATED = "PowerState/deallocated"
-VM_STATUS_DEALLOCATING = "PowerState/deallocating"
-VM_STATUS_RUNNING = "PowerState/running"
-VM_STATUS_STARTING = "PowerState/starting"
+VM_STATUS_STOPPED = "stopped"
+VM_STATUS_DEALLOCATED = "deallocated"
+VM_STATUS_DEALLOCATING = "deallocating"
+VM_STATUS_RUNNING = "running"
+VM_STATUS_STARTING = "starting"
 class AzureVM:
   def __init__(self, cli, vm_json):
     self._azure_cli = cli
@@ -25,13 +25,15 @@ class AzureVM:
     # parse resource group from id: e.g., /resourceGroups/<NAME>/providers/
     self.resource_group_name = re.search('\/resourceGroups\/(.+?)\/providers\/', vm_id).group(1)
     self.name = vm_json["name"]
-    self.size = vm_json['properties']['hardwareProfile']['vmSize']
+    size = vm_json['properties']['hardwareProfile']['vmSize']
+    self.size = re.search('Standard_(.*)', size).group(1)
     self.os = vm_json['properties']['storageProfile']['osDisk']['osType']
+    self.location = vm_json["location"]
 
   def GetStatus(self):
     API_URL = f"{AZURE_API_ENDPOINT}/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Compute/virtualMachines/{self.name}/instanceView?api-version=2019-07-01"
     response = self._azure_cli.API_call(API_URL)
-    return response['statuses'][-1]['code']
+    return response['statuses'][-1]['code'].split('/')[-1]
 
   def Start(self):
     status = self.GetStatus()
@@ -198,7 +200,7 @@ def list_vms(args):
   logger.debug("Listing all virtual machines...")
   for vm in vm_cli.virtual_machines:
     status = vm.GetStatus()
-    print(f"{vm.name}\t({vm.os}, {vm.size}):\t{status}")
+    print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
 
 def stop_idle(args):
   logger.debug("Shutdown idle Windows virtual machines...")
