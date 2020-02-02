@@ -68,7 +68,12 @@ function restart_container() {
 
  local usage=$(docker stats --no-stream --format "{{.Name}} {{.MemPerc}}" | grep "$container_name" | awk '{print substr($2,0,length($2)-1)}')
 
- if [[ "$usage" > "$threshold" ]]; then
+ # bash does not support comparing float numbers, need to convert to integer first
+ usage=${usage%.*}
+ threshold=${threshold%.*}
+
+ # comparing strings directly could give wrong results, for example 8 > 10, need to use -gt
+ if [[ "$usage" -gt "$threshold" ]]; then
   debug "Container [$container_name] memory usage ($usage%) over threshold ($threshold%). Restarting..."
   stop_container $container_name
   start_container $container_name
