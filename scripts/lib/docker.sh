@@ -60,6 +60,18 @@ function start_container() {
  sleep 3
 }
 
+function restart_container() {
+  local container_name=$1
+  local threshold=$2
+  local usage=$(docker stats --no-stream | grep 'nook' | awk '{print substr($4,0,length($4)-3)}')
+
+  if [[ "$usage" > "$threshold" ]]; then
+    debug "Container [$container_name] memory usage ($usage MB) over threshold ($threshold MB). Restarting..."
+    stop_container $container_name
+    start_container $container_name
+  fi
+}
+
 # enter an existing container
 function enter_container() {
  local container_name=$1
