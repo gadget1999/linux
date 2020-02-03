@@ -74,7 +74,7 @@ function restart_container() {
 
  # comparing strings directly could give wrong results, for example 8 > 10, need to use -gt
  if [[ "$usage" -gt "$threshold" ]]; then
-  debug "Container [$container_name] memory usage ($usage%) over threshold ($threshold%). Restarting..."
+  log "Container [$container_name] memory usage ($usage%) over threshold ($threshold%). Restarting..."
   stop_container $container_name
   start_container $container_name
  fi
