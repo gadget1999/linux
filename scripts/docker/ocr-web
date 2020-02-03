@@ -7,7 +7,7 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="ocr"
 IMAGE="ricktorzynski/ocr-tesseract-docker"
 
-MAX_RAM="300m"
+MAX_RAM="200m"
 EXTRA_OPTS=(
  -p 57257:5000
  -u $MAIN_USER_ID
