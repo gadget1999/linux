@@ -1,6 +1,6 @@
 import argparse
 import logging, logging.handlers
-import os
+import os, sys
 import re
 import time
 import json
@@ -264,4 +264,5 @@ vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
 if __name__ == "__main__":
   parser = get_parser()
   args = parser.parse_args()
-  args.func(args)
+  if len(sys.argv) > 1:
+    args.func(args)
