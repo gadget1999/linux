@@ -21,8 +21,6 @@ services:
   seafile:
     image: seafileltd/seafile-mc:latest
     container_name: seafile
-    ports:
-      - "${SEAFILE_PORT}:80"
     volumes:
       - /opt/seafile/data:/shared
     environment:
