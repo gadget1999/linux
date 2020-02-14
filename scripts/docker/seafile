@@ -6,6 +6,11 @@ source $CMD_PATH/lib/common.sh
 check_env "SEAFILE_PORT SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD"
 check_packages "docker-compose docker"
 
+export SEAFILE_PORT
+export SEAFILE_DB_KEY
+export SEAFILE_ADMIN
+export SEAFILE_PASSWORD
+
 POD="seafile"
 COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
 
