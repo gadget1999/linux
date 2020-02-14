@@ -2,11 +2,11 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
 
-check_env "SEAFILE_PORT SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD"
+check_env "SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD"
 check_packages "docker-compose docker"
 
-export SEAFILE_PORT
 export SEAFILE_DB_KEY
 export SEAFILE_ADMIN
 export SEAFILE_PASSWORD
@@ -14,8 +14,24 @@ export SEAFILE_PASSWORD
 POD="seafile"
 COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
 
-if [ "$1" == "debug" ]; then
- docker-compose -f $COMPOSE_FILE up
-else
- docker-compose -f $COMPOSE_FILE up -d
-fi
+function delete_pod() {
+ debug "Deleting existing pod"
+ docker rm -f seafile seafile-mysql seafile-memcached
+}
+
+function start_pod() {
+ local pod_main_container=$1
+ local compose_file=$2
+
+ [ "$(container_exists $pod_main_container)" == "true" ] && delete_pod
+
+ local detach_mode="-d"
+ [ "$DEBUG_POD" != "" ] && detach_mode=""
+ 
+ debug "Starting pod from $compose_file..."
+ docker-compose -f $compose_file up $detach_mode
+}
+
+[ "$1" == "debug" ] && DEBUG_POD=1
+
+start_pod $POD $COMPOSE_FILE
