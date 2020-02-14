@@ -178,6 +178,7 @@ conditional_copy adb $TMP_CMD_FOLDER/android $CMD_PATH
 conditional_copy docker $TMP_CMD_FOLDER/docker $CMD_PATH
 conditional_copy mosquitto_sub $TMP_CMD_FOLDER/mqtt $CMD_PATH
 conditional_copy python3 $TMP_CMD_FOLDER/python $CMD_PATH/python
+conditional_copy docker-compose $TMP_CMD_FOLDER/kubernetes $CMD_PATH/kubernetes
 
 $SUDO chmod +x $CMD_PATH/*
 

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_env "SEAFILE_PORT SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD"
+check_packages "docker-compose docker"
+
+POD="seafile"
+COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
+
+if [ "$1" == "debug" ]; then
+ docker-compose -f $COMPOSE_FILE up
+else
+ docker-compose -f $COMPOSE_FILE up -d
+fi
