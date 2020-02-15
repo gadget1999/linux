@@ -3,7 +3,6 @@ services:
   db:
     image: mariadb:10.1
     container_name: seafile-mysql
-    mem-limit: 1024m
     environment:
       - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_KEY}
       - MYSQL_LOG_CONSOLE=true
@@ -15,7 +14,6 @@ services:
   memcached:
     image: memcached:1.5.6
     container_name: seafile-memcached
-    mem-limit: 300m
     entrypoint: memcached -m 128
     networks:
       - seafile-net
@@ -23,7 +21,6 @@ services:
   seafile:
     image: seafileltd/seafile-mc:latest
     container_name: seafile
-    mem-limit: 1024m
     ports:
       - "${SEAFILE_PORT}:443"
     volumes:
