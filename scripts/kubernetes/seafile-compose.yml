@@ -3,6 +3,7 @@ services:
   db:
     image: mariadb:10.1
     container_name: seafile-mysql
+    mem-limit: 1024m
     environment:
       - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_KEY}
       - MYSQL_LOG_CONSOLE=true
@@ -21,6 +22,7 @@ services:
   seafile:
     image: seafileltd/seafile-mc:latest
     container_name: seafile
+    mem-limit: 1024m
     ports:
       - "${SEAFILE_PORT}:443"
     volumes:
