@@ -3,13 +3,23 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
+source $CMD_PATH/lib/certificate.sh
 
-check_env "SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD"
+check_env "SEAFILE_DATA SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD SEAFILE_PORT"
 check_packages "docker-compose docker"
+check_cert_env
 
+export SEAFILE_PORT
 export SEAFILE_DB_KEY
 export SEAFILE_ADMIN
 export SEAFILE_PASSWORD
+export SEAFILE_FQDN=$DDNS_DOMAIN
+export SEAFILE_DATA
+
+SEAFILE_SSL=$SEAFILE_DATA/ssl
+[ ! -d $SEAFILE_SSL ] && sudo mkdir $SEAFILE_SSL
+sudo cp $CERT_ROOT_FOLDER/$CERT_FULLCHAIN $SEAFILE_SSL/$DDNS_DOMAIN.crt
+sudo cp $CERT_ROOT_FOLDER/$CERT_KEY $SEAFILE_SSL/$DDNS_DOMAIN.key
 
 POD="seafile"
 COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
