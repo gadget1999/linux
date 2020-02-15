@@ -7,7 +7,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_KEY}
       - MYSQL_LOG_CONSOLE=true
     volumes:
-      - /opt/seafile/db:/var/lib/mysql
+      - ${SEAFILE_DATA}/db:/var/lib/mysql
     networks:
       - seafile-net
 
@@ -24,7 +24,7 @@ services:
     ports:
       - "${SEAFILE_PORT}:443"
     volumes:
-      - ${SEAFILE_DATA}:/shared
+      - ${SEAFILE_DATA}/data:/shared
     environment:
       - DB_HOST=db
       - DB_ROOT_PASSWD=${SEAFILE_DB_KEY}
