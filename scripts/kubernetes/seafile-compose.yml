@@ -15,6 +15,7 @@ services:
   memcached:
     image: memcached:1.5.6
     container_name: seafile-memcached
+    mem-limit: 300m
     entrypoint: memcached -m 128
     networks:
       - seafile-net
