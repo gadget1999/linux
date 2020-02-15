@@ -14,13 +14,15 @@ services:
   memcached:
     image: memcached:1.5.6
     container_name: seafile-memcached
-    entrypoint: memcached -m 256
+    entrypoint: memcached -m 128
     networks:
       - seafile-net
           
   seafile:
     image: seafileltd/seafile-mc:latest
     container_name: seafile
+    ports:
+      - "${SEAFILE_PORT}:443"
     volumes:
       - /opt/seafile/data:/shared
     environment:
@@ -28,7 +30,8 @@ services:
       - DB_ROOT_PASSWD=${SEAFILE_DB_KEY}
       - SEAFILE_ADMIN_EMAIL=${SEAFILE_ADMIN}
       - SEAFILE_ADMIN_PASSWORD=${SEAFILE_PASSWORD}
-      - SEAFILE_SERVER_LETSENCRYPT=false
+      - SEAFILE_SERVER_LETSENCRYPT=true
+      - SEAFILE_SERVER_HOSTNAME=${SEAFILE_FQDN}
     depends_on:
       - db
       - memcached
