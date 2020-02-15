@@ -45,3 +45,10 @@ function start_pod() {
 [ "$1" == "debug" ] && DEBUG_POD=1
 
 start_pod $POD $COMPOSE_FILE
+
+# fix seafile CSRF issue caused by container port mapping
+# more details: https://github.com/haiwen/seafile-docker/issues/134
+sleep 10
+GOOD_NGINX_CONF=$SEAFILE_DATA/data/seafile/conf/seafile.nginx.conf
+sudo docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
+docker exec seafile /usr/sbin/nginx -s reload
