@@ -24,7 +24,7 @@ services:
     ports:
       - "${SEAFILE_PORT}:443"
     volumes:
-      - /opt/seafile/data:/shared
+      - ${SEAFILE_DATA}:/shared
     environment:
       - DB_HOST=db
       - DB_ROOT_PASSWD=${SEAFILE_DB_KEY}
