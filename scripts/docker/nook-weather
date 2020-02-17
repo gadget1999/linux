@@ -16,7 +16,7 @@ EXTRA_OPTS=(
  -e GPS_COORDINATES=$DARKSKY_LOCATION
  -v $WORK_DIR/quotes:/quotes:ro
  -p $DARKSKY_PORT:8080
- -u $MAIN_USER_ID
+ -u nobody
  -m $MAX_RAM
  )
 

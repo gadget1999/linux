@@ -10,7 +10,7 @@ IMAGE="ricktorzynski/ocr-tesseract-docker"
 MAX_RAM="200m"
 EXTRA_OPTS=(
  -p 57257:5000
- -u $MAIN_USER_ID
+ -u nobody
  -m $MAX_RAM
  )
 

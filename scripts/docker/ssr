@@ -7,7 +7,7 @@ source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
 
-check_env "SSR_PASSWORD DDNS_DOMAIN CERT_ROOT"
+check_env "SSR_PASSWORD DDNS_DOMAIN CERT_STORAGE"
 
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
@@ -34,7 +34,7 @@ esac
 # only use custom path for ECC type as v2ray cannot handle it
 CONTAINER_CERT_ROOT=/config/.acme.sh
 if [ "$CERT_TYPE" == "ecc" ]; then
- CERT_OPTS="cert=$CONTAINER_CERT_ROOT/$CERT_FULLCHAIN;key=$CONTAINER_CERT_ROOT/$CERT_KEY"
+ CERT_OPTS="cert=$CONTAINER_CERT_ROOT/fullchain.pem;key=$CONTAINER_CERT_ROOT/privkey.pem"
  V2RAY_OPTS="$V2RAY_OPTS;$CERT_OPTS"
 fi
 #debug "V2Ray options: $V2RAY_OPTS"
@@ -43,12 +43,12 @@ V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts $V2RAY_OPTS"
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -e "$V2RAY_ARGS"
- -v $CERT_ROOT:$CONTAINER_CERT_ROOT:ro
+ -v $CERT_STORAGE:$CONTAINER_CERT_ROOT:ro
  -e PASSWORD=$SSR_PASSWORD
  -e DNS_ADDRS=176.103.130.130,176.103.130.131
  -p $PORT:8388
  -p $PORT:8388/udp
- -u $MAIN_USER_ID
+ -u nobody:12345
  -m $MAX_RAM
  )
 
