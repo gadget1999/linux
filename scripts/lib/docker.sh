@@ -254,10 +254,10 @@ function backup_volume()    {
   local filename="$2-vol-$volume.tar"
 
   debug "Exporting docker volume [$volume] to: $filename..."
-  docker run -d -v $volume:/backup --name "backup-$volume" busybox
+  docker run -d --rm -v $volume:/backup --name "backup-$volume" busybox
   docker cp backup-$volume:/backup /tmp/backup-$volume
   tar -C /tmp/backup-$volume -cvf $filename .
-  docker rm backup-$volume
+  docker stop backup-$volume
   $SUDO rm -rf /tmp/backup-$volume
 
   # verify if the docker image backup is valid
