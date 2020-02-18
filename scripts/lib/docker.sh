@@ -254,7 +254,7 @@ function backup_volume()    {
   local filename="$2-vol-$volume.tar"
 
   debug "Exporting docker volume [$volume] to: $filename..."
-  docker run -d --rm -v $volume:/backup --name "backup-$volume" busybox
+  docker run -d --rm -v $volume:/backup --name "backup-$volume" alpine sh
   docker cp backup-$volume:/backup /tmp/backup-$volume
   tar -C /tmp/backup-$volume -cvf $filename .
   docker stop backup-$volume
@@ -283,12 +283,12 @@ function restore_volume()    {
   rm  restore-$volume.tar
 
   debug "Restoring volume content..."
-  docker run -d -v $volume:/restore --name "restore-$volume" busybox
+  docker run -d -v $volume:/restore --name "restore-$volume" alpine
   docker cp /tmp/restore-$volume/. restore-$volume:/restore
   docker rm restore-$volume
 
   debug "List restored content"
-  docker run -it --rm -v $volume:/restore busybox ls -alR /restore
+  docker run -it --rm -v $volume:/restore alpine ls -alR /restore
 
   debug "Clean up resources"
   $SUDO rm -rf /tmp/restore-$volume

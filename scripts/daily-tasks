@@ -3,4 +3,5 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+load_tasks
 $CMD_PATH/run-tasks "$DAILY_TASKS"

@@ -140,6 +140,14 @@ function should_continue() {
   fi
 }
 
+function load_tasks() {
+ # ENV variables are not available in cron jobs
+ local current_user=$(whoami)
+ local home_dir=/home/$current_user
+ [ "current_user" == "root" ] && home_dir=/root
+
+ source $home_dir/.tasks
+}
 
 ############# Files #############
 
