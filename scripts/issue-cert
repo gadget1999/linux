@@ -32,5 +32,7 @@ if [ "$CERT_STORAGE" != "" ]; then
  log "Copying new certificates to $CERT_STORAGE"
  $SUDO cp $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
  $SUDO cp $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem
+ $SUDO chown container $CERT_STORAGE/*
+ $SUDO chgrp container $CERT_STORAGE/*
  ls -l $CERT_STORAGE
 fi
