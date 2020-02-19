@@ -15,7 +15,7 @@ EXTRA_OPTS=(
  -p 8883:8883
  -v $CONTAINER_CONFIG_ROOT/$CONTAINER:/config/mosquitto:ro
  -v $CERT_STORAGE:/config/letsencrypt:ro
- -u $MAIN_USER_ID
+ -u $CONTAINER_UID
  -m $MAX_RAM
  )
 

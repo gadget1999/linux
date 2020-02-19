@@ -9,9 +9,30 @@ source $CMD_PATH/lib/common.sh
 
 check_packages "docker"
 
+function setup_container_user() {
+ [ "$(id -u $CONTAINER_USER)" != "" ] && return
+
+ debug "Creating user [$CONTAINER_USER]"
+ sudo useradd -M -u $CONTAINER_UID $CONTAINER_USER --shell=/bin/false --home-dir=/non-exist
+}
+
+function grant_container_access() {
+ local -n volumes=$1
+
+ setup_container_user
+
+ for volume in ${volumes[*]}; do
+  if [[ $volume = /* ]]; then
+   debug "Changing permission for $volume..."
+   sudo chown $CONTAINER_USER -R $volume
+   sudo chgrp $CONTAINER_USER -R $volume 
+  fi
+ done 
+}
+
 # need to match pattern of end-of-line 'pattern$'
 function container_exists() {
-  docker ps -a | grep " $1$" &> /dev/null
+  sudo docker ps -a | grep " $1$" &> /dev/null
   if [ $? == 0 ]; then
     echo "true"
   else
@@ -20,7 +41,7 @@ function container_exists() {
 }
 
 function is_container_running() {
-  docker ps | grep " $1$" &> /dev/null
+  sudo docker ps | grep " $1$" &> /dev/null
   if [ $? == 0 ]; then
     echo "true"
   else
@@ -35,7 +56,7 @@ function delete_container() {
  [ $(container_exists $container_name) != "true" ] && return
 
  debug "Deleting container: $container_name"
- docker rm $container_name
+ sudo docker rm $container_name
 }
 
 function stop_container() {
@@ -43,7 +64,7 @@ function stop_container() {
  [ $(is_container_running $container_name) != "true" ] && return
 
  debug "Stopping container: $container_name"
- docker stop $container_name
+ sudo docker stop $container_name
 }
 
 function start_container() {
@@ -56,7 +77,7 @@ function start_container() {
  fi
 
  debug "Starting container: $container_name"
- docker start $container_name
+ sudo docker start $container_name
  sleep 3
 }
 
@@ -91,7 +112,7 @@ function enter_container() {
  fi
 
  #color_echo red ">>> Now in container: $container_name"
- docker exec -it $container_name sh
+ sudo docker exec -it $container_name sh
  #debug ">>> Now back to host"
 }
 
@@ -137,7 +158,7 @@ function new_container() {
  fi
 
  debug "Update image: $image_name"
- docker pull $image_name
+ sudo docker pull $image_name
 
  local docker_options=(
   run --init
@@ -154,7 +175,7 @@ function new_container() {
  [ "$DEBUG_DOCKER" != "0" ] && test-args "${docker_options[@]}"
 
  debug "Start container (at $background): $container_name"
- docker "${docker_options[@]}"
+ sudo docker "${docker_options[@]}"
 
  # check if the container is started if on background
  if [ "$background" == "background" ]; then
@@ -239,7 +260,7 @@ function backup_container()    {
   local filename="$2-container-$container.tar"
 
   log "Exporting docker container [$container] to: $filename..."
-  docker export -o $filename $container
+  sudo docker export -o $filename $container
 
   # verify if the docker image backup is valid
   if ! tar tf $filename &> /dev/null; then
@@ -254,11 +275,11 @@ function backup_volume()    {
   local filename="$2-vol-$volume.tar"
 
   debug "Exporting docker volume [$volume] to: $filename..."
-  docker run -d --rm -v $volume:/backup --name "backup-$volume" alpine sh
-  docker cp backup-$volume:/backup /tmp/backup-$volume
+  sudo docker run -d --rm -v $volume:/backup --name "backup-$volume" alpine sh
+  sudo docker cp backup-$volume:/backup /tmp/backup-$volume
   tar -C /tmp/backup-$volume -cvf $filename .
-  docker stop backup-$volume
-  $SUDO rm -rf /tmp/backup-$volume
+  sudo docker stop backup-$volume
+  sudo rm -rf /tmp/backup-$volume
 
   # verify if the docker image backup is valid
   if ! tar tf $filename &> /dev/null; then
@@ -273,7 +294,7 @@ function restore_volume()    {
   local filename=$1
 
   debug "Create docker volume [$volume]"
-  docker volume create $volume
+  sudo docker volume create $volume
 
   debug "Extracting backup content..."
   mkdir /tmp/restore-$volume
@@ -283,47 +304,47 @@ function restore_volume()    {
   rm  restore-$volume.tar
 
   debug "Restoring volume content..."
-  docker run -d -v $volume:/restore --name "restore-$volume" alpine
-  docker cp /tmp/restore-$volume/. restore-$volume:/restore
-  docker rm restore-$volume
+  sudo docker run -d --rm -v $volume:/restore --name "restore-$volume" alpine
+  sudo docker cp /tmp/restore-$volume/. restore-$volume:/restore
+  sudo docker rm restore-$volume
 
   debug "List restored content"
-  docker run -it --rm -v $volume:/restore alpine ls -alR /restore
+  sudo docker run -it --rm -v $volume:/restore alpine ls -alR /restore
 
   debug "Clean up resources"
-  $SUDO rm -rf /tmp/restore-$volume
+  sudo rm -rf /tmp/restore-$volume
 }
 
 function check_volume()    {
   local volume=$1
 
   debug "Mounting volume to a temporary container..."
-  docker run -it --rm -v $volume:/vol alpine sh
+  sudo docker run -it --rm -v $volume:/vol alpine sh
 }
 
 function squash_image()    {
   local image=$1
 
   log "Create a temp container for [$image]"
-  docker run -d --name squash $image
+  sudo docker run -d --name squash $image
 
   log "Export container"
-  docker export -o /tmp/squash.tar squash
-  docker stop squash
-  docker rm squash
+  sudo docker export -o /tmp/squash.tar squash
+  sudo docker stop squash
+  sudo docker rm squash
 
   log "Import squashed image"
-  docker rmi $image
-  docker import /tmp/squash.tar $image
-  rm /tmp/squash.tar
+  sudo docker rmi $image
+  sudo docker import /tmp/squash.tar $image
+  sudo rm /tmp/squash.tar
 }
 
 function delete_orphan_images()    {
-  docker images --quiet --filter=dangling=true | \
+  sudo docker images --quiet --filter=dangling=true | \
     xargs --no-run-if-empty docker rmi
 }
 
 function delete_orphan_volumes()    {
-  docker volume list --quiet --filter=dangling=true | \
+  sudo docker volume list --quiet --filter=dangling=true | \
     xargs --no-run-if-empty docker rmi
 }

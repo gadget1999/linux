@@ -10,7 +10,6 @@ PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 ENABLE_LOGGING=1
 DEBUG=1
-MAIN_USER_ID=$(id -u $MAIN_USER)
 
 ############# Env Checking #############
 

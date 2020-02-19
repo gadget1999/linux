@@ -16,6 +16,8 @@ export SEAFILE_PASSWORD
 export SEAFILE_FQDN=$DDNS_DOMAIN
 export SEAFILE_DATA
 
+grant_container_access ($SEAFILE_DATA)
+
 SEAFILE_SSL=$SEAFILE_DATA/data/ssl
 [ ! -d $SEAFILE_SSL ] && sudo mkdir $SEAFILE_SSL
 sudo cp $CERT_ROOT/$CERT_FULLCHAIN $SEAFILE_SSL/$DDNS_DOMAIN.crt
@@ -26,7 +28,7 @@ COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
 
 function delete_pod() {
  debug "Deleting existing pod"
- docker rm -f seafile seafile-mysql seafile-memcached
+ sudo docker rm -f seafile seafile-mysql seafile-memcached
 }
 
 function start_pod() {
@@ -39,7 +41,7 @@ function start_pod() {
  [ "$DEBUG_POD" != "" ] && detach_mode=""
  
  debug "Starting pod from $compose_file..."
- docker-compose -f $compose_file up $detach_mode
+ sudo docker-compose -f $compose_file up $detach_mode
 }
 
 [ "$1" == "debug" ] && DEBUG_POD=1

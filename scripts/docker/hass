@@ -16,7 +16,7 @@ EXTRA_OPTS=(
   -v $HOST_PATH/config:/config/homeassistant:ro
   -v $HOST_PATH/bin:/cmd:ro
   -v $CERT_STORAGE:/config/letsencrypt
-  -u $MAIN_USER_ID
+  -u $CONTAINER_UID
   -m $MAX_RAM
  )
 
