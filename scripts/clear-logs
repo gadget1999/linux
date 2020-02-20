@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+check_root
+
 function zerofile() {
  file=$1
  [ ! -e "$file" ] && return

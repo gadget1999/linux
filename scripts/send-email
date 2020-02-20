@@ -6,6 +6,8 @@ source $CMD_PATH/lib/email.sh
 
 check_email_env
 
+[ $# != 2 ] && show_usage "subject body"
+
 SUBJECT=$1
 BODY=$2
 
