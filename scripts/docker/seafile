@@ -17,9 +17,6 @@ export SEAFILE_PASSWORD
 export SEAFILE_FQDN=$DDNS_DOMAIN
 export SEAFILE_DATA
 
-vols=($SEAFILE_DATA)
-grant_container_access vols
-
 SEAFILE_SSL=$SEAFILE_DATA/data/ssl
 [ ! -d $SEAFILE_SSL ] && sudo mkdir $SEAFILE_SSL
 cp $CERT_ROOT/$CERT_FULLCHAIN $SEAFILE_SSL/$DDNS_DOMAIN.crt
