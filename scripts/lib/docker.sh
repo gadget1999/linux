@@ -8,6 +8,7 @@ source $CMD_PATH/lib/common.sh
 #####################################
 
 check_packages "docker"
+check_root
 
 function setup_container_user() {
  check_env "CONTAINER_USER CONTAINER_UID"

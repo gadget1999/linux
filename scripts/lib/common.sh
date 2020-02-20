@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 CMD_PATH=$(dirname "$0")
-source $CMD_PATH/env.conf
+load_env
 
 # Common variables
 NOW=$(date +"%Y_%m_%d-%H_%M_%S")
@@ -12,6 +12,15 @@ ENABLE_LOGGING=1
 DEBUG=1
 
 ############# Env Checking #############
+
+function load_env() {
+ # ENV variables are not available in cron jobs
+ local current_user=$(whoami)
+ local home_dir=/home/$current_user
+ [ "$current_user" == "root" ] && home_dir=/root
+
+ source $home_dir/.env.conf
+}
 
 function check_os_type() {
  [ "$OS_TYPE" != "" ] && return
@@ -53,18 +62,19 @@ function check_packages() {
  done
 }
 
+function check_root() {
+ [ "$REQUIRES_ROOT" == "" ] && return
+ [ "$(id -u)" == "0" ] && return
+
+ color_echo orange "This command requires root privilege."
+ exit 1
+}
+
 function show_usage() {
  local msg=$1
 
  color_echo orange "Usage: $PROGRAM $msg"
  exit 1
-}
-
-function requires_root() {
- if [ "$(id -u)" != "0" ]; then
-  color_echo orange "This command requires root privilege"
-  exit 1
- fi
 }
 
 ############# Logging #############
@@ -144,15 +154,6 @@ function should_continue() {
   else
     return 0; # 0 means success (true condition)
   fi
-}
-
-function load_tasks() {
- # ENV variables are not available in cron jobs
- local current_user=$(whoami)
- local home_dir=/home/$current_user
- [ "$current_user" == "root" ] && home_dir=/root
-
- source $home_dir/.tasks
 }
 
 ############# Files #############
