@@ -7,9 +7,6 @@ source $CMD_PATH/lib/common.sh
 ## Docker helper functions
 #####################################
 
-check_packages "docker"
-check_root
-
 function setup_container_user() {
  check_env "CONTAINER_USER CONTAINER_UID"
  [ "$(id -u $CONTAINER_USER)" != "" ] && return
@@ -350,3 +347,10 @@ function delete_orphan_volumes()    {
   sudo docker volume list --quiet --filter=dangling=true | \
     xargs --no-run-if-empty docker rmi
 }
+
+####################
+# Bootstraping
+####################
+
+check_packages "docker"
+check_root

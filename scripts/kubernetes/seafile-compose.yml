@@ -2,6 +2,7 @@ version: '2.0'
 services:
   db:
     image: mariadb:10.1
+    restart: unless-stopped
     container_name: seafile-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${SEAFILE_DB_KEY}
@@ -13,6 +14,7 @@ services:
 
   memcached:
     image: memcached:1.5.6
+    restart: unless-stopped
     container_name: seafile-memcached
     entrypoint: memcached -m 128
     networks:
@@ -20,6 +22,7 @@ services:
           
   seafile:
     image: seafileltd/seafile-mc:latest
+    restart: unless-stopped
     container_name: seafile
     ports:
       - "${SEAFILE_PORT}:443"
