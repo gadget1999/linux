@@ -25,7 +25,6 @@ function load_env() {
   fatal_error "ENV file not found: $ENV_FILE"
  fi
 }
-load_env
 
 function check_os_type() {
  [ "$OS_TYPE" != "" ] && return
@@ -239,3 +238,8 @@ function conditional_copy() {
  [ ! -d $dst_folder ] && $SUDO mkdir $dst_folder
  copy_files "$src_folder/*" $dst_folder
 }
+
+####################
+# Bootstraping
+####################
+load_env
