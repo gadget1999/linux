@@ -10,6 +10,7 @@ source $CMD_PATH/lib/common.sh
 check_packages "docker"
 
 function setup_container_user() {
+ check_env "CONTAINER_USER CONTAINER_UID"
  [ "$(id -u $CONTAINER_USER)" != "" ] && return
 
  debug "Creating user [$CONTAINER_USER]"

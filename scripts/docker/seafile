@@ -5,6 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 source $CMD_PATH/lib/certificate.sh
 
+requires_root
 check_env "SEAFILE_DATA SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD SEAFILE_PORT"
 check_packages "docker-compose docker"
 check_cert_env
@@ -16,19 +17,20 @@ export SEAFILE_PASSWORD
 export SEAFILE_FQDN=$DDNS_DOMAIN
 export SEAFILE_DATA
 
-grant_container_access ($SEAFILE_DATA)
+vols=($SEAFILE_DATA)
+grant_container_access vols
 
 SEAFILE_SSL=$SEAFILE_DATA/data/ssl
 [ ! -d $SEAFILE_SSL ] && sudo mkdir $SEAFILE_SSL
-sudo cp $CERT_ROOT/$CERT_FULLCHAIN $SEAFILE_SSL/$DDNS_DOMAIN.crt
-sudo cp $CERT_ROOT/$CERT_KEY $SEAFILE_SSL/$DDNS_DOMAIN.key
+cp $CERT_ROOT/$CERT_FULLCHAIN $SEAFILE_SSL/$DDNS_DOMAIN.crt
+cp $CERT_ROOT/$CERT_KEY $SEAFILE_SSL/$DDNS_DOMAIN.key
 
 POD="seafile"
 COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
 
 function delete_pod() {
  debug "Deleting existing pod"
- sudo docker rm -f seafile seafile-mysql seafile-memcached
+ docker rm -f seafile seafile-mysql seafile-memcached
 }
 
 function start_pod() {
@@ -41,7 +43,7 @@ function start_pod() {
  [ "$DEBUG_POD" != "" ] && detach_mode=""
  
  debug "Starting pod from $compose_file..."
- sudo docker-compose -f $compose_file up $detach_mode
+ docker-compose -f $compose_file up $detach_mode
 }
 
 [ "$1" == "debug" ] && DEBUG_POD=1
@@ -52,5 +54,5 @@ start_pod $POD $COMPOSE_FILE
 # more details: https://github.com/haiwen/seafile-docker/issues/134
 sleep 10
 GOOD_NGINX_CONF=$SEAFILE_DATA/data/seafile/conf/seafile.nginx.conf
-sudo docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
+docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
 docker exec seafile /usr/sbin/nginx -s reload

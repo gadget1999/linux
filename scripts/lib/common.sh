@@ -60,6 +60,13 @@ function show_usage() {
  exit 1
 }
 
+function requires_root() {
+ if [ "$(id -u)" != "0" ]; then
+  color_echo orange "This command requires root privilege"
+  exit 1
+ fi
+}
+
 ############# Logging #############
 
 NOCOLOR="\e[m"
