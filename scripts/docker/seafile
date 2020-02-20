@@ -5,7 +5,6 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 source $CMD_PATH/lib/certificate.sh
 
-requires_root
 check_env "SEAFILE_DATA SEAFILE_DB_KEY SEAFILE_ADMIN SEAFILE_PASSWORD SEAFILE_PORT"
 check_packages "docker-compose docker"
 check_cert_env
