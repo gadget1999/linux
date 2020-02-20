@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 CMD_PATH=$(dirname "$0")
-load_env
 
 # Common variables
 NOW=$(date +"%Y_%m_%d-%H_%M_%S")
@@ -19,8 +18,14 @@ function load_env() {
  local home_dir=/home/$current_user
  [ "$current_user" == "root" ] && home_dir=/root
 
- source $home_dir/.env.conf
+ ENV_FILE=$home_dir/.env.conf
+ if [ -e $ENV_FILE ]; then
+  source $ENV_FILE
+ else
+  fatal_error "ENV file not found: $ENV_FILE"
+ fi
 }
+load_env
 
 function check_os_type() {
  [ "$OS_TYPE" != "" ] && return
@@ -44,8 +49,7 @@ function check_env() {
  local VARS=$1
  for VAR in ${VARS[*]}; do
   if [[ ${!VAR} == "" ]]; then
-   log_error "Invalid ENV variables found: $VAR"
-   exit
+   fatal_error "Invalid ENV variables found: $VAR"
   fi
   # debug "$VAR=${!VAR}"
  done
@@ -55,8 +59,7 @@ function check_packages() {
  local PACKAGES=$1
  for PACKAGE in ${PACKAGES[*]}; do
   if [ ! -x "$(command -v $PACKAGE)" ]; then
-   log_error "Required package not found: $PACKAGE"
-   exit
+   fatal_error "Required package not found: $PACKAGE"
   fi
   # debug "$VAR=${!VAR}"
  done
@@ -66,8 +69,7 @@ function check_root() {
  [ "$REQUIRES_ROOT" == "" ] && return
  [ "$(id -u)" == "0" ] && return
 
- color_echo orange "This command requires root privilege."
- exit 1
+ fatal_error "This command requires root privilege."
 }
 
 function show_usage() {
