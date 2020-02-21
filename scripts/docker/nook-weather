@@ -4,19 +4,21 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "DARKSKY_API_KEY DARKSKY_PORT DARKSKY_LOCATION"
+check_env "DARKSKY_API_KEY DARKSKY_PORT DARKSKY_LOCATION CONTAINER_UID"
 
 CONTAINER="nook"
 IMAGE="gadget1999/rpi-nook-weather"
 
-MAX_RAM="100m"
 WORK_DIR=/download/nook
+grant_container_access $WORK_DIR
+
+MAX_RAM="100m"
 EXTRA_OPTS=(
  -e DARKSKY_API_KEY=$DARKSKY_API_KEY
  -e GPS_COORDINATES=$DARKSKY_LOCATION
  -v $WORK_DIR/quotes:/quotes:ro
  -p $DARKSKY_PORT:8080
- -u nobody
+ -u $CONTAINER_UID
  -m $MAX_RAM
  )
 
