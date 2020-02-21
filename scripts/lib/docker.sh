@@ -242,17 +242,16 @@ function new_container_vm() {
 }
 
 function container_cli() {
- local container_name=$1
- local image_name=$2
- local -n extra_args=$3 # use an array to avoid space/quote issues
- local -n entrypoint_args=$4
+ local image_name=$1
+ local -n extra_args=$2 # use an array to avoid space/quote issues
+ local -n entrypoint_args=$3
 
  # container cli is just CLI in a container, should be foreground and stateless
  local stateless="stateless"
  local background="foreground"
 
  # container services are background stateless containers
- new_container $container_name $image_name $stateless $background extra_args entrypoint_args
+ new_container "tmp_$image_name" $image_name $stateless $background extra_args entrypoint_args
 }
 
 function backup_container()    {

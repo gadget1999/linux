@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+[ "$1" == "" ] && show_usage "target-url"
+
+IMAGE="jumanjiman/ssllabs-scan"
+
+TARGET_URL=$1
+
+debug "Scanning URL: $TARGET_URL"
+EXTRA_OPTS=(
+ --read-only
+ --cap-drop all
+ )
+
+ENTRYPOINT=(
+ ssllabs-scan -grade --usecache $URL_TO_SCAN
+ )
+
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
