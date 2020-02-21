@@ -251,7 +251,7 @@ function container_cli() {
  local background="foreground"
 
  # container services are background stateless containers
- new_container "tmp$image_name" $image_name $stateless $background extra_args entrypoint_args
+ new_container "$PROGRAM" $image_name $stateless $background extra_args entrypoint_args
 }
 
 function backup_container()    {
