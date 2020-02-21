@@ -7,7 +7,21 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="openvas"
 IMAGE="mikesplain/openvas"
 
+if [ "$1" == "update" ]; then
+ docker exec -it $CONTAINER greenbone-nvt-sync
+ docker exec -it $CONTAINER openvasmd --rebuild --progress
+ docker exec -it $CONTAINER greenbone-certdata-sync
+ docker exec -it $CONTAINER greenbone-scapdata-sync
+ docker exec -it $CONTAINER openvasmd --update --verbose --progress
+ docker exec -it $CONTAINER /etc/init.d/openvas-manager restart
+ docker exec -it $CONTAINER /etc/init.d/openvas-scanner restart
+ exit
+fi
+
+mkdir /tmp/openvas
+
 EXTRA_OPTS=(
+ -v /tmp/openvas:/var/run/redis
  -v $CONTAINER:/var/lib/openvas/mgr/
  -p 443:443
  )
