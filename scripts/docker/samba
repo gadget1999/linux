@@ -4,10 +4,12 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD"
+check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD CONTAINER_UID"
 
 CONTAINER="samba"
 IMAGE="gadget1999/rpi-samba"
+
+grant_container_access $SAMBA_LOCAL_PATH
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
