@@ -7,7 +7,7 @@ source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
 
-check_env "SSR_PASSWORD DDNS_DOMAIN CERT_STORAGE"
+check_env "SSR_PASSWORD DDNS_DOMAIN CERT_STORAGE CONTAINER_UID"
 
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
@@ -40,6 +40,8 @@ fi
 #debug "V2Ray options: $V2RAY_OPTS"
 V2RAY_ARGS="ARGS=--plugin v2ray-plugin --plugin-opts $V2RAY_OPTS"
 
+grant_container_access $CERT_STORAGE
+
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -e "$V2RAY_ARGS"
@@ -48,7 +50,7 @@ EXTRA_OPTS=(
  -e DNS_ADDRS=176.103.130.130,176.103.130.131
  -p $PORT:8388
  -p $PORT:8388/udp
- -u nobody:12345
+ -u $CONTAINER_UID
  -m $MAX_RAM
  )
 

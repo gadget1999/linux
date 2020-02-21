@@ -20,6 +20,9 @@ function grant_container_access() {
 
  for volume in "$@"; do
   if [[ $volume = /* ]]; then
+   local uid=$(stat -c '%u' $volume)
+   [ "$uid" == "$CONTAINER_UID" ] && continue
+
    debug "Changing permission for $volume..."
    sudo chown $CONTAINER_USER -R $volume
    sudo chgrp $CONTAINER_USER -R $volume 
