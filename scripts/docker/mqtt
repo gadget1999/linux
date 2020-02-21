@@ -4,10 +4,12 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "CONTAINER_CONFIG_ROOT CERT_STORAGE"
+check_env "CONTAINER_CONFIG_ROOT CERT_STORAGE CONTAINER_UID"
 
 CONTAINER="mqtt"
 IMAGE="gadget1999/rpi-mqtt"
+
+grant_container_access $CONTAINER_CONFIG_ROOT/$CONTAINER $CERT_STORAGE
 
 MAX_RAM="50m"
 EXTRA_OPTS=(

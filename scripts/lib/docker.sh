@@ -16,11 +16,9 @@ function setup_container_user() {
 }
 
 function grant_container_access() {
- local -n volumes=$1
-
  setup_container_user
 
- for volume in ${volumes[*]}; do
+ for volume in "$@"; do
   if [[ $volume = /* ]]; then
    debug "Changing permission for $volume..."
    sudo chown $CONTAINER_USER -R $volume
