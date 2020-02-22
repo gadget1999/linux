@@ -6,7 +6,6 @@ source $CMD_PATH/lib/docker.sh
 
 IMAGE="drwetter/testssl.sh"
 
-debug "Scanning URL: $TARGET_URL"
 EXTRA_OPTS=(
  --read-only
  --cap-drop all
