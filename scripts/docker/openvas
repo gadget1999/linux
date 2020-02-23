@@ -49,6 +49,9 @@ case $1 in
  update)
   update_NVD
   ;;
+ stop)
+  stop_container openvas
+  ;;
  debug)
   DEBUG_POD=1
   start_openvas
