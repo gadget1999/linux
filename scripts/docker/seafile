@@ -22,33 +22,134 @@ cp $CERT_ROOT/$CERT_FULLCHAIN $SEAFILE_SSL/$DDNS_DOMAIN.crt
 cp $CERT_ROOT/$CERT_KEY $SEAFILE_SSL/$DDNS_DOMAIN.key
 
 POD="seafile"
-COMPOSE_FILE="$CMD_PATH/kubernetes/$POD-compose.yml"
+COMPOSE_FILE_ROOT="$CMD_PATH/kubernetes"
+STATEFUL_CONTAINERS=($POD)
+STATELESS_CONTAINERS=(seafile-mysql seafile-memcached)
 
-function delete_pod() {
- debug "Deleting existing pod"
- docker rm -f seafile seafile-mysql seafile-memcached
+#########################
+# Helper functions
+#########################
+
+function stop_pod() {
+ local -n stateful_containers=$1
+ local -n stateless_containers=$2
+
+ for instance in ${stateful_containers[*]}; do
+  stop_container $instance
+ done
+
+ for instance in ${stateless_containers[*]}; do
+  stop_container $instance
+  #delete_container $instance
+ done
 }
 
-function start_pod() {
- local pod_main_container=$1
- local compose_file=$2
+function delete_pod() {
+ local -n stateful_containers=$1
+ local -n stateless_containers=$2
 
- [ "$(container_exists $pod_main_container)" == "true" ] && delete_pod
+ for instance in ${stateful_containers[*]}; do
+  delete_container $instance
+ done
+
+ for instance in ${stateless_containers[*]}; do
+  delete_container $instance
+ done
+}
+
+function new_pod() {
+ local compose_file=$1
 
  local detach_mode="-d"
  [ "$DEBUG_POD" != "" ] && detach_mode=""
- 
+
  debug "Starting pod from $compose_file..."
  docker-compose -f $compose_file up $detach_mode
 }
 
-[ "$1" == "debug" ] && DEBUG_POD=1
+function start_pod() {
+ local pod_name=$1
+ local compose_file="$COMPOSE_FILE_ROOT/$pod_name/docker-compose.yaml"
+ local -n stateful_containers=$2
+ local -n stateless_containers=$3
 
-start_pod $POD $COMPOSE_FILE
+ if [ $(container_exists $pod_name) != "true" ]; then
+  # use docker-compose to create dependencies
+  new_pod $compose_file
+  return
+ fi
 
-# fix seafile CSRF issue caused by container port mapping
-# more details: https://github.com/haiwen/seafile-docker/issues/134
-sleep 10
-GOOD_NGINX_CONF=$SEAFILE_DATA/data/seafile/conf/seafile.nginx.conf
-docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
-docker exec seafile /usr/sbin/nginx -s reload
+ # just restart the containers as everything already configured
+ # (later on try 'docker-compose start')
+ for instance in ${stateless_containers[*]}; do
+  start_container $instance
+ done
+
+ for instance in ${stateful_containers[*]}; do
+  start_container $instance
+ done
+}
+
+function upgrade_container_debian() {
+ local container_name=$1
+ local DOCKER_CMD="docker exec $container_name"
+
+ debug "Upgrading container OS..."
+ $DOCKER_CMD apt-get update
+ $DOCKER_CMD apt-get -y dist-upgrade
+ $DOCKER_CMD apt-get -y autoremove
+
+ debug "Restarting container..."
+ stop_container $container_name
+ start_container $container_name
+}
+
+function upgrade_seafile_nginx() {
+ local DOCKER_CMD="docker exec seafile"
+
+ debug "Adding nginx repo..."
+ $DOCKER_CMD add-apt-repository ppa:nginx/stable
+ debug "Upgrading nginx..."
+ $DOCKER_CMD apt-get update
+ $DOCKER_CMD apt-get install -y nginx
+ $DOCKER_CMD apt-get -y autoremove
+}
+
+function update_seafile_nginx() {
+ local DOCKER_CMD="docker exec seafile"
+
+ # fix seafile CSRF issue caused by container port mapping
+ # more details: https://github.com/haiwen/seafile-docker/issues/134
+ # also use more secure conf file
+ GOOD_NGINX_CONF=$SEAFILE_DATA/data/seafile/conf/seafile.nginx.conf
+ debug "Updating nginx conf..."
+ docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
+ debug "Restarting nginx..."
+ $DOCKER_CMD /usr/sbin/nginx -s reload
+}
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ stop)
+  stop_pod STATEFUL_CONTAINERS STATELESS_CONTAINERS
+  ;;
+ delete)
+  delete_pod STATEFUL_CONTAINERS STATELESS_CONTAINERS
+  ;;
+ upgrade)
+  upgrade_container_debian $POD
+  upgrade_seafile_nginx
+  ;;
+ debug)
+  DEBUG_POD=1
+  start_pod $POD STATEFUL_CONTAINERS STATELESS_CONTAINERS
+  ;;
+ *)
+  start_pod $POD STATEFUL_CONTAINERS STATELESS_CONTAINERS
+  sleep 10
+  update_seafile_nginx
+  ;;
+esac
