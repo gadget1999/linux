@@ -7,28 +7,53 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="openvas"
 IMAGE="mikesplain/openvas"
 
-if [ "$1" == "update" ]; then
- docker exec -it $CONTAINER greenbone-nvt-sync
- docker exec -it $CONTAINER openvasmd --rebuild --progress
- docker exec -it $CONTAINER greenbone-certdata-sync
- docker exec -it $CONTAINER greenbone-scapdata-sync
- docker exec -it $CONTAINER openvasmd --update --verbose --progress
- docker exec -it $CONTAINER /etc/init.d/openvas-manager restart
- docker exec -it $CONTAINER /etc/init.d/openvas-scanner restart
- exit
-fi
+#########################
+# Helper functions
+#########################
 
-mkdir /tmp/openvas
+function update_NVD() {
+ local DOCKER_CMD="docker exec $CONTAINER"
+ 
+ $DOCKER_CMD greenbone-nvt-sync
+ $DOCKER_CMD openvasmd --rebuild --progress
+ $DOCKER_CMD greenbone-certdata-sync
+ $DOCKER_CMD greenbone-scapdata-sync
+ $DOCKER_CMD openvasmd --update --verbose --progress
+ $DOCKER_CMD /etc/init.d/openvas-manager restart
+ $DOCKER_CMD /etc/init.d/openvas-scanner restart
+}
 
-EXTRA_OPTS=(
- -v /tmp/openvas:/var/run/redis
- -v $CONTAINER:/var/lib/openvas/mgr/
- -p 443:443
- )
+function start_openvas() {
+ local run_vol=/tmp/$CONTAINER
 
-ENTRYPOINT=()
+ [ ! -d $run_vol ] && mkdir $run_vol
 
-[ "$1" == "debug" ] && DEBUG_DOCKER=1
-new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+ EXTRA_OPTS=(
+  -v $run_vol:/var/run/redis
+  -v $CONTAINER:/var/lib/openvas/mgr/
+  -p 443:443
+  )
 
-docker logs -f openvas
+ ENTRYPOINT=()
+
+ new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+
+ docker logs -f $CONTAINER
+}
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ update)
+  update_NVD
+  ;;
+ debug)
+  DEBUG_POD=1
+  start_openvas
+  ;;
+ *)
+  start_openvas
+  ;;
+esac
