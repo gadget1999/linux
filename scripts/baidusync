@@ -20,9 +20,10 @@ function download_BaiduPan() {
  # using IFS to fix it
  IFS=$'\n'
  # use sed to strip out header line
- local items=($(bypy ls $remote_root | sed "1 d" | cut -d '|' -f 2))
+ local items=($(bypy ls $remote_root '$f'))
  unset IFS
  for item in "${items[@]}"; do
+  [[ "$item" == *":"* ]] && continue
   local path="$remote_root/$item"
   log "Dowloading $path"
 
