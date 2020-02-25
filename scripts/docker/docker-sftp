@@ -15,7 +15,11 @@ PORT=24786
 USER_CONF="/tmp/atmos-sftp.conf"
 echo "$SFTP_USER:$SFTP_PASSWORD:::share" > $USER_CONF
 
-SSH_KEY=$CONTAINER_CONFIG_ROOT/sftp/.container_sftp_key
+SSH_KEY=$CONTAINER_CONFIG_ROOT/sftp/ssh_host_ed25519_key
+if [ ! -e $SSH_KEY ]; then
+ debug "Generating SFTP key: $SSH_KEY"
+ sudo ssh-keygen -t ed25519 -f $SSH_KEY < /dev/null
+fi
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
@@ -24,7 +28,6 @@ EXTRA_OPTS=(
  -v $ROOT_FOLDER:/home/$SFTP_USER/share
  -p $PORT:22
  -p $PORT:8388/udp
- -u $CONTAINER_UID
  -m $MAX_RAM
  )
 
