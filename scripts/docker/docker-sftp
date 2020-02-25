@@ -4,16 +4,15 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "SFTP_USER SFTP_PASSWORD CONTAINER_USER"
+check_env "SFTP_USER SFTP_PASSWORD SFTP_PORT CONTAINER_UID"
 
 CONTAINER="sftp"
 IMAGE="atmoz/sftp:alpine"
 
 ROOT_FOLDER="/download/sftp"
-PORT=24786
 
 USER_CONF="/tmp/atmos-sftp.conf"
-echo "$SFTP_USER:$SFTP_PASSWORD:::share" > $USER_CONF
+echo "$SFTP_USER:$SFTP_PASSWORD:$CONTAINER_UID:$CONTAINER_UID:share" > $USER_CONF
 
 SSH_KEY=$CONTAINER_CONFIG_ROOT/sftp/ssh_host_ed25519_key
 if [ ! -e $SSH_KEY ]; then
@@ -26,8 +25,8 @@ EXTRA_OPTS=(
  -v $USER_CONF:/etc/sftp/users.conf:ro
  -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key:ro
  -v $ROOT_FOLDER:/home/$SFTP_USER/share
- -p $PORT:22
- -p $PORT:8388/udp
+ -p $SFTP_PORT:22
+ -p $SFTP_PORT:8388/udp
  -m $MAX_RAM
  )
 
