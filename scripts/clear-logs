@@ -3,7 +3,7 @@
 check_root
 
 function zerofile() {
- file=$1
+ local file=$1
  [ ! -e "$file" ] && return
 
  echo "Truncate $file"

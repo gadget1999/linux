@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "dropbox"
+
+FILE_PATTERN="$@"
+
+function dropbox_upload() {
+ local object=$1
+ local target=$2
+
+ debug "Uploading $object..."
+ dropbox upload $object /$target/$object
+}
+
+for file in $FILE_PATTERN; do
+ dropbox_upload $file $TODAY
+done
