@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+[ "$1" == "" ] && show_usage "target-image-name[:tag]"
+
+IMAGE="aquasec/trivy"
+TARGET=$1
+
+EXTRA_OPTS=(
+ --cap-drop all
+ )
+
+ENTRYPOINT=(
+ "$@"
+ )
+
+debug "Scanning docker image [$TARGET] for vulnerabilities..."
+container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
