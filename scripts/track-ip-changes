@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/email.sh
+
+check_env "MAIN_EMAIL"
+check_email_env
+
+CHECK_INTERVAL=3600
+IP_CACHE=/tmp/ip-cache
+
+# single instance
+lock
+
+touch $IP_CACHE
+
+function notify_ip_change {
+ local old_ip=$1
+ local new_ip=$2
+
+ debug "Sending email notification to $MAIN_EMAIL"
+ send_email \
+  $MAIN_EMAIL \
+  "Public IP changed from [$old_ip] to [$new_ip]" \
+  "Please remember to change firewall accordingly."
+}
+
+function check_ip_change {
+ local old_ip=$(cat $IP_CACHE)
+ local new_ip=$($CMD_PATH/public-ip)
+
+ debug "Old IP: $old_ip;  New IP: $new_ip"
+ if [ "$new_ip" == "" ]; then
+  log "Failed to get public IP."
+  return
+ fi
+
+ [ "$new_ip" == "$old_ip" ] && return
+
+ echo $new_ip > $IP_CACHE
+ 
+ # if old_ip is empty, most likely first run
+ [ "$old_ip" == "" ] && return
+
+ # send email to notify
+ notify_ip_change $old_ip $new_ip
+}
+
+while true; do
+ check_ip_change
+
+ sleep $CHECK_INTERVAL
+done
