@@ -274,10 +274,11 @@ function backup_volume()    {
   local filename="$2-vol-$volume.tar"
 
   debug "Exporting docker volume [$volume] to: $filename..."
-  sudo docker run -d --rm -v $volume:/backup --name "backup-$volume" alpine sh
+  sudo docker run -d -v $volume:/backup --name "backup-$volume" alpine sh
   sudo docker cp backup-$volume:/backup /tmp/backup-$volume
   tar -C /tmp/backup-$volume -cvf $filename .
   sudo docker stop backup-$volume
+  sudo docker rm backup-$volume
   sudo rm -rf /tmp/backup-$volume
 
   # verify if the docker image backup is valid
