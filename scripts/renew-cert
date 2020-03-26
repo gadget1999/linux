@@ -32,8 +32,8 @@ fi
 
 if [ "$CERT_STORAGE" != "" ]; then
  log "Copying new certificates to $CERT_STORAGE"
- sudo copy_file $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem overwrite
- sudo copy_file $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem overwrite
+ copy_file $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem overwrite
+ copy_file $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem overwrite
  sudo chown container $CERT_STORAGE/*
  sudo chgrp container $CERT_STORAGE/*
  ls -l $CERT_STORAGE
