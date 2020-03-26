@@ -24,7 +24,7 @@ if [ "$MAIN_EMAIL" != "" ]; then
  check_email_env
  send_email \
   $MAIN_EMAIL \
-  "$CERT_DOMAIN certificate issued" \
+  "$DDNS_DOMAIN certificate issued" \
   "Enjoy!"
 fi
 

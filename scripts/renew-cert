@@ -26,7 +26,7 @@ if [ "$MAIN_EMAIL" != "" ]; then
  check_email_env
  send_email \
   $MAIN_EMAIL \
-  "$CERT_DOMAIN certificate renewed" \
+  "$DDNS_DOMAIN certificate renewed" \
   "Enjoy!"
 fi
 
