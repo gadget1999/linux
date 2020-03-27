@@ -36,7 +36,7 @@ function start_openvas() {
 
  ENTRYPOINT=()
 
- new_container $CONTAINER $IMAGE "stateless" "backgroun" EXTRA_OPTS ENTRYPOINT
+ new_container $CONTAINER $IMAGE "stateless" "background" EXTRA_OPTS ENTRYPOINT
 
  docker logs -f $CONTAINER
 }
