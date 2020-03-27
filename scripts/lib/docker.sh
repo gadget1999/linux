@@ -234,6 +234,9 @@ function new_container_vm() {
   stateless="stateful"
  fi
 
+ [ $(is_container_running $container_name) == "true" ] && return
+ [ "$(container_exists $container_name)" == "true" ] && start_container $container_name
+
  # do not delete existing container vm (vm needs to persist its state)
  #delete_container $container_name
 
