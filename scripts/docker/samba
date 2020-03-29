@@ -4,6 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
+# SAMBA_SHARE format: Share:/data:rw:$SAMBA_USER
 check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD CONTAINER_UID"
 
 CONTAINER="samba"
@@ -17,16 +18,23 @@ EXTRA_OPTS=(
  -p 445:10445
  -p 137:10137/udp
  -p 138:10138/udp
- -v $SAMBA_LOCAL_PATH:/$SAMBA_SHARE
+ -v $SAMBA_LOCAL_PATH:/data
  -e SMB_VER="SMB2_10"
  -e PUID=$CONTAINER_UID
  -e PGID=$CONTAINER_UID
  -e USER="$SAMBA_USER:$SAMBA_PASSWORD"
- -e SHARE="$SAMBA_SHARE:/$SAMBA_SHARE:rw:$SAMBA_USER"
+ -e SHARE="$SAMBA_SHARE"
+ -e SHARE2="$SAMBA_SHARE2"
+ -e SHARE3="$SAMBA_SHARE3"
+ -e SHARE4="$SAMBA_SHARE4"
  -m $MAX_RAM
  )
 
 ENTRYPOINT=()
 
-[ "$1" == "debug" ] && DEBUG_DOCKER=1
+if [ "$1" == "debug" ]; then
+ DEBUG_DOCKER=1
+ ENTRYPOINT=(sh)
+fi
+
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
