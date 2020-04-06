@@ -24,18 +24,35 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=()
 
-if [ "$1" == "debug" ]; then
- DEBUG_DOCKER=1
- ENTRYPOINT=(sleep infinity)
- EXTRA_OPTS=(
-  -e DARKSKY_API_KEY=$DARKSKY_API_KEY
-  -e GPS_COORDINATES=$DARKSKY_LOCATION
-  -v $WORK_DIR/quotes:/quotes:ro
-  -p $DARKSKY_PORT:8080
-  -v $WORK_DIR/templates:/templates
-  -v $WORK_DIR/static:/static
-  -v $WORK_DIR/server.py:/server.py
- )
-fi
+case "$1" in
+ "debug")
+  DEBUG_DOCKER=1
+  ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
+  EXTRA_OPTS=(
+   -e DARKSKY_API_KEY=$DARKSKY_API_KEY
+   -e GPS_COORDINATES=$DARKSKY_LOCATION
+   -v $WORK_DIR/quotes:/quotes:ro
+   -p $DARKSKY_PORT:8080
+   -m $MAX_RAM
+   )
+    ;;
+
+ "debuglocal")
+  DEBUG_DOCKER=1
+  ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
+  EXTRA_OPTS=(
+   -e DARKSKY_API_KEY=$DARKSKY_API_KEY
+   -e GPS_COORDINATES=$DARKSKY_LOCATION
+   -v $WORK_DIR/quotes:/quotes:ro
+   -p $DARKSKY_PORT:8080
+   -v $WORK_DIR/templates:/templates
+   -v $WORK_DIR/static:/static
+   -v $WORK_DIR/server.py:/server.py
+   )
+  ;;
+
+ *)
+  ;;
+esac
 
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
