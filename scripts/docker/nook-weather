@@ -30,10 +30,11 @@ case "$1" in
   DEBUG_DOCKER=1
   ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
   EXTRA_OPTS=(
-   -e DARKSKY_API_KEY=$DARKSKY_API_KEY
-   -e GPS_COORDINATES=$DARKSKY_LOCATION
+   -e WEATHER_API_PROVIDER=$WEATHER_API_PROVIDER
+   -e WEATHER_API_KEY=$WEATHER_API_KEY
+   -e GPS_COORDINATES=$GPS_COORDINATES
    -v $WORK_DIR/quotes:/quotes:ro
-   -p $DARKSKY_PORT:8080
+   -p $WEATHER_PORT:8080
    -m $MAX_RAM
    )
     ;;
@@ -42,10 +43,11 @@ case "$1" in
   DEBUG_DOCKER=1
   ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
   EXTRA_OPTS=(
-   -e DARKSKY_API_KEY=$DARKSKY_API_KEY
-   -e GPS_COORDINATES=$DARKSKY_LOCATION
+   -e WEATHER_API_PROVIDER=$WEATHER_API_PROVIDER
+   -e WEATHER_API_KEY=$WEATHER_API_KEY
+   -e GPS_COORDINATES=$GPS_COORDINATES
    -v $WORK_DIR/quotes:/quotes:ro
-   -p $DARKSKY_PORT:8080
+   -p $WEATHER_PORT:8080
    -v $WORK_DIR/templates:/templates
    -v $WORK_DIR/static:/static
    -v $WORK_DIR/server.py:/server.py
