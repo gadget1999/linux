@@ -12,12 +12,16 @@ IMAGE="gadget1999/rpi-nook-weather"
 WORK_DIR=/download/nook
 grant_container_access $WORK_DIR
 
+touch $LOG
+grant_container_access $LOG
+
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -e WEATHER_API_PROVIDER=$WEATHER_API_PROVIDER
  -e WEATHER_API_KEY=$WEATHER_API_KEY
  -e GPS_COORDINATES=$GPS_COORDINATES
  -v $WORK_DIR/quotes:/quotes:ro
+ -v $LOG:$LOG
  -p $WEATHER_PORT:8080
  -u $CONTAINER_UID
  -m $MAX_RAM
