@@ -12,6 +12,7 @@ IMAGE="gadget1999/rpi-nook-weather"
 WORK_DIR=/download/nook
 grant_container_access $WORK_DIR
 
+sudo rm -R $LOG
 touch $LOG
 grant_container_access $LOG
 
