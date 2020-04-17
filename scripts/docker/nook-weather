@@ -28,7 +28,6 @@ EXTRA_OPTS=(
  -v $WORK_DIR/quotes:/quotes:ro
  -v $LOG:$LOG
  -p $WEATHER_PORT:8080
- -u $CONTAINER_UID
  -m $MAX_RAM
  )
 
@@ -37,33 +36,17 @@ ENTRYPOINT=()
 case "$1" in
  "debug")
   DEBUG_DOCKER=1
-  ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
-  EXTRA_OPTS=(
-   -e WEATHER_API_PROVIDER=$WEATHER_API_PROVIDER
-   -e WEATHER_API_KEY=$WEATHER_API_KEY
-   -e GPS_COORDINATES=$GPS_COORDINATES
-   -v $WORK_DIR/quotes:/quotes:ro
-   -p $WEATHER_PORT:8080
-   -m $MAX_RAM
-   )
+  EXTRA_OPTS+=(-u $CONTAINER_UID)
     ;;
 
- "debuglocal")
+ "debug-dev")
   DEBUG_DOCKER=1
+  EXTRA_OPTS+=(-e DEBUG=TRUE)
   ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
-  EXTRA_OPTS=(
-   -e WEATHER_API_PROVIDER=$WEATHER_API_PROVIDER
-   -e WEATHER_API_KEY=$WEATHER_API_KEY
-   -e GPS_COORDINATES=$GPS_COORDINATES
-   -v $WORK_DIR/quotes:/quotes:ro
-   -p $WEATHER_PORT:8080
-   -v $WORK_DIR/templates:/templates
-   -v $WORK_DIR/static:/static
-   -v $WORK_DIR/server.py:/server.py
-   )
-  ;;
+    ;;
 
  *)
+  EXTRA_OPTS+=(-u $CONTAINER_UID)
   ;;
 esac
 
