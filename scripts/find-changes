@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo Search whole filesystem for changed files in the last $1 minutes
+sudo find / \
+ ! -path "/proc/*" \
+ ! -path "/sys/*" \
+ ! -path "/run/*" \
+ ! -path "/dev/*" \
+ ! -path "/media/*" \
+ ! -path "/tmp/*" \
+ -cmin -$1 \
+ -exec stat -c "%.19z %s %n" {} \;
