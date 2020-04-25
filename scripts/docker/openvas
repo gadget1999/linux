@@ -31,7 +31,7 @@ function start_openvas() {
  EXTRA_OPTS=(
   -v $run_vol:/var/run/redis
   -v $CONTAINER:/var/lib/openvas/mgr/
-  -p 443:443
+  -p 12443:443
   )
 
  ENTRYPOINT=()
