@@ -65,6 +65,8 @@ function new_pod() {
 
  debug "Starting pod from $compose_file..."
  docker-compose -f $compose_file up $detach_mode
+ 
+ upgrade_seafile_nginx $POD
 }
 
 function start_pod() {
