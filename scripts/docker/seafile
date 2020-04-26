@@ -66,6 +66,9 @@ function new_pod() {
  debug "Starting pod from $compose_file..."
  docker-compose -f $compose_file up $detach_mode
  
+ sleep 10
+
+ upgrade_container_debian $POD
  upgrade_seafile_nginx $POD
 }
 
@@ -117,23 +120,12 @@ function upgrade_seafile_nginx() {
  $DOCKER_CMD apt-get install -y nginx
  $DOCKER_CMD apt-get -y autoremove
 
- debug "Restarting container..."
- stop_container $container_name
- start_container $container_name
-}
-
-function update_seafile_nginx() {
- local container_name=$1
- local DOCKER_CMD="docker exec seafile"
-
  # fix seafile CSRF issue caused by container port mapping
  # more details: https://github.com/haiwen/seafile-docker/issues/134
  # also use more secure conf file
  GOOD_NGINX_CONF=$SEAFILE_DATA/data/seafile/conf/seafile.nginx.conf
  debug "Updating nginx conf..."
  docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
- debug "Restarting nginx..."
- $DOCKER_CMD /usr/sbin/nginx -s reload
  
  debug "Restarting container..."
  stop_container $container_name
@@ -161,7 +153,5 @@ case $1 in
   ;;
  *)
   start_pod $POD STATEFUL_CONTAINERS STATELESS_CONTAINERS
-  sleep 10
-  update_seafile_nginx $POD
   ;;
 esac
