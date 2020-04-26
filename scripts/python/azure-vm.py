@@ -203,12 +203,11 @@ def list_vms(args):
     print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
 
 def stop_idle(args):
-  logger.debug("Shutdown idle Windows virtual machines...")
+  logger.debug("Shutdown idle virtual machines...")
   for vm in vm_cli.virtual_machines:
-    if vm.os == "Windows":
-      status = vm.GetStatus()
-      if (status == VM_STATUS_STOPPED):
-        vm.Stop()
+    status = vm.GetStatus()
+    if (status == VM_STATUS_STOPPED):
+      vm.Stop()
 
 def get_parser():
   parser = argparse.ArgumentParser('azvm')
