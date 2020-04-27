@@ -7,6 +7,12 @@ source $CMD_PATH/lib/common.sh
 ## Docker helper functions
 #####################################
 
+DOCKER_LOCAL_REPO_FLAG=/tmp/docker-use-local-repo
+function use_local_docker_repo() {
+ debug "Use local docker repo"
+ touch $DOCKER_LOCAL_REPO_FLAG
+}
+
 function setup_container_user() {
  check_env "CONTAINER_USER CONTAINER_UID"
  [ "$(id -u $CONTAINER_USER)" != "" ] && return
@@ -157,8 +163,10 @@ function new_container() {
   stop_container $container_name
  fi
 
- debug "Update image: $image_name"
- sudo docker pull $image_name
+ if [ ! -f "$DOCKER_LOCAL_REPO_FLAG" ]; then
+  debug "Update image: $image_name"
+  sudo docker pull $image_name
+ fi
 
  local docker_options=(
   run --init

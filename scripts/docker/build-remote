@@ -1,0 +1,25 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+[ "$1" == "" ] && show_usage "container-name"
+
+check_env "GITHUB_ID GITHUB_REPO IMAGE_PREFIX"
+
+# do not pull from remote repo so that it's easier to test
+use_local_docker_repo
+
+GITHUB_DIR="$GITHUB_REPO.git#master:$1"
+IMAGE_NAME="$GITHUB_ID/$IMAGE_PREFIX-$1:latest"
+
+debug "Removing previous local copies.."
+docker rmi $IMAGE_NAME
+
+debug "Building docker image [$IMAGE_NAME] ..."
+docker build --force-rm --no-cache \
+ https://github.com/$GITHUB_ID/$GITHUB_DIR \
+ -t $IMAGE_NAME
+
+$CMD_PATH/clear-images
