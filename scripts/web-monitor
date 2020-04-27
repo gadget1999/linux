@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "python3"
+check_env "SENDGRID_API_KEY MAIN_EMAIL MONITOR_HOSTS"
+
+MONITOR_SENDER=$(hostname)@linux.com
+MONITOR_RECIPIENT=$MAIN_EMAIL
+
+export SENDGRID_API_KEY
+export MONITOR_SENDER
+export MONITOR_RECIPIENT
+export MONITOR_HOSTS
+
+[ "$1" == "debug" ] && export DEBUG
+python3 $CMD_PATH/python/web-monitor.py $@
