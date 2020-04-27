@@ -106,9 +106,13 @@ class WebMonitor:
 AppName = "web-monitor"
 def init_logger():
   app_logfile = f"/tmp/{AppName}.log"
+  logFormatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
   fileHandler = logging.FileHandler(app_logfile)
-  fileHandler.setFormatter(logging.Formatter("%(asctime)s: %(levelname)s - %(message)s"))
+  fileHandler.setFormatter(logFormatter)
   logger.addHandler(fileHandler)
+  consoleHandler = logging.StreamHandler()
+  consoleHandler.setFormatter(logFormatter)
+  logger.addHandler(consoleHandler)
   if 'DEBUG' in os.environ:
     logger.setLevel(logging.DEBUG)
   else:
