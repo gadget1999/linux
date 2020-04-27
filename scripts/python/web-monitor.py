@@ -44,7 +44,7 @@ class WebMonitor:
     else:
       return False
 
-  def is_up(url):
+  def is_online(url):
     error = None
     try:
       r = requests.get(url)
@@ -76,18 +76,18 @@ class WebMonitor:
 
   def __send_email(self, url, error):
     parsed_uri = urlparse(url)
-    host = '{uri.scheme}://{uri.netloc}/'.format(uri=parsed_uri)
+    host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
     subject = f"[Web-Monitor]: {host} is down!"
-    body = f"Error details: {error}"
+    body = f"<b>Error details</b>: {error} <p> <b>URL</b>: {url}"
     SendGrid.send_email(self.__sender, self.__recipient, subject, body)
 
   def start(self):
     failed_hosts = []
 
     for url in self.__hosts:
-      status, error = WebMonitor.is_up(url)
+      status, error = WebMonitor.is_online(url)
       if status:
-        logger.debug(f"[{url}] is up.")
+        logger.debug(f"[{url}] is online.")
       else:
         # if fails, then retry after 5 min to decide
         logger.warning(f"[{url}] may be down, will confirm later: {error}")
@@ -96,7 +96,7 @@ class WebMonitor:
     if failed_hosts:
       time.sleep(300)
       for url in failed_hosts:
-        status, error = WebMonitor.is_up(url)
+        status, error = WebMonitor.is_online(url)
         if status:
           logger.info(f"Host: {url} is up. (no email sent)")
         else:
