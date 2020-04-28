@@ -6,13 +6,22 @@ source $CMD_PATH/lib/docker.sh
 
 IMAGE="drwetter/testssl.sh"
 
+OUTPUT=/tmp/$PROGRAM.json
+[ -f "$OUTPUT" ] && rm $OUTPUT
+touch $OUTPUT
+
 EXTRA_OPTS=(
  --read-only
  --cap-drop all
+ -v $OUTPUT:$OUTPUT
  )
 
 ENTRYPOINT=(
+ --jsonfile $OUTPUT
+ --severity MEDIUM
  "$@"
  )
 
 container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
+
+cat $OUTPUT
