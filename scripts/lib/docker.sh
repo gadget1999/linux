@@ -150,7 +150,9 @@ function new_container() {
  if [ "$background" == "background" ]; then
   extra_options=(-d "${extra_options[@]}")
  else
-  extra_options=(-it "${extra_options[@]}")
+  # use "-i" instead because otherwise script being called (without TTY) will not work
+  #extra_options=(-it "${extra_options[@]}")
+  extra_options=(-i "${extra_options[@]}")
  fi
 
  if [ "$(container_exists $container_name)" == "true" ]; then

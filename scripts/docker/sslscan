@@ -18,10 +18,8 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=(
  --jsonfile $OUTPUT
- --severity MEDIUM
+ --severity HIGH
  "$@"
  )
 
 container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
-
-cat $OUTPUT
