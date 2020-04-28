@@ -76,9 +76,10 @@ class SSLLabs:
       for endpoint in endpoints:
         rating = { 'url': url, 'ip': endpoint['ipAddress'], 'grade': endpoint['grade'] }
         ratings.append(rating)
+      return ratings
     except Exception as e:
       logger.error(f"Failed to get server SSL rating: {e}")
-    return ratings
+      return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]    
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
