@@ -12,7 +12,6 @@ MONITOR_RECIPIENT=$MAIN_EMAIL
 export SENDGRID_API_KEY
 export MONITOR_SENDER
 export MONITOR_RECIPIENT
-export MONITOR_HOSTS
 
 [ "$1" == "debug" ] && export DEBUG
-python3 $CMD_PATH/python/web-monitor.py $@
+python3 $CMD_PATH/python/web-monitor.py check-alive $MONITOR_HOSTS

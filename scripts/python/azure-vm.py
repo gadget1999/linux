@@ -262,6 +262,10 @@ vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
 
 if __name__ == "__main__":
   parser = get_parser()
+  if len(sys.argv) == 1:
+    # no arguments provided
+    parser.print_help()
+    sys.exit(0)
+  
   args = parser.parse_args()
-  if len(sys.argv) > 1:
-    args.func(args)
+  args.func(args)
