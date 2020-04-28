@@ -11,6 +11,11 @@ SSLSCAN_OUTPUT=/tmp/sslscan.json
 function scan_one_server() {
  local server=$1
 
+ if [[ $server = http:* ]]; then
+  log_error "Invalid server: $server"
+  return
+ fi
+
  debug "Scanning $server..."
  $SSLSCAN_CLI $server
  if [ ! -e $SSLSCAN_OUTPUT ]; then
