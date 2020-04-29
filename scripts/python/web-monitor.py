@@ -64,7 +64,7 @@ class SSLLabs:
         raise Exception(f"SSLLabs API error: {result['statusMessage']}")
 
       # wait until we have a conclusion or timeout
-      time.sleep(30)
+      time.sleep(60)
       result = SSLLabs.__analyze_api_call(payload)
     raise Exception(f"Analyzing SSL timed out: {url}")
 
@@ -78,7 +78,10 @@ class SSLLabs:
         ratings.append(rating)
       return ratings
     except Exception as e:
-      logger.error(f"Failed to get server SSL rating: {e}")
+      logger.error(f"{e}")
+      if isinstance(e, APIThrottlingException):
+        logger.info("Sleeping for a while to avoid further throttling.")
+        time.sleep(900)
       return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]    
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
