@@ -159,16 +159,16 @@ class WebMonitor:
     body_lines = []
     for item in report:
       grade = item['grade'].upper()
-      if grade[0] != 'A':
-        rating = f"<b style=\"color:red;\">{grade}</b>"
+      if grade[0] == 'A':
+        rating = f"<b style=\"color:green;\">{grade}</b>"
       else:
-        rating = f"<b>{grade}</b>"
+        rating = f"<b style=\"color:red;\">{grade}</b>"
       parsed_uri = urlparse(item['url'])
       host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
       body_lines.append(f"{rating}: {host} ({item['ip']})<br>")
 
-    now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
-    subject = f"SSL rating report (generated on {now})"
+    today = time.strftime('%Y-%m-%d', time.localtime())
+    subject = f"[{today}] SSL Rating Report"
     body = '\n'.join(body_lines)
     sendgrid = SendGrid(self.__email_api_key)
     sendgrid.send_email(self.__email_sender, self.__email_recipient, subject, body)
