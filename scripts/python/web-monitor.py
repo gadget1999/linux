@@ -163,7 +163,9 @@ class WebMonitor:
         rating = f"<b style=\"color:red;\">{grade}</b>"
       else:
         rating = f"<b>{grade}</b>"
-      body_lines.append(f"{rating}: {item['url']} ({item['ip']})<br>")
+      parsed_uri = urlparse(item['url'])
+      host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
+      body_lines.append(f"{rating}: {host} ({item['ip']})<br>")
 
     now = time.strftime('%Y-%m-%d %H:%M', time.localtime())
     subject = f"SSL rating report (generated on {now})"
