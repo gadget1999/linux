@@ -43,6 +43,8 @@ class SSLLabs:
   __API_ANALYZE = 'https://api.ssllabs.com/api/v3/analyze'
 
   def __analyze_api_call(params):
+    # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
+    time.sleep(2)
     r = requests.get(SSLLabs.__API_ANALYZE, params=params)
     if r.status_code == 429 or r.status_code == 529:
       raise APIThrottlingException(f"SSLLabs API throttled: error={r.status_code}")
