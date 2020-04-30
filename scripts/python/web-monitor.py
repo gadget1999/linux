@@ -129,7 +129,8 @@ class WebMonitor:
         if not line:
           continue
         if WebMonitor.is_valid_url(line):
-          self.__hosts.append(line)
+          if line not in self.__hosts:
+            self.__hosts.append(line)
         else:
           logger.warning(f"Invalid URL in hosts list: {line}")
 
