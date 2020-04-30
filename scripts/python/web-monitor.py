@@ -45,9 +45,9 @@ class SSLLabs:
   def __analyze_api_call(params):
     r = requests.get(SSLLabs.__API_ANALYZE, params=params)
     if r.status_code == 429 or r.status_code == 529:
-      raise APIThrottlingException(f"REST API throttled: error={r.status_code}")
+      raise APIThrottlingException(f"SSLLabs API throttled: error={r.status_code}")
     elif r.status_code > 400:
-      raise Exception(f"REST API failed: error={r.status_code}")
+      raise Exception(f"SSLLabs API failed: error={r.status_code}")
     return r.json()
   
   def analyze_server(url):
@@ -82,7 +82,9 @@ class SSLLabs:
       if isinstance(e, APIThrottlingException):
         logger.info("Sleeping for a while to avoid further throttling.")
         time.sleep(900)
-      return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]    
+        return [{ 'url': url, 'ip': f"{e}", 'grade': 'Throttled' }]    
+      else:
+        return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]    
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
@@ -203,6 +205,10 @@ class WebMonitor:
 
       logger.info(f"Checking SSL rating for {url}...")
       results = SSLLabs.get_site_rating(url)
+      # retry once if failed
+      if results[0]['grade'].lower() == 'throttled':
+        logger.info(f"Retrying {url} after yielding ...")
+        results = SSLLabs.get_site_rating(url)
       for result in results:
         logger.info(f"SSL rating: {result['grade']} ({result['ip']})")
         full_report.append(result)
