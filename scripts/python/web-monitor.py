@@ -40,18 +40,33 @@ class APIThrottlingException(Exception):
    pass
 
 class SSLLabs:
-  __API_ANALYZE = 'https://api.ssllabs.com/api/v3/analyze'
-
   def __analyze_api_call(params):
+    analyze_endpoint = 'https://api.ssllabs.com/api/v3/analyze'
     # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
     time.sleep(2)
-    r = requests.get(SSLLabs.__API_ANALYZE, params=params)
+    r = requests.get(analyze_endpoint, params=params)
     if r.status_code == 429 or r.status_code == 529:
       raise APIThrottlingException(f"SSLLabs API throttled: error={r.status_code}")
     elif r.status_code > 400:
       raise Exception(f"SSLLabs API failed: error={r.status_code}")
     return r.json()
   
+  def track_server_load():
+    try:
+      info_endpoint = 'https://api.ssllabs.com/api/v3/info'
+      # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
+      time.sleep(2)
+      r = requests.get(info_endpoint)
+      if r.status_code > 400:
+        logger.error(f"SSLLabs API failed: error={r.status_code}")
+        return
+
+      # log the current load
+      result = r.json()
+      logger.info(f"SSLLabs server info: load={result['currentAssessments']}/{result['maxAssessments']}, yield={result['newAssessmentCoolOff']/1000}s")
+    except Exception as e:
+      logger.error(f"Failed to get server info: {e}")
+
   def analyze_server(url):
     url = url.lower()
     if not url.startswith('https://'):
@@ -73,6 +88,10 @@ class SSLLabs:
   def get_site_rating(url):
     ratings = []
     try:
+      # track SSLLabs server load
+      SSLLabs.track_server_load()
+
+      # start new assessment
       result = SSLLabs.analyze_server(url)
       endpoints = result['endpoints']
       for endpoint in endpoints:
