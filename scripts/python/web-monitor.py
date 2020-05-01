@@ -89,7 +89,8 @@ class SSLLabs:
     ratings = []
     try:
       # track SSLLabs server load
-      SSLLabs.track_server_load()
+      if 'DEBUG' in os.environ:
+        SSLLabs.track_server_load()
 
       # start new assessment
       result = SSLLabs.analyze_server(url)
