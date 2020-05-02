@@ -6,6 +6,8 @@ source $CMD_PATH/lib/common.sh
 check_packages "python3"
 check_env "SENDGRID_API_KEY MAIN_EMAIL MONITOR_HOSTS"
 
+lock
+
 MONITOR_SENDER=$(hostname)@linux.com
 MONITOR_RECIPIENT=$MAIN_EMAIL
 
