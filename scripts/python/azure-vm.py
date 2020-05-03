@@ -244,10 +244,13 @@ def init_logger():
     logger.setLevel(logging.DEBUG)
   formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
 
-  fileHandler = logging.handlers.RotatingFileHandler(LOGFILE)
-  fileHandler.setFormatter(formatter)
-  fileHandler.setLevel(logging.INFO)
-  logger.addHandler(fileHandler)
+  try:
+    fileHandler = logging.handlers.RotatingFileHandler(LOGFILE)
+    fileHandler.setFormatter(formatter)
+    fileHandler.setLevel(logging.INFO)
+    logger.addHandler(fileHandler)
+  except Exception: 
+    print(f"Cannot open log file: {e}")
 
   consoleHandler = logging.StreamHandler()
   consoleHandler.setFormatter(formatter)

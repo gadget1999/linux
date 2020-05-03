@@ -272,9 +272,14 @@ AppName = "web-monitor"
 def init_logger():
   app_logfile = f"/tmp/{AppName}.log"
   logFormatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
-  fileHandler = logging.FileHandler(app_logfile)
-  fileHandler.setFormatter(logFormatter)
-  logger.addHandler(fileHandler)
+
+  try:
+    fileHandler = logging.FileHandler(app_logfile)
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+  except Exception: 
+    print(f"Cannot open log file: {e}")
+
   consoleHandler = logging.StreamHandler()
   consoleHandler.setFormatter(logFormatter)
   logger.addHandler(consoleHandler)
