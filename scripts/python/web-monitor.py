@@ -8,8 +8,8 @@ import requests
 from urllib.parse import urlparse
 
 import argparse
-from common import Logger
-logger = Logger.getLogger('web-monitor')
+from common import Logger, CLIParser
+logger = Logger.getLogger(CLIParser.get_app_name())
 
 class SendGrid:
   def __init__(self, api_key):
@@ -251,29 +251,16 @@ def ssl(args):
   worker = WebMonitor(args.file)
   worker.check_ssl()
 
-def get_parser():
-  parser = argparse.ArgumentParser('web-monitor')
-  subparsers = parser.add_subparsers(title='commands')
-
-  alive_parser = subparsers.add_parser('check-alive', help='Check if the sites in the file are alive')
-  alive_parser.add_argument('file', help='File contains list of sites')
-  alive_parser.set_defaults(func=alive)
-
-  ssl_parser = subparsers.add_parser('check-ssl', help='Check SSL rating of the sites in the file')
-  ssl_parser.add_argument('file', help='File contains list of sites')
-  ssl_parser.set_defaults(func=ssl)
-  return parser
-
 #################################
 # Program starts
 #################################
 
 if __name__ == '__main__':
-  parser = get_parser()
-  if len(sys.argv) == 1:
-    # no arguments provided
-    parser.print_help()
-    sys.exit(0)
-
-  args = parser.parse_args()
-  args.func(args)
+  CLI_config = { 'commands': [
+    { 'name': 'check-alive', 'help': 'Check if the sites in the file are alive', 'func': alive, 
+      'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] },
+    { 'name': 'check-ssl', 'help': 'Check SSL rating of the sites in the file', 'func': ssl,
+      'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] }
+    ]}
+  parser = CLIParser.get_parser(CLI_config)
+  CLIParser.run(parser)

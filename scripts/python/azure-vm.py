@@ -5,7 +5,7 @@ import time
 import json
 import requests
 
-from common import Logger
+from common import Logger, CLIParser
 logger = Logger.getLogger('azure-vm')
 
 class AzureSubscription:
@@ -171,7 +171,7 @@ class AzureCLI:
 # CLI interface
 ########################################
 
-def restart(args):
+def restart_vms(args):
   logger.debug(f"CMD - Restarting virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
@@ -180,7 +180,7 @@ def restart(args):
     else:
       logger.error(f"VM was not found: {vm_name}")
 
-def start(args):
+def start_vms(args):
   logger.debug(f"CMD - Starting virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
@@ -189,7 +189,7 @@ def start(args):
     else:
       logger.error(f"VM was not found: {vm_name}")
 
-def stop(args):
+def stop_vms(args):
   logger.debug(f"CMD - Stopping virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
@@ -204,35 +204,12 @@ def list_vms(args):
     status = vm.GetStatus()
     print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
 
-def stop_idle(args):
+def stop_idle_vms(args):
   logger.debug("Shutdown idle virtual machines...")
   for vm in vm_cli.virtual_machines:
     status = vm.GetStatus()
     if (status == VM_STATUS_STOPPED):
       vm.Stop()
-
-def get_parser():
-  parser = argparse.ArgumentParser('azvm')
-  subparsers = parser.add_subparsers(title='commands')
-
-  list_parser = subparsers.add_parser('list', help='List virtual machines')
-  list_parser.set_defaults(func=list_vms)
-
-  stop_idle_parser = subparsers.add_parser('stop-idle', help='Shutdown idle virtual machines')
-  stop_idle_parser.set_defaults(func=stop_idle)
-
-  start_parser = subparsers.add_parser('start', help='Start virtual machines')
-  start_parser.add_argument('names', nargs='+', help='Virtual machines names')
-  start_parser.set_defaults(func=start)
-
-  stop_parser = subparsers.add_parser('stop', help='Stop virtual machines')
-  stop_parser.add_argument('names', nargs='+', help='Virtual machines names')
-  stop_parser.set_defaults(func=stop)
-
-  restart_parser = subparsers.add_parser('restart', help='Restart virtual machines')
-  restart_parser.add_argument('names', nargs='+', help='Virtual machines names')
-  restart_parser.set_defaults(func=restart)
-  return parser
 
 #################################
 # Program starts
@@ -244,11 +221,15 @@ APP_KEY = os.environ['AZURE_APP_KEY']
 vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
 
 if __name__ == "__main__":
-  parser = get_parser()
-  if len(sys.argv) == 1:
-    # no arguments provided
-    parser.print_help()
-    sys.exit(0)
-  
-  args = parser.parse_args()
-  args.func(args)
+  CLI_config = { 'commands': [
+    { 'name': 'list', 'help': 'List virtual machines', 'func': list_vms },
+    { 'name': 'stop-idle', 'help': 'Shutdown idle virtual machines', 'func': stop_idle_vms },
+    { 'name': 'start', 'help': 'Start virtual machines', 'func': start_vms, 
+      'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] },
+    { 'name': 'stop', 'help': 'Stop virtual machines', 'func': stop_vms,
+      'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] },
+    { 'name': 'restart', 'help': 'Restart virtual machines', 'func': restart_vms,
+      'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] }
+    ]}
+  parser = CLIParser.get_parser(CLI_config)
+  CLIParser.run(parser)
