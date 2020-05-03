@@ -1,10 +1,12 @@
 import argparse
-import logging, logging.handlers
 import os, sys
 import re
 import time
 import json
 import requests
+
+from common import Logger
+logger = Logger.getLogger('azure-vm')
 
 class AzureSubscription:
   def __init__(self, subscription_id, subscription_name):
@@ -236,28 +238,6 @@ def get_parser():
 # Program starts
 #################################
 
-LOGFILE = "/tmp/azure-vm.log"
-logger = logging.getLogger("")
-def init_logger():
-  logger.setLevel(logging.INFO)
-  if "DEBUG" in os.environ:
-    logger.setLevel(logging.DEBUG)
-  formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
-
-  try:
-    fileHandler = logging.handlers.RotatingFileHandler(LOGFILE)
-    fileHandler.setFormatter(formatter)
-    fileHandler.setLevel(logging.INFO)
-    logger.addHandler(fileHandler)
-  except Exception as e: 
-    print(f"Cannot open log file: {e}")
-
-  consoleHandler = logging.StreamHandler()
-  consoleHandler.setFormatter(formatter)
-  consoleHandler.setLevel(logging.DEBUG)
-  logger.addHandler(consoleHandler)
-
-init_logger()
 TENANT = os.environ['AZURE_TENANT_ID']
 APP_ID = os.environ['AZURE_APP_ID']
 APP_KEY = os.environ['AZURE_APP_KEY']

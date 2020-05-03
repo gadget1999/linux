@@ -8,8 +8,8 @@ import requests
 from urllib.parse import urlparse
 
 import argparse
-import logging
-logger = logging.getLogger()
+from common import Logger
+logger = Logger.getLogger('web-monitor')
 
 class SendGrid:
   def __init__(self, api_key):
@@ -268,28 +268,7 @@ def get_parser():
 # Program starts
 #################################
 
-AppName = "web-monitor"
-def init_logger():
-  app_logfile = f"/tmp/{AppName}.log"
-  logFormatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
-
-  try:
-    fileHandler = logging.FileHandler(app_logfile)
-    fileHandler.setFormatter(logFormatter)
-    logger.addHandler(fileHandler)
-  except Exception as e: 
-    print(f"Cannot open log file: {e}")
-
-  consoleHandler = logging.StreamHandler()
-  consoleHandler.setFormatter(logFormatter)
-  logger.addHandler(consoleHandler)
-  if 'DEBUG' in os.environ:
-    logger.setLevel(logging.DEBUG)
-  else:
-    logger.setLevel(logging.INFO)
-
 if __name__ == '__main__':
-  init_logger()
   parser = get_parser()
   if len(sys.argv) == 1:
     # no arguments provided
