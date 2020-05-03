@@ -129,7 +129,7 @@ LOCKFILE=/tmp/$PROGRAM.lock
 
 function cleanup() {
   if [ "$LOCKFILE" != "" ]; then
-    log "Process [$PROGRAM] exiting ..."
+    debug "Process [$PROGRAM] exiting ..."
     rm -r $LOCKFILE
     exit 2
   fi
@@ -143,7 +143,7 @@ function lock() {
     LOCKFILE=""
     exit 1
   else
-    log "Process [$PROGRAM] started."
+    debug "Process [$PROGRAM] started."
     touch $LOCKFILE
   fi
 }
