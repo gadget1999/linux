@@ -249,7 +249,7 @@ def init_logger():
     fileHandler.setFormatter(formatter)
     fileHandler.setLevel(logging.INFO)
     logger.addHandler(fileHandler)
-  except Exception: 
+  except Exception as e: 
     print(f"Cannot open log file: {e}")
 
   consoleHandler = logging.StreamHandler()
