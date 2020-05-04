@@ -1,11 +1,11 @@
 import logging
 import colorlog
 class Logger:
-  def getLogger(app_name=None):
+  def getLogger(app_name=None, log_to_file=True):
     logger = colorlog.getLogger(app_name)
     # console logger
     consoleHandler = logging.StreamHandler()
-    console_log_format = "%(log_color)s:%(asctime)s: %(message)s"
+    console_log_format = "%(log_color)s%(asctime)s: %(message)s"
     console_log_colors = {
                 'DEBUG':    'yellow',
                 'INFO':     'green',
@@ -17,8 +17,9 @@ class Logger:
     consoleHandler.setFormatter(console_log_formatter)
     consoleHandler.setLevel(logging.DEBUG)
     logger.addHandler(consoleHandler)
-    # file logger if app name is set
-    if app_name:
+    if log_to_file:
+      if not app_name:
+        app_name = CLIParser.get_app_name()
       app_logfile = f"/tmp/{app_name}.log"
       try:
         fileHandler = logging.FileHandler(app_logfile)

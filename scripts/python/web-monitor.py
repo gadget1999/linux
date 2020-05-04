@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 
 import argparse
 from common import Logger, CLIParser
-logger = Logger.getLogger(CLIParser.get_app_name())
+logger = Logger.getLogger()
 
 class SendGrid:
   def __init__(self, api_key):
@@ -144,17 +144,21 @@ class WebMonitor:
   def __init__(self, sites_file):
     self.__load_email_config()
     self.__hosts = []
-    with open(sites_file, 'r') as f:
-      lines = f.readlines()
-      for line in lines:
-        line = line.strip(' \r\'\"\n')
-        if not line:
-          continue
-        if WebMonitor.is_valid_url(line):
-          if line not in self.__hosts:
-            self.__hosts.append(line)
-        else:
-          logger.warning(f"Invalid URL in hosts list: {line}")
+    try:
+      with open(sites_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+          line = line.strip(' \r\'\"\n')
+          if not line:
+            continue
+          if WebMonitor.is_valid_url(line):
+            if line not in self.__hosts:
+              self.__hosts.append(line)
+          else:
+            logger.warning(f"Invalid URL in hosts list: {line}")
+    except Exception as e:
+      logger.critical(f"Cannot load site list file: {e}")
+      sys.exit(1)
 
   def __load_email_config(self):
     self.__email_configured = False

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+[ "$1" == "" ] && show_usage "image-name"
+
+check_packages "curl"
+
+IMAGE_NAME=$1
+TRIGGER_VAR_NAME=trigger_$IMAGE_NAME
+check_env "$TRIGGER_VAR_NAME"
+
+TRIGGER_URL="https://hub.docker.com/api/build/v1/source/${!TRIGGER_VAR_NAME}/call/"
+
+log "Starting Docker Hub build: $IMAGE_NAME"
+curl -X POST "$TRIGGER_URL"

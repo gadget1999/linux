@@ -6,7 +6,7 @@ import json
 import requests
 
 from common import Logger, CLIParser
-logger = Logger.getLogger('azure-vm')
+logger = Logger.getLogger()
 
 class AzureSubscription:
   def __init__(self, subscription_id, subscription_name):
