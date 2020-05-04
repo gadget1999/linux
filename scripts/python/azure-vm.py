@@ -91,9 +91,9 @@ class AzureVM:
 AZURE_LOGIN_ENDPOINT = "https://login.microsoftonline.com"
 AZURE_API_ENDPOINT = "https://management.azure.com"
 class AzureCLI:
-  _access_token = None
-  _subscriptions = []
-  _virtual_machines = []
+  __access_token = None
+  __subscriptions = []
+  __virtual_machines = []
 
   ########################################
   # Private methods
@@ -112,7 +112,7 @@ class AzureCLI:
         "resource": AZURE_API_ENDPOINT
       }
     response = self.API_call(API_URL, data=params)
-    self._access_token = response['access_token']
+    self.__access_token = response['access_token']
 
   def __load_subscriptions(self):
     API_URL = f"{AZURE_API_ENDPOINT}/subscriptions?api-version=2019-11-01"
@@ -120,13 +120,13 @@ class AzureCLI:
     for subscription in response["value"]:
       subscription_id = subscription["subscriptionId"]
       subscription_name = subscription["displayName"]
-      self._subscriptions.append(AzureSubscription(subscription_id, subscription_name))
+      self.__subscriptions.append(AzureSubscription(subscription_id, subscription_name))
 
   def __load_virtual_machines(self, subscription_id):
     API_URL = f"{AZURE_API_ENDPOINT}/subscriptions/{subscription_id}/providers/Microsoft.Compute/virtualMachines?api-version=2019-07-01"
     response = self.API_call(API_URL)
     for vm in response["value"]:
-      self._virtual_machines.append(AzureVM(self, vm))
+      self.__virtual_machines.append(AzureVM(self, vm))
 
   ########################################
   # Public methods
@@ -134,16 +134,16 @@ class AzureCLI:
 
   @property
   def subscriptions(self):
-    if not self._subscriptions:
+    if not self.__subscriptions:
       self.__load_subscriptions()
-    return self._subscriptions
+    return self.__subscriptions
 
   @property
   def virtual_machines(self):
-    if not self._virtual_machines:
+    if not self.__virtual_machines:
       for subscription in self.subscriptions:
         self.__load_virtual_machines(subscription.Id)
-    return self._virtual_machines
+    return self.__virtual_machines
 
   def find_virtual_machine(self, vm_name):
     for vm in self.virtual_machines:
@@ -152,8 +152,8 @@ class AzureCLI:
     return None
 
   def API_call(self, url, data=None, headers=None):
-    if (self._access_token is not None):
-      headers = { "Authorization": f"Bearer {self._access_token}" }
+    if (self.__access_token is not None):
+      headers = { "Authorization": f"Bearer {self.__access_token}" }
     response = requests.get(url, data=data, headers=headers, timeout=60)
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), "API returned error: {response.status_code}"
@@ -162,8 +162,8 @@ class AzureCLI:
     return response.json()
 
   def API_call_post(self, url, data=None, headers=None):
-    if (self._access_token is not None):
-      headers = { "Authorization": f"Bearer {self._access_token}" }
+    if (self.__access_token is not None):
+      headers = { "Authorization": f"Bearer {self.__access_token}" }
     response = requests.post(url, data=data, headers=headers, timeout=60)
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), "API returned error: {response.status_code}"
