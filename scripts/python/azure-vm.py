@@ -7,6 +7,7 @@ import requests
 
 from common import Logger, CLIParser
 logger = Logger.getLogger()
+Logger.disable_http_tracing()
 
 class AzureSubscription:
   def __init__(self, subscription_id, subscription_name):

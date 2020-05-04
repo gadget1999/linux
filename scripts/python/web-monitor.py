@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import argparse
 from common import Logger, CLIParser
 logger = Logger.getLogger()
+Logger.disable_http_tracing()
 
 class SendGrid:
   def __init__(self, api_key):

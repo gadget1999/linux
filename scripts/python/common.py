@@ -33,6 +33,10 @@ class Logger:
     logger.setLevel(logging.DEBUG)
     return logger
 
+  def disable_http_tracing():
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 import argparse
 import os, sys
 class CLIParser:
