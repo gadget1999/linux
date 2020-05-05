@@ -4,16 +4,15 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 check_packages "python3"
-check_env "SENDGRID_API_KEY MAIN_EMAIL MONITOR_HOSTS"
+check_env "SENDGRID_API_KEY MONITOR_HOSTS MONITOR_RECIPIENTS"
 
 lock
 
-MONITOR_SENDER=$(hostname)@linux.com
-MONITOR_RECIPIENT=$MAIN_EMAIL
+MONITOR_SENDER=SSLLabs@linux.com
 
 export SENDGRID_API_KEY
 export MONITOR_SENDER
-export MONITOR_RECIPIENT
+export MONITOR_RECIPIENTS
 
 [ "$1" == "debug" ] && export DEBUG
 python3 $CMD_PATH/python/web-monitor.py check-ssl $MONITOR_HOSTS

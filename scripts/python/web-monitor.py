@@ -194,9 +194,9 @@ class WebMonitor:
   def __load_email_config(self):
     self.__email_configured = False
     try:
-      self.__email_api_key = os.environ['SENDGRID_API_KEY'].strip('\"')
-      self.__email_sender = os.environ['MONITOR_SENDER']
-      self.__email_recipients = os.environ['MONITOR_RECIPIENTS'].split(';')
+      self.__email_api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
+      self.__email_sender = os.environ['MONITOR_SENDER'].strip('\" ')
+      self.__email_recipients = os.environ['MONITOR_RECIPIENTS'].strip('\" ').split(';')
       self.__email_configured = True
     except Exception as e:
       logger.warning(f"Email configuration incomplete: {e}")
