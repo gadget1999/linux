@@ -2,39 +2,21 @@
 
 import os, sys
 import json
-import time
-
+import time, datetime
+# for web APIs
 import requests
 from urllib.parse import urlparse
-
-import argparse
+# for SSL
+import socket
+import ssl
+# for email and HTML body
+from jinja2 import Template
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail, MimeType
+# for logging and CLI arguments parsing
 from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
-
-class SendGrid:
-  def __init__(self, api_key):
-    self.__api_key = api_key.strip('\"')
-
-  def __api_call(self, data):
-    api_endpoint = 'https://api.sendgrid.com/v3/mail/send'
-    api_headers = { 'Authorization': f"Bearer {self.__api_key}", 'Content-Type': 'application/json' }
-    r = requests.post(api_endpoint, headers=api_headers, data=data)
-    if r.status_code >= 400:
-      raise Exception(f"SendGrid API failed ({r.status_code})")
-
-  def send_email(self, sender, to, subject, body):
-    sender = { 'email': sender }
-    recipient = [{ 'email': to }]
-    body = [{ 'type': 'text/html', 'value': body }]
-
-    message = {}
-    message['personalizations'] = [{ 'to': recipient }]
-    message['from'] = sender
-    message['subject'] = subject
-    message['content'] = body
-
-    self.__api_call(json.dumps(message))
 
 class APIThrottlingException(Exception):
    """Raised when the API throttling happens"""
@@ -107,10 +89,58 @@ class SSLLabs:
         time.sleep(900)
         return [{ 'url': url, 'ip': f"{e}", 'grade': 'Throttled' }]    
       else:
-        return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]    
+        return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]
+
+  def get_ssl_expiration_date(url):
+    try:
+      parsed_uri = urlparse(url)
+      host = parsed_uri.hostname
+      port = parsed_uri.port
+      if not port:
+        port = 443
+      context = ssl.create_default_context()
+      with socket.create_connection((host, port)) as sock:
+        with context.wrap_socket(sock, server_hostname=host) as ssock:
+          cert_info = ssock.getpeercert()
+          ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
+          return datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
+    except Exception as e:
+      logger.error(f"Failed to get expiration date for {url}: {e}")
+      return datetime.datetime.now()
+
+  def get_ssl_expiration_in_days(url):
+    now = datetime.datetime.now()
+    dt = SSLLabs.get_ssl_expiration_date(url)
+    return (dt - now).days
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
+  __html_SSL_report_template = """
+<html>
+ <head><title>SSL Report</title></head>
+ <body>
+  <p>
+  SSL rating report from API provided by: https://www.ssllabs.com/ssltest/index.html
+  </p>
+  <b>Rating, Expires in days, URL, IP (or error)</b><br>
+  {%- for site in sites %}
+   {% if site.grade.startswith('A') %}
+    <b style=\"color:green;\">{{ site.grade }}</b>, 
+   {% else %}
+    <b style=\"color:red;\">{{ site.grade }}</b>, 
+   {% endif %}
+   {% if site.expires|int < 60 %}
+    <b style=\"color:red;\">{{ site.expires }}</b>, 
+   {% else %}
+    {{ site.expires }}, 
+   {% endif %}
+   {{ site.url }}, {{ site.ip }}
+   {% if not loop.last %}<br>{% endif %}
+  {%- endfor %}
+ </body>
+</html>
+"""
+
   # class methods
   def is_valid_url(url):
     url = url.lower()
@@ -166,7 +196,7 @@ class WebMonitor:
     try:
       self.__email_api_key = os.environ['SENDGRID_API_KEY'].strip('\"')
       self.__email_sender = os.environ['MONITOR_SENDER']
-      self.__email_recipient = os.environ['MONITOR_RECIPIENT']
+      self.__email_recipients = os.environ['MONITOR_RECIPIENTS'].split(';')
       self.__email_configured = True
     except Exception as e:
       logger.warning(f"Email configuration incomplete: {e}")
@@ -175,33 +205,45 @@ class WebMonitor:
     if not self.__email_configured:
       return
 
-    parsed_uri = urlparse(url)
-    host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
-    subject = f"[Web-Monitor]: {host} is down!"
-    body = f"<b>Error details</b>: {error} <p> <b>URL</b>: {url}"
-    sendgrid = SendGrid(self.__email_api_key)
-    sendgrid.send_email(self.__email_sender, self.__email_recipient, subject, body)
+    try:
+      # construct email
+      email = Mail()
+      email.from_email = self.__email_sender
+      for recipient in self.__email_recipients:
+        email.add_to(recipient)
+      parsed_uri = urlparse(url)
+      host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
+      email.subject = f"[Web-Monitor]: {host} is down!"
+      email.add_content(f"<b>Error details</b>: {error} <p> <b>URL</b>: {url}", MimeType.html)
+      # send email
+      sendgrid = SendGridAPIClient(self.__email_api_key)
+      r = sendgrid.send(email)
+      if r.status_code > 400:
+        logger.error(f"SendGrid API failed: error={r.status_code}")
+    except Exception as e:
+      logger.error(f"Failed to send Site Down Report: {e}")
 
   def __send_ssl_report(self, report):
     if not self.__email_configured or not report:
       return
 
-    body_lines = []
-    for item in report:
-      grade = item['grade'].upper()
-      if grade[0] == 'A':
-        rating = f"<b style=\"color:green;\">{grade}</b>"
-      else:
-        rating = f"<b style=\"color:red;\">{grade}</b>"
-      parsed_uri = urlparse(item['url'])
-      host = '{uri.netloc}'.format(uri=parsed_uri)
-      body_lines.append(f"{rating},{host},{item['ip']}<br>")
-
-    today = time.strftime('%Y-%m-%d', time.localtime())
-    subject = f"[{today}] SSL Rating Report"
-    body = '\n'.join(body_lines)
-    sendgrid = SendGrid(self.__email_api_key)
-    sendgrid.send_email(self.__email_sender, self.__email_recipient, subject, body)
+    try:
+      # construct email
+      email = Mail()
+      email.from_email = self.__email_sender
+      for recipient in self.__email_recipients:
+        email.add_to(recipient)
+      today = time.strftime('%Y-%m-%d', time.localtime())
+      email.subject = f"[{today}] SSL Rating Report"
+      engine = Template(WebMonitor.__html_SSL_report_template)
+      email.add_content(engine.render(sites=report), MimeType.html)
+      # send email
+      sendgrid = SendGridAPIClient(self.__email_api_key)
+      r = sendgrid.send(email)
+      if r.status_code > 400:
+        logger.error(f"SendGrid API failed: error={r.status_code}")
+    except Exception as e:
+      logger.error(f"Failed to send Site SSL Report: {e}")
 
   def check_alive(self):
     failed_hosts = []
@@ -237,8 +279,10 @@ class WebMonitor:
       if results[0]['grade'].lower() == 'throttled':
         logger.info(f"Retrying {url} after yielding ...")
         results = SSLLabs.get_site_rating(url)
+      expires = SSLLabs.get_ssl_expiration_in_days(url)
       for result in results:
-        logger.info(f"SSL rating: {result['grade']} ({result['ip']})")
+        logger.info(f"SSL rating: {result['grade']} ({result['ip']}): expires in {expires} days.")
+        result['expires'] = expires
         full_report.append(result)
     self.__send_ssl_report(full_report)
 
@@ -246,12 +290,12 @@ class WebMonitor:
 # CLI interface
 ########################################
 
-def alive(args):
+def check_alive(args):
   logger.debug(f"CMD - Check if sites in [{args.file}] are alive")
   worker = WebMonitor(args.file)
   worker.check_alive()
 
-def ssl(args):
+def check_ssl(args):
   logger.debug(f"CMD - Check SSL rating of sites in [{args.file}]")
   worker = WebMonitor(args.file)
   worker.check_ssl()
@@ -262,9 +306,9 @@ def ssl(args):
 
 if __name__ == '__main__':
   CLI_config = { 'commands': [
-    { 'name': 'check-alive', 'help': 'Check if the sites in the file are alive', 'func': alive, 
+    { 'name': 'check-alive', 'help': 'Check if the sites in the file are alive', 'func': check_alive, 
       'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] },
-    { 'name': 'check-ssl', 'help': 'Check SSL rating of the sites in the file', 'func': ssl,
+    { 'name': 'check-ssl', 'help': 'Check SSL rating of the sites in the file', 'func': check_ssl,
       'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] }
     ]}
   parser = CLIParser.get_parser(CLI_config)
