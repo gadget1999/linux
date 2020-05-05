@@ -196,7 +196,9 @@ class WebMonitor:
     try:
       self.__email_api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
       self.__email_sender = os.environ['MONITOR_SENDER'].strip('\" ')
-      self.__email_recipients = os.environ['MONITOR_RECIPIENTS'].strip('\" ').split(';')
+      white_spaces = ' \n'
+      clean_string = os.environ['MONITOR_RECIPIENTS'].translate({ord(i): None for i in white_spaces})
+      self.__email_recipients = clean_string.split(';')
       self.__email_configured = True
     except Exception as e:
       logger.warning(f"Email configuration incomplete: {e}")
