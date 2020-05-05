@@ -194,8 +194,8 @@ class WebMonitor:
       else:
         rating = f"<b style=\"color:red;\">{grade}</b>"
       parsed_uri = urlparse(item['url'])
-      host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
-      body_lines.append(f"{rating}: {host} ({item['ip']})<br>")
+      host = '{uri.netloc}'.format(uri=parsed_uri)
+      body_lines.append(f"{rating},{host},{item['ip']}<br>")
 
     today = time.strftime('%Y-%m-%d', time.localtime())
     subject = f"[{today}] SSL Rating Report"
