@@ -68,13 +68,18 @@ class SSLLabs:
       result = SSLLabs.__analyze_api_call(payload)
     raise Exception(f"Analyzing SSL timed out: {url}")
 
+  RatingErrorThrottled = 'Throttled'
+  RatingErrorGeneral = 'Error'
+  RatingErrors = [RatingErrorGeneral, RatingErrorThrottled]
   def get_site_rating(url):
     ratings = []
     try:
+      # skip rating (faster debug)
+      if 'SKIP_SSL_RATING' in os.environ:
+        raise Exception("Skip SSLLabs")
       # track SSLLabs server load
       if 'DEBUG' in os.environ:
         SSLLabs.track_server_load()
-
       # start new assessment
       result = SSLLabs.analyze_server(url)
       endpoints = result['endpoints']
@@ -87,26 +92,28 @@ class SSLLabs:
       if isinstance(e, APIThrottlingException):
         logger.info("Sleeping for a while to avoid further throttling.")
         time.sleep(900)
-        return [{ 'url': url, 'ip': f"{e}", 'grade': 'Throttled' }]    
+        return [{ 'url': url, 'ip': f"{e}", 'grade': SSLLabs.RatingErrorThrottled }]    
       else:
-        return [{ 'url': url, 'ip': f"{e}", 'grade': 'Error' }]
+        return [{ 'url': url, 'ip': f"{e}", 'grade': SSLLabs.RatingErrorGeneral }]
 
-  def get_ssl_expiration_date(url):
+  def get_ssl_expiration_date(url, ip=None):
     try:
       parsed_uri = urlparse(url)
       host = parsed_uri.hostname
       port = parsed_uri.port
+      if ip:
+        host = ip
       if not port:
         port = 443
       context = ssl.create_default_context()
       with socket.create_connection((host, port)) as sock:
-        with context.wrap_socket(sock, server_hostname=host) as ssock:
+        with context.wrap_socket(sock, server_hostname=parsed_uri.hostname) as ssock:
           cert_info = ssock.getpeercert()
           ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
           return datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
     except Exception as e:
       logger.error(f"Failed to get expiration date for {url}: {e}")
-      return datetime.datetime.now()
+      return datetime.datetime.min
 
   def get_ssl_expiration_in_days(url):
     now = datetime.datetime.now()
@@ -129,7 +136,9 @@ class WebMonitor:
    {% else %}
     <b style=\"color:red;\">{{ site.grade }}</b>, 
    {% endif %}
-   {% if site.expires|int < 60 %}
+   {% if site.expires|int < -36500 %}
+    <b style=\"color:red;\">-</b>, 
+   {% elif site.expires|int < 60 %}
     <b style=\"color:red;\">{{ site.expires }}</b>, 
    {% else %}
     {{ site.expires }}, 
@@ -278,11 +287,14 @@ class WebMonitor:
       logger.info(f"Checking SSL rating for {url}...")
       results = SSLLabs.get_site_rating(url)
       # retry once if failed
-      if results[0]['grade'].lower() == 'throttled':
+      if results[0]['grade'] == SSLLabs.RatingErrorThrottled:
         logger.info(f"Retrying {url} after yielding ...")
         results = SSLLabs.get_site_rating(url)
-      expires = SSLLabs.get_ssl_expiration_in_days(url)
       for result in results:
+        if result['grade'] in SSLLabs.RatingErrors:
+          expires = SSLLabs.get_ssl_expiration_in_days(url)
+        else:
+          expires = SSLLabs.get_ssl_expiration_in_days(url, result['ip'])
         logger.info(f"SSL rating: {result['grade']} ({result['ip']}): expires in {expires} days.")
         result['expires'] = expires
         full_report.append(result)
