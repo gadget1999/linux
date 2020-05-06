@@ -4,12 +4,14 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 check_packages "python3"
-check_env "SENDGRID_API_KEY MONITOR_HOSTS MONITOR_RECIPIENTS"
+check_env "SENDGRID_API_KEY MONITOR_HOSTS MONITOR_HOSTS_REMOTE MONITOR_RECIPIENTS"
 
 lock
 
 days_since_lastrun 28
 [ "$days_since_lastrun" == "false" ] && exit 0
+
+update_config_from_dropbox $MONITOR_HOSTS_REMOTE $MONITOR_HOSTS
 
 MONITOR_SENDER=SSLLabs@linux.com
 

@@ -264,6 +264,23 @@ function conditional_copy() {
  copy_files "$src_folder/*" $dst_folder
 }
 
+function update_config_from_dropbox() {
+ local remote_file=$1
+ local local_file=$2
+
+ # download from dropbox
+ local tmp_file=/tmp/$NOW.tmp
+ debug "Downloading $remote_file ..."
+ dropbox download $remote_file $tmp_file
+ if [ ! -s $tmp_file ]; then
+  log_error "Failed to download file: $remote_file."
+  return
+ fi
+
+ copy_file $tmp_file $local_file "overwrite"
+ rm $tmp_file
+}
+
 ####################
 # Bootstraping
 ####################
