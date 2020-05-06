@@ -117,9 +117,9 @@ class SSLLabs:
       logger.error(f"Failed to get expiration date for {url}: {e}")
       return datetime.datetime.min
 
-  def get_ssl_expiration_in_days(url):
+  def get_ssl_expiration_in_days(url, ip=None):
     now = datetime.datetime.now()
-    dt = SSLLabs.get_ssl_expiration_date(url)
+    dt = SSLLabs.get_ssl_expiration_date(url, ip)
     return (dt - now).days
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
@@ -335,5 +335,5 @@ if __name__ == '__main__':
    parser = CLIParser.get_parser(CLI_config)
    CLIParser.run(parser)
   except Exception as e:
-   logger.error("Exception happened: {e}")
+   logger.error(f"Exception happened: {e}")
    sys.exit(1)
