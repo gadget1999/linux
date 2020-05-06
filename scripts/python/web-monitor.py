@@ -3,6 +3,8 @@
 import os, sys
 import json
 import time, datetime
+# for capturing Ctrl-C
+from signal import signal, SIGINT
 # for web APIs
 import requests
 from urllib.parse import urlparse
@@ -317,13 +319,21 @@ def check_ssl(args):
 #################################
 # Program starts
 #################################
+def handler(signal_received, frame):
+  logger.critical("Ctrl-C signal is captured, exiting...")
+  sys.exit(2)
 
 if __name__ == '__main__':
+  signal(SIGINT, handler)
   CLI_config = { 'commands': [
     { 'name': 'check-alive', 'help': 'Check if the sites in the file are alive', 'func': check_alive, 
       'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] },
     { 'name': 'check-ssl', 'help': 'Check SSL rating of the sites in the file', 'func': check_ssl,
       'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] }
     ]}
-  parser = CLIParser.get_parser(CLI_config)
-  CLIParser.run(parser)
+  try:
+   parser = CLIParser.get_parser(CLI_config)
+   CLIParser.run(parser)
+  except Exception as e:
+   logger.error("Exception happened: {e}")
+   sys.exit(1)
