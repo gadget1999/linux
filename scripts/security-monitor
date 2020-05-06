@@ -8,6 +8,9 @@ check_env "SENDGRID_API_KEY MONITOR_HOSTS MONITOR_RECIPIENTS"
 
 lock
 
+days_since_lastrun 28
+[ "$days_since_lastrun" == "false" ] && exit 0
+
 MONITOR_SENDER=SSLLabs@linux.com
 
 export SENDGRID_API_KEY
@@ -16,6 +19,7 @@ export MONITOR_RECIPIENTS
 
 [ "$1" == "debug" ] && export DEBUG
 python3 $CMD_PATH/python/web-monitor.py check-ssl $MONITOR_HOSTS
+[ "$?" != "0" ] && set_lastrun
 
 ####################################################################
 # following is for using sslscan, will be removed in the future
