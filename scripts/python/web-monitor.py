@@ -57,7 +57,7 @@ class SSLLabs:
     if not url.startswith('https://'):
       raise Exception(f"Invalid URL to scan: {url}")
 
-    payload = { 'host': url, 'fromCache': 'on', 'maxAge': 2 }
+    payload = { 'host': url, 'fromCache': 'on', 'maxAge': 24 }
     result = SSLLabs.__analyze_api_call(payload)
     for i in range(0, 6):
       if result['status'] == 'READY':
