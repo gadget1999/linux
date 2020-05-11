@@ -126,28 +126,63 @@ class SSLLabs:
 class WebMonitor:
   __html_SSL_report_template = """
 <html>
- <head><title>SSL Report</title></head>
+ <head>
+  <title>SSL Report</title>
+  <style>
+   table {
+    font-family: arial, sans-serif;
+    table-layout: auto;
+    border-collapse: collapse;
+    width: 100%;
+   }
+   td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 2px;
+   }
+   tr:nth-child(even) {
+    background-color: #dddddd;
+   }
+  </style>
+ </head>
  <body>
   <p>
   SSL rating report from API provided by: https://www.ssllabs.com/ssltest/index.html
   </p>
-  <b>Rating, Expires in days, URL, IP (or error)</b><br>
-  {%- for site in sites %}
-   {% if site.grade.startswith('A') %}
-    <b style=\"color:green;\">{{ site.grade }}</b>, 
-   {% else %}
-    <b style=\"color:red;\">{{ site.grade }}</b>, 
-   {% endif %}
-   {% if site.expires|int < -36500 %}
-    <b style=\"color:red;\">-</b>, 
-   {% elif site.expires|int < 60 %}
-    <b style=\"color:red;\">{{ site.expires }}</b>, 
-   {% else %}
-    {{ site.expires }}, 
-   {% endif %}
-   {{ site.url }}, {{ site.ip }}
-   {% if not loop.last %}<br>{% endif %}
-  {%- endfor %}
+  <table>
+    <tr>
+     <th>Rating</th>
+     <th>Expires (days)</th>
+     <th>URL</th>
+     <th>IP (or error)</th>
+    </tr>
+    {%- for site in sites %}
+    <tr>
+     <td>
+      {% if site.grade.startswith('A') %}
+      <b style=\"color:green;\">{{ site.grade }}</b>
+      {% else %}
+      <b style=\"color:red;\">{{ site.grade }}</b>
+      {% endif %}
+     </td>
+     <td>
+      {% if site.expires|int < -36500 %}
+      <b style=\"color:red;\">-</b>
+      {% elif site.expires|int < 60 %}
+      <b style=\"color:red;\">{{ site.expires }}</b>
+      {% else %}
+      {{ site.expires }}
+      {% endif %}
+     </td>
+     <td>
+      {{ site.url }}
+     </td>
+     <td>
+      {{ site.ip }}
+     </td>
+    </tr>
+    {%- endfor %}
+  </table>
  </body>
 </html>
 """
