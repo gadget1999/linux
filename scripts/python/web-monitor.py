@@ -284,7 +284,8 @@ class WebMonitor:
       today = time.strftime('%Y-%m-%d', time.localtime())
       email.subject = f"[{today}] SSL Rating Report"
       engine = Template(WebMonitor.__html_SSL_report_template)
-      email.add_content(engine.render(sites=report), MimeType.html)
+      sorted_report = sorted(report, key=lambda k: k['ip']) 
+      email.add_content(engine.render(sites=sorted_report), MimeType.html)
       # send email
       sendgrid = SendGridAPIClient(self.__email_api_key)
       r = sendgrid.send(email)
