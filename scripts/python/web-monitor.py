@@ -53,8 +53,8 @@ class SSLLabs:
       logger.error(f"Failed to get server info: {e}")
 
   def analyze_server(url):
-    url = url.lower()
-    if not url.startswith('https://'):
+    parsed_uri = urlparse(url)
+    if parsed_uri.scheme != 'https':
       raise Exception(f"Invalid URL to scan: {url}")
 
     payload = { 'host': url, 'fromCache': 'on', 'maxAge': 24 }
@@ -85,8 +85,10 @@ class SSLLabs:
       # start new assessment
       result = SSLLabs.analyze_server(url)
       endpoints = result['endpoints']
+      parsed_uri = urlparse(url)
+      report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
       for endpoint in endpoints:
-        rating = { 'url': url, 'ip': endpoint['ipAddress'], 'grade': endpoint['grade'] }
+        rating = { 'url': url, 'report': report_url, 'ip': endpoint['ipAddress'], 'grade': endpoint['grade'] }
         ratings.append(rating)
       return ratings
     except Exception as e:
@@ -175,7 +177,7 @@ class WebMonitor:
       {% endif %}
      </td>
      <td>
-      {{ site.url }}
+      <a href="{{ site.report }}">{{ site.url }}</a>
      </td>
      <td>
       {{ site.ip }}
