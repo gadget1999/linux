@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+source $CMD_PATH/lib/certificate.sh
+
+[ $# != 2 ] && show_usage "app port"
+
+check_cert_env
+
+check_env "CONTAINER_CONFIG_ROOT CERT_ROOT"
+
+CONTAINER="nginx-$1"
+IMAGE="nginx:alpine"
+APP_PORT=$2
+
+NGINX_CONFIG=$CONTAINER_CONFIG_ROOT/nginx
+SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
+
+grant_container_access $NGINX_CONFIG
+grant_container_access $SSL_CONFIG
+
+MAX_RAM="100m"
+EXTRA_OPTS=(
+ -v $NGINX_CONFIG/nginx.conf:/etc/nginx/nginx.conf:ro
+ -v $NGINX_CONFIG/conf.d:/etc/nginx/conf.d
+ -v $SSL_CONFIG:/etc/nginx/ssl
+ -p $APP_PORT:$APP_PORT/tcp
+ -m $MAX_RAM
+ )
+
+ENTRYPOINT=()
+
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
