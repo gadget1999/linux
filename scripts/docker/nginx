@@ -5,26 +5,44 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 source $CMD_PATH/lib/certificate.sh
 
-[ $# != 2 ] && show_usage "app port"
-
+[ $# != 3 ] && show_usage "app external_port proxy_url"
 check_cert_env
-
 check_env "CONTAINER_CONFIG_ROOT CERT_ROOT"
 
-CONTAINER="nginx-$1"
-IMAGE="nginx:alpine"
+function create_nginx_conf() {
+ local conf_file=$1
+ local dns_name=$2
+ local external_port=$3
+ local proxy_url=$4
+
+ local template=$CMD_PATH/nginx/nginx_proxy.template
+ copy_file $template $conf_file "overwrite"
+
+ check_packages "sed" 
+ debug "Updating variables in conf file..."
+ sed -i "s/{{external_port}}/$external_port/g" $conf_file
+ sed -i "s/{{dns_name}}/$dns_name/g" $conf_file
+ sed -i "s/{{proxy_address}}/$proxy_url/g" $conf_file
+}
+
+APP_NAME=$1
 APP_PORT=$2
+PROXY_URL=$3
+CONTAINER="nginx-$APP_NAME"
+IMAGE="nginx:alpine"
 
 NGINX_CONFIG=$CONTAINER_CONFIG_ROOT/nginx
 SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
+APP_CONFIG=$NGINX_CONFIG/conf.d/$APP_NAME.conf
 
+create_nginx_conf $APP_CONFIG $APP_PORT $DDNS_DOMAIN $PROXY_URL
 grant_container_access $NGINX_CONFIG
 grant_container_access $SSL_CONFIG
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -v $NGINX_CONFIG/nginx.conf:/etc/nginx/nginx.conf:ro
- -v $NGINX_CONFIG/conf.d:/etc/nginx/conf.d
+ -v $APP_CONFIG:/etc/nginx/conf.d/$APP_NAME.conf
  -v $SSL_CONFIG:/etc/nginx/ssl
  -p $APP_PORT:$APP_PORT/tcp
  -m $MAX_RAM

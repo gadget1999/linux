@@ -203,9 +203,6 @@ function copy_file() {
   return 1
  fi
 
- # do not overwrite conf files
- [[ $target == *".conf" ]] && return 0
- 
  # ask for confirmation if files are different
  local md5source=( $(md5sum "$source") )
  local md5target=( $(md5sum "$target") )
