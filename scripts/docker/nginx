@@ -9,7 +9,25 @@ source $CMD_PATH/lib/certificate.sh
 check_cert_env
 check_env "CONTAINER_CONFIG_ROOT CERT_ROOT"
 
+APP_NAME=$1
+APP_PORT=$2
+PROXY_URL=$3
+CONTAINER="nginx-$APP_NAME"
+IMAGE="nginxinc/nginx-unprivileged:stable-alpine"
+
+NGINX_CONFIG=$CONTAINER_CONFIG_ROOT/nginx/nginx.conf
+APP_CONFIG=$NGINX_CONFIG/nginx/conf.d/$APP_NAME.conf
+SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
+
 function create_nginx_conf() {
+ local conf_file=$1
+
+ local template=$CMD_PATH/lib/nginx_conf.template
+ debug "Creating $conf_file ..."
+ sudo cp $template $conf_file
+}
+
+function create_nginx_app_conf() {
  local conf_file=$1
  local dns_name=$2
  local external_port=$3
@@ -26,25 +44,16 @@ function create_nginx_conf() {
  sudo sed -i "s%{{proxy_address}}%$proxy_url%g" $conf_file
 }
 
-APP_NAME=$1
-APP_PORT=$2
-PROXY_URL=$3
-CONTAINER="nginx-$APP_NAME"
-IMAGE="nginxinc/nginx-unprivileged:stable-alpine"
-
-NGINX_CONFIG=$CONTAINER_CONFIG_ROOT/nginx
-SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
-APP_CONFIG=$NGINX_CONFIG/conf.d/$APP_NAME.conf
-
 create_nginx_conf $APP_CONFIG $DDNS_DOMAIN $APP_PORT $PROXY_URL
+create_nginx_app_conf $APP_CONFIG $DDNS_DOMAIN $APP_PORT $PROXY_URL
 grant_container_access $NGINX_CONFIG
 grant_container_access $SSL_CONFIG
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
- -v $NGINX_CONFIG/nginx.conf:/etc/nginx/nginx.conf:ro
- -v $APP_CONFIG:/etc/nginx/conf.d/default.conf
- -v $SSL_CONFIG:/etc/nginx/ssl
+ -v $NGINX_CONFIG:/etc/nginx/nginx.conf:ro
+ -v $APP_CONFIG:/etc/nginx/conf.d/default.conf:ro
+ -v $SSL_CONFIG:/etc/nginx/ssl:ro
  -p $APP_PORT:$APP_PORT/tcp
  -u $CONTAINER_UID
  -m $MAX_RAM
