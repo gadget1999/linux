@@ -20,7 +20,7 @@ function check_cert_env() {
 }
 
 function issue_certificate()  {
- local cmd="$CERT_CMD --issue -d $DDNS_DOMAIN $CERT_TRANSPORT"
+ local cmd="$CERT_CMD --issue --ocsp -d $DDNS_DOMAIN $CERT_TRANSPORT"
 
  [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --keylength ec-384"
  
