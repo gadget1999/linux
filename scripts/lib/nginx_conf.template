@@ -6,6 +6,9 @@ events {
 }
 
 http {
+  resolver 1.1.1.1;
+  resolver_timeout 10s;
+
   map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
