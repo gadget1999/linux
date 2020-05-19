@@ -15,7 +15,7 @@ function create_nginx_conf() {
  local external_port=$3
  local proxy_url=$4
 
- local template=$CMD_PATH/nginx/nginx_proxy.template
+ local template=$CMD_PATH/lib/nginx_proxy.template
  copy_file $template $conf_file "overwrite"
 
  check_packages "sed" 
