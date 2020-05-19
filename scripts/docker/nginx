@@ -30,7 +30,7 @@ APP_NAME=$1
 APP_PORT=$2
 PROXY_URL=$3
 CONTAINER="nginx-$APP_NAME"
-IMAGE="nginx:alpine"
+IMAGE="nginxinc/nginx-unprivileged:stable-alpine"
 
 NGINX_CONFIG=$CONTAINER_CONFIG_ROOT/nginx
 SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
@@ -46,6 +46,7 @@ EXTRA_OPTS=(
  -v $APP_CONFIG:/etc/nginx/conf.d/default.conf
  -v $SSL_CONFIG:/etc/nginx/ssl
  -p $APP_PORT:$APP_PORT/tcp
+ -u $CONTAINER_UID
  -m $MAX_RAM
  )
 
