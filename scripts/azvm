@@ -15,5 +15,5 @@ export AZURE_APP_KEY
 if [ $# == 0 ]; then
  python3 $CMD_PATH/python/azure-vm.py list
 else
- python3 $CMD_PATH/python/azure-vm.py $@
+ (python3 $CMD_PATH/python/azure-vm.py $@) &
 fi
