@@ -72,13 +72,15 @@ class SSLLabs:
 
   RatingErrorThrottled = 'Throttled'
   RatingErrorGeneral = 'Error'
-  RatingErrors = [RatingErrorGeneral, RatingErrorThrottled]
+  RatingErrorSkipped = 'Skipped'
+  RatingErrors = [RatingErrorGeneral, RatingErrorThrottled, RatingErrorSkipped]
   def get_site_rating(url):
     ratings = []
     try:
       # skip rating (faster debug)
       if 'SKIP_SSL_RATING' in os.environ:
-        raise Exception("Skip SSLLabs")
+        return [{ 'url': url, 'ip': '', 'grade': SSLLabs.RatingErrorSkipped }]
+
       # track SSLLabs server load
       if 'DEBUG' in os.environ:
         SSLLabs.track_server_load()
