@@ -387,7 +387,7 @@ class WebMonitor:
       recipients = clean_string.split(';')
       return EmailConfig(api_key=api_key, sender=sender, recipients=recipients)
     except Exception as e:
-      logger.warning(f"Email configuration incomplete: {e}")
+      logger.error(f"Email configuration incomplete: {e}")
       return None
 
   def generate_html_body(report, outputfile=None):
@@ -484,7 +484,7 @@ if 'UNIT_TEST' in os.environ:
 ########################################
 
 def check_sites(args):
-  logger.debug(f"CMD - Check sites in [{args.file}] (include SSL grade: {args.get_ssl_grade}")
+  logger.debug(f"CMD - Check sites in [{args.file}] (include SSL grade: {args.get_ssl_grade})")
   WebMonitor.check_sites_in_file(args.file, args.get_ssl_grade)
 
 #################################
