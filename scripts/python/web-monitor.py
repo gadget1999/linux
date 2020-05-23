@@ -438,6 +438,8 @@ class WebMonitor:
   def get_report(urls, include_ssl_rating=False):
     full_report = []
     has_down_sites = False
+    total = len(urls)
+    i = 1
     for url in urls:
       if '://' not in url:
         # assume https
@@ -445,7 +447,9 @@ class WebMonitor:
       if not SiteInfo.is_valid_url(url):
         logger.warning(f"Skipping invalid URL: {url}")
         continue
+      logger.debug(f"Analyzing site ({i}/{total}): {url}")
       result = SiteInfo.get_report(url, include_ssl_rating)
+      i += 1
       if not result[0].online:
         has_down_sites = True
       for record in result:
