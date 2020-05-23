@@ -3,6 +3,9 @@
 import os, sys
 import json
 import time, datetime
+# for struct-like class
+import copy
+from dataclasses import dataclass
 # for capturing Ctrl-C
 from signal import signal, SIGINT
 # for web APIs
@@ -15,10 +18,34 @@ import ssl
 from jinja2 import Template
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, MimeType
+# for unittest
+import unittest
 # for logging and CLI arguments parsing
 from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
+
+def get_ip_addresses(host, port):
+  try:
+    addresses = []
+    addrInfo = socket.getaddrinfo(host, port)
+    for addr in addrInfo:
+      addresses.append(addr[4][0])
+    if addresses:
+      return addresses, None
+    else:
+      return None, f"Failed to get IP addresses for {host}"
+  except Exception as e:
+    return None, f"Failed to get IP addresses for {host}: {e}"
+
+@dataclass
+class SSLRecord:
+  url: str
+  report: str = None
+  ip: str = None
+  grade: str = None
+  expires: str = None
+  error: str = None
 
 class APIThrottlingException(Exception):
    """Raised when the API throttling happens"""
@@ -36,7 +63,7 @@ class SSLLabs:
       raise Exception(f"SSLLabs API failed: error={r.status_code}")
     return r.json()
   
-  def track_server_load():
+  def __track_server_load():
     try:
       info_endpoint = 'https://api.ssllabs.com/api/v3/info'
       # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
@@ -52,7 +79,7 @@ class SSLLabs:
     except Exception as e:
       logger.error(f"Failed to get server info: {e}")
 
-  def analyze_server(url):
+  def __analyze_server(url):
     parsed_uri = urlparse(url)
     if parsed_uri.scheme != 'https':
       raise Exception(f"Invalid URL to scan: {url}")
@@ -60,9 +87,9 @@ class SSLLabs:
     payload = { 'host': url, 'fromCache': 'on', 'maxAge': 24 }
     result = SSLLabs.__analyze_api_call(payload)
     for i in range(0, 6):
-      if result['status'] == 'READY':
+      if result['status'].lower() == 'ready':
         return result
-      elif result['status'] == 'ERROR':
+      elif result['status'].lower() == 'error':
         raise Exception(f"SSLLabs API error: {result['statusMessage']}")
 
       # wait until we have a conclusion or timeout
@@ -70,68 +97,202 @@ class SSLLabs:
       result = SSLLabs.__analyze_api_call(payload)
     raise Exception(f"Analyzing SSL timed out: {url}")
 
-  RatingErrorThrottled = 'Throttled'
-  RatingErrorGeneral = 'Error'
-  RatingErrorSkipped = 'Skipped'
-  RatingErrors = [RatingErrorGeneral, RatingErrorThrottled, RatingErrorSkipped]
   def get_site_rating(url):
     ratings = []
     try:
-      # skip rating (faster debug)
-      if 'SKIP_SSL_RATING' in os.environ:
-        return [{ 'url': url, 'ip': '', 'grade': SSLLabs.RatingErrorSkipped }]
-
       # track SSLLabs server load
       if 'DEBUG' in os.environ:
-        SSLLabs.track_server_load()
+        SSLLabs.__track_server_load()
       # start new assessment
-      result = SSLLabs.analyze_server(url)
+      try:
+        logger.info(f"Checking SSL rating for {url}...")
+        result = SSLLabs.__analyze_server(url)
+      except APIThrottlingException:
+        # retry after a while if throttled
+        logger.info("Sleeping for a while to avoid further throttling.")
+        time.sleep(900)
+        result = SSLLabs.__analyze_server(url)
       endpoints = result['endpoints']
       parsed_uri = urlparse(url)
       report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
       for endpoint in endpoints:
-        rating = { 'url': url, 'report': report_url, 'ip': endpoint['ipAddress'], 'grade': endpoint['grade'] }
+        rating = SSLRecord(url=url, report=report_url, ip=endpoint['ipAddress'])
+        if endpoint['statusMessage'].lower() != 'ready':
+          rating.error = endpoint['statusMessage']
+          rating.grade = 'Error'
+        else:
+          rating.grade = endpoint['grade']
         ratings.append(rating)
       return ratings
     except Exception as e:
       logger.error(f"{e}")
-      if isinstance(e, APIThrottlingException):
-        logger.info("Sleeping for a while to avoid further throttling.")
-        time.sleep(900)
-        return [{ 'url': url, 'ip': f"{e}", 'grade': SSLLabs.RatingErrorThrottled }]    
-      else:
-        return [{ 'url': url, 'ip': f"{e}", 'grade': SSLLabs.RatingErrorGeneral }]
+      return [SSLRecord(url=url, grade='Error', error=f"{e}")]
 
-  def get_ssl_expiration_date(url, ip=None):
+  def __get_ssl_expiration_date(host, ip=None, port=443):
     try:
-      parsed_uri = urlparse(url)
-      host = parsed_uri.hostname
-      port = parsed_uri.port
-      if ip:
-        host = ip
+      if not ip:
+        ip = host
       if not port:
         port = 443
+      logger.debug(f"Getting SSL certificate info: {ip}:{port}")
       context = ssl.create_default_context()
-      with socket.create_connection((host, port)) as sock:
-        with context.wrap_socket(sock, server_hostname=parsed_uri.hostname) as ssock:
+      with socket.create_connection((ip, port)) as sock:
+        with context.wrap_socket(sock, server_hostname=host) as ssock:
           cert_info = ssock.getpeercert()
           ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
-          return datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
+          expire_time = datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
+          logger.debug(f"Expiration time: {expire_time.strftime('%Y-%m-%d')}")          
+          return expire_time, None
     except Exception as e:
-      logger.error(f"Failed to get expiration date for {url}: {e}")
-      return datetime.datetime.min
+      error = f"Failed to get expiration date for {host}: {e}"
+      logger.error(error)
+      return None, error
 
-  def get_ssl_expiration_in_days(url, ip=None):
-    now = datetime.datetime.now()
-    dt = SSLLabs.get_ssl_expiration_date(url, ip)
-    return (dt - now).days
+  def get_ssl_expires_in_days(url, ip=None, check_endpoints=False):
+    parsed_uri = urlparse(url)
+    host = parsed_uri.hostname
+    port = parsed_uri.port
+    if ip:
+      # only scan specified endpoint
+      addresses = [ip]
+    elif check_endpoints:
+      # check all endpoints
+      addresses, error = get_ip_addresses(host, port)
+      if error:
+        logger.error(f"{error}")
+        addresses = ['']
+    else:
+      # only check site, not endpoints
+      addresses = ['']
+    # get results for every endpoint
+    results = []
+    for ip in addresses:
+      result = SSLRecord(url=url, ip=ip)
+      expires, error = SSLLabs.__get_ssl_expiration_date(host, ip, port)
+      if error:
+        result.expires = 'Error'
+        result.error = error
+      else:
+        result.expires = (expires - datetime.datetime.now()).days
+      results.append(result)
+    return results
+
+class SSLLabsTestCase(unittest.TestCase):
+  def test_get_ssl_ratings(self):
+    rating = SSLLabs.get_site_rating("https://www.google.com")
+    self.assertEqual(len(rating), 2, 'wrong number of records')
+    rating = SSLLabs.get_site_rating("https://www.google1.com")
+    self.assertEqual(len(rating), 1, 'wrong number of records')
+  def test_get_ssl_expiration(self):
+    report = SSLLabs.get_ssl_expires_in_days("https://www.indiaglitz.com", check_endpoints=True)
+    self.assertEqual(len(report), 4, 'wrong number of records')
+    report = SSLLabs.get_ssl_expires_in_days("https://www.indiaglitz.com")
+    self.assertEqual(len(report), 1, 'wrong number of records')
+    report = SSLLabs.get_ssl_expires_in_days("https://www.google1.com")
+    self.assertEqual(len(report), 1, 'wrong number of records')
+
+if 'UNIT_TEST' in os.environ:
+  test = SSLLabsTestCase()
+  #test.test_get_ssl_ratings()
+  #test.test_get_ssl_expiration()
+
+@dataclass
+class SiteRecord:
+  url: str
+  alive: bool = False
+  online: bool = False
+  ip: str = None
+  error: str = None
+  ssl_expires: str = None
+  ssl_rating: str = None
+
+class SiteInfo:
+  def is_valid_url(url):
+    url = url.lower()
+    if url.startswith('https://'):
+      return True
+    elif url.startswith('http://'):
+      return True
+    else:
+      return False
+
+  # return alive (if reachable), online (if functional) and error if any
+  def is_online(url):
+    try:
+      logger.debug(f"Checking [{url}] status...")
+      r = requests.get(url)
+      if r.status_code < 404:
+        logger.debug(f"Online (status={r.status_code})")
+        return True, True, None
+      else:
+        error = f"HTTP error code: {r.status_code}"
+        logger.error(error)
+        return True, False, error
+    except Exception as e:
+      error = f"Network error: {e}"
+      logger.error(error)
+      return False, False, error
+
+  def get_report(url, include_ssl_rating=False):
+    url = url.strip(' \r\'\"\n').lower()
+    alive, online, error = SiteInfo.is_online(url)
+    site_info = SiteRecord(url=url, alive=alive, online=online, error=error)
+    if not alive or url.startswith('http://'):
+      # no point to continue if not alive, or it's HTTP
+      return [site_info]
+    if not include_ssl_rating:
+      # only basic SSL info
+      ssl_expiration_info = SSLLabs.get_ssl_expires_in_days(url)[0]
+      site_info.ssl_expires = ssl_expiration_info.expires
+      if ssl_expiration_info.error:
+        site_info.error = ssl_expiration_info.error
+      return [site_info]
+    # get full SSL report
+    final_reports = []
+    ssl_rating_info = SSLLabs.get_site_rating(url)
+    for record in ssl_rating_info:
+      report = copy.copy(site_info)
+      report.ip = record.ip
+      ssl_expiration_info = SSLLabs.get_ssl_expires_in_days(url, record.ip)[0]
+      report.ssl_expires = ssl_expiration_info.expires
+      if ssl_expiration_info.error:
+        report.error = ssl_expiration_info.error
+      report.ssl_rating = record.grade
+      if record.error:
+        # SSL rating error has higher priority
+        report.error = record.error
+      final_reports.append(report)
+    return final_reports
+
+class SiteInfoTestCase(unittest.TestCase):
+  def test_get_site_report(self):
+    report = SiteInfo.get_report("http://us.cloud-learning.net:37828/forecast", True)
+    self.assertEqual(len(report), 1, 'wrong number of records')
+    report = SiteInfo.get_report("https://www.google.com", False)
+    self.assertEqual(len(report), 1, 'wrong number of records')
+    report = SiteInfo.get_report("https://www.google.com", True)
+    self.assertEqual(len(report), 2, 'wrong number of records')
+    report = SiteInfo.get_report("https://www.google1.com", True)
+    self.assertEqual(len(report), 1, 'wrong number of records')
+    report = SiteInfo.get_report("https://www.indiaglitz.com", False)
+    self.assertEqual(len(report), 1, 'wrong number of records')
+
+if 'UNIT_TEST' in os.environ:
+  test = SiteInfoTestCase()
+  #test.test_get_site_report()
+
+@dataclass
+class EmailConfig:
+  api_key: str
+  sender: str
+  recipients: str
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
   __html_SSL_report_template = """
 <html>
  <head>
-  <title>SSL Report</title>
+  <title>Web Site Report</title>
   <style>
    table {
     font-family: arial, sans-serif;
@@ -155,34 +316,44 @@ class WebMonitor:
   </p>
   <table>
     <tr>
-     <th>Rating</th>
+     <th>Online</th>
+     <th>Grade</th>
      <th>Expires (days)</th>
      <th>URL</th>
-     <th>IP (or error)</th>
+     <th>IP</th>
+     <th>Error</th>
     </tr>
     {%- for site in sites %}
     <tr>
      <td>
-      {% if site.grade.startswith('A') %}
-      <b style=\"color:green;\">{{ site.grade }}</b>
+      {% if site.online %}
+      <b style=\"color:green;\">Yes</b>
       {% else %}
-      <b style=\"color:red;\">{{ site.grade }}</b>
+      <b style=\"color:red;\">No</b>
       {% endif %}
      </td>
      <td>
-      {% if site.expires|int < -36500 %}
-      <b style=\"color:red;\">-</b>
-      {% elif site.expires|int < 60 %}
-      <b style=\"color:red;\">{{ site.expires }}</b>
+      {% if site.ssl_rating and site.ssl_rating.startswith('A') %}
+      <b style=\"color:green;\">{{ site.ssl_rating }}</b>
       {% else %}
-      {{ site.expires }}
+      <b style=\"color:red;\">{{ site.ssl_rating if site.ssl_rating }}</b>
+      {% endif %}
+     </td>
+     <td>
+      {% if site.ssl_expires and (site.ssl_expires|int < 60) %}
+      <b style=\"color:red;\">{{ site.ssl_expires }}</b>
+      {% else %}
+      {{ site.ssl_expires if site.ssl_expires }}
       {% endif %}
      </td>
      <td>
       <a href="{{ site.report }}">{{ site.url }}</a>
      </td>
      <td>
-      {{ site.ip }}
+      {{ site.ip if site.ip }}
+     </td>
+     <td>
+      {{ site.error if site.error }}
      </td>
     </tr>
     {%- endfor %}
@@ -191,170 +362,130 @@ class WebMonitor:
 </html>
 """
 
-  # class methods
-  def is_valid_url(url):
-    url = url.lower()
-    if url.startswith('https://'):
-      return True
-    elif url.startswith('http://'):
-      return True
-    else:
-      return False
-
-  def is_https(url):
-    url = url.lower()
-    if url.startswith('https://'):
-      return True
-    else:
-      return False
-
-  def is_online(url):
-    error = None
+  def __load_urls(url_list_file):
     try:
-      r = requests.get(url)
-      if r.status_code < 400:
-        return True, None
-
-      error = f"HTTP error code: {r.status_code}"
-    except Exception as e:
-      error = f"Network error: {e}"
-
-    return False, error
-
-  # instance variables and methods
-  def __init__(self, sites_file):
-    self.__load_email_config()
-    self.__hosts = []
-    try:
-      with open(sites_file, 'r') as f:
+      urls = []
+      with open(url_list_file, 'r') as f:
         lines = f.readlines()
         for line in lines:
           line = line.strip(' \r\'\"\n')
           if not line:
             continue
-          if WebMonitor.is_valid_url(line):
-            if line not in self.__hosts:
-              self.__hosts.append(line)
-          else:
-            logger.warning(f"Invalid URL in hosts list: {line}")
+          if line not in urls:
+            urls.append(line)
+      return urls
     except Exception as e:
       logger.critical(f"Cannot load site list file: {e}")
       sys.exit(1)
 
-  def __load_email_config(self):
-    self.__email_configured = False
+  def __load_email_config():
     try:
-      self.__email_api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
-      self.__email_sender = os.environ['MONITOR_SENDER'].strip('\" ')
+      api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
+      sender = os.environ['MONITOR_SENDER'].strip('\" ')
       white_spaces = ' \n'
       clean_string = os.environ['MONITOR_RECIPIENTS'].translate({ord(i): None for i in white_spaces})
-      self.__email_recipients = clean_string.split(';')
-      self.__email_configured = True
+      recipients = clean_string.split(';')
+      return EmailConfig(api_key=api_key, sender=sender, recipients=recipients)
     except Exception as e:
       logger.warning(f"Email configuration incomplete: {e}")
+      return None
 
-  def __send_site_down_email(self, url, error):
-    if not self.__email_configured:
+  def generate_html_body(report, outputfile=None):
+    engine = Template(WebMonitor.__html_SSL_report_template)
+    html = engine.render(sites=report)
+    if outputfile:
+      with open(outputfile, 'w') as f:
+        f.write(html)
+    return html
+
+  def send_email_report(report):
+    email_config = WebMonitor.__load_email_config()
+    if not email_config or not report:
       return
-
     try:
       # construct email
       email = Mail()
-      email.from_email = self.__email_sender
-      for recipient in self.__email_recipients:
-        email.add_to(recipient)
-      parsed_uri = urlparse(url)
-      host = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
-      email.subject = f"[Web-Monitor]: {host} is down!"
-      email.add_content(f"<b>Error details</b>: {error} <p> <b>URL</b>: {url}", MimeType.html)
-      # send email
-      sendgrid = SendGridAPIClient(self.__email_api_key)
-      r = sendgrid.send(email)
-      if r.status_code > 400:
-        logger.error(f"SendGrid API failed: error={r.status_code}")
-    except Exception as e:
-      logger.error(f"Failed to send Site Down Report: {e}")
-
-  def __send_ssl_report(self, report):
-    if not self.__email_configured or not report:
-      return
-
-    try:
-      # construct email
-      email = Mail()
-      email.from_email = self.__email_sender
-      for recipient in self.__email_recipients:
+      email.from_email = email_config.sender
+      for recipient in email_config.recipients:
         email.add_to(recipient)
       today = time.strftime('%Y-%m-%d', time.localtime())
-      email.subject = f"[{today}] SSL Rating Report"
-      engine = Template(WebMonitor.__html_SSL_report_template)
-      sorted_report = sorted(report, key=lambda k: k['ip']) 
-      email.add_content(engine.render(sites=sorted_report), MimeType.html)
+      email.subject = f"[{today}] Site Monitoring Report"
+      email.add_content(WebMonitor.generate_html_body(report), MimeType.html)
       # send email
-      sendgrid = SendGridAPIClient(self.__email_api_key)
+      sendgrid = SendGridAPIClient(email_config.api_key)
       r = sendgrid.send(email)
       if r.status_code > 400:
         logger.error(f"SendGrid API failed: error={r.status_code}")
     except Exception as e:
       logger.error(f"Failed to send Site SSL Report: {e}")
 
-  def check_alive(self):
-    failed_hosts = []
-
-    for url in self.__hosts:
-      status, error = WebMonitor.is_online(url)
-      if status:
-        logger.debug(f"[{url}] is online.")
-      else:
-        # if fails, then retry after 5 min to decide
-        logger.warning(f"[{url}] may be down, will confirm later: {error}")
-        failed_hosts.append(url)
-
-    if failed_hosts:
-      time.sleep(300)
-      for url in failed_hosts:
-        status, error = WebMonitor.is_online(url)
-        if status:
-          logger.info(f"Host: {url} is up. (no email sent)")
+  def __reconfirm_sites(report):
+    logger.info("Wait some time and retry failed sites.")
+    time.sleep(120)
+    has_down_sites = False
+    for record in report:
+      if not record.online:
+        alive, online, error = SiteInfo.is_online(record.url)
+        record.alive = alive
+        record.online = online
+        record.error = error
+        if not online:
+          has_down_sites = True
         else:
-          logger.error(f"[{url}] is down ({error}). Sending email...")
-          self.__send_site_down_email(url, error)
+          logger.info(f"Site is now online: {record.url}")
+    return has_down_sites
 
-  def check_ssl(self):
+  def get_report(urls, include_ssl_rating=False):
     full_report = []
-    for url in self.__hosts:
-      if not WebMonitor.is_https(url):
+    has_down_sites = False
+    for url in urls:
+      if '://' not in url:
+        # assume https
+        url = f"https://{url}"
+      if not SiteInfo.is_valid_url(url):
+        logger.warning(f"Skipping invalid URL: {url}")
         continue
+      result = SiteInfo.get_report(url, include_ssl_rating)
+      if not result[0].online:
+        has_down_sites = True
+      for record in result:
+        full_report.append(record)
+    return full_report, has_down_sites
 
-      logger.info(f"Checking SSL rating for {url}...")
-      results = SSLLabs.get_site_rating(url)
-      # retry once if failed
-      if results[0]['grade'] == SSLLabs.RatingErrorThrottled:
-        logger.info(f"Retrying {url} after yielding ...")
-        results = SSLLabs.get_site_rating(url)
-      for result in results:
-        if result['grade'] in SSLLabs.RatingErrors:
-          expires = SSLLabs.get_ssl_expiration_in_days(url)
-        else:
-          expires = SSLLabs.get_ssl_expiration_in_days(url, result['ip'])
-        logger.info(f"SSL rating: {result['grade']} ({result['ip']}): expires in {expires} days.")
-        result['expires'] = expires
-        full_report.append(result)
-    self.__send_ssl_report(full_report)
+  def check_sites(urls, include_ssl_rating=False):
+    full_report, has_down_sites = WebMonitor.get_report(urls, include_ssl_rating)
+    # reconfirm failed sites
+    if has_down_sites:
+      has_down_sites = WebMonitor.__reconfirm_sites(full_report)
+    # send email if ssl rating included, or has failed sites
+    if include_ssl_rating or has_down_sites:
+      WebMonitor.send_email_report(full_report)
+
+  def check_sites_in_file(url_list_file, include_ssl_rating=False):
+    urls = WebMonitor.__load_urls(url_list_file)
+    WebMonitor.check_sites(urls, include_ssl_rating)
+
+class WebMonitorTestCase(unittest.TestCase):
+  def test_webmonitor_report(self):
+    urls = ['https://www.google.com', 'https://www.google1.com', 'www.msn.com']
+    report, has_down = WebMonitor.get_report(urls, False)
+    self.assertEqual(len(report), 3, 'wrong number of records')
+    report, has_down = WebMonitor.get_report(urls, True)
+    self.assertEqual(len(report), 4, 'wrong number of records')
+    html = WebMonitor.generate_html_body(report, '/tmp/000.html')
+    WebMonitor.send_email_report(report)
+
+if 'UNIT_TEST' in os.environ:
+  test = WebMonitorTestCase()
+  test.test_webmonitor_report()
 
 ########################################
 # CLI interface
 ########################################
 
-def check_alive(args):
-  logger.debug(f"CMD - Check if sites in [{args.file}] are alive")
-  worker = WebMonitor(args.file)
-  worker.check_alive()
-
-def check_ssl(args):
-  logger.debug(f"CMD - Check SSL rating of sites in [{args.file}]")
-  worker = WebMonitor(args.file)
-  worker.check_ssl()
+def check_sites(args):
+  logger.debug(f"CMD - Check sites in [{args.file}] (include SSL grade: {args.get_ssl_grade}")
+  WebMonitor.check_sites_in_file(args.file, args.get_ssl_grade)
 
 #################################
 # Program starts
@@ -363,13 +494,11 @@ def handler(signal_received, frame):
   logger.critical("Ctrl-C signal is captured, exiting...")
   sys.exit(2)
 
-if __name__ == '__main__':
+if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
   signal(SIGINT, handler)
-  CLI_config = { 'commands': [
-    { 'name': 'check-alive', 'help': 'Check if the sites in the file are alive', 'func': check_alive, 
-      'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] },
-    { 'name': 'check-ssl', 'help': 'Check SSL rating of the sites in the file', 'func': check_ssl,
-      'params': [{ 'name': 'file', 'help': 'File contains list of sites'}] }
+  CLI_config = { 'func':check_sites, 'arguments': [
+    {'name':'file', 'help':'File contains list of sites'}, 
+    {'name':'--get_ssl_grade', 'help':'Include SSL rating', 'action':'store_true'}
     ]}
   try:
    parser = CLIParser.get_parser(CLI_config)

@@ -45,12 +45,8 @@ class CLIParser:
     file_name = os.path.basename(script)
     return os.path.splitext(file_name)[0]
 
-  def get_parser(config):
-    app_name = CLIParser.get_app_name()
-    parser = argparse.ArgumentParser(app_name)
+  def __get_cmd_parser(parser, commands):
     subparsers = parser.add_subparsers(title='commands')
-    # parse commands
-    commands = config['commands']
     for command in commands:
       cmd_name = command['name']
       cmd_help = command['help']
@@ -67,8 +63,22 @@ class CLIParser:
           if 'multi-value' in cmd_param:
             nargs = "+"
           cmd_parser.add_argument(param_name, nargs=nargs, help=param_help)
-
     return parser
+
+  def __get_arg_parser(parser, config):
+    arguments = config['arguments']
+    for arg in arguments:
+      parser.add_argument(arg['name'], help=arg['help'], action=arg.get('action'))
+    parser.set_defaults(func=config['func'])
+    return parser
+
+  def get_parser(config):
+    app_name = CLIParser.get_app_name()
+    parser = argparse.ArgumentParser(app_name)
+    if 'commands' in config:
+      return CLIParser.__get_cmd_parser(parser, config['commands'])
+    elif 'arguments' in config:
+      return CLIParser.__get_arg_parser(parser, config)
 
   def run(parser):
     if len(sys.argv) == 1:
