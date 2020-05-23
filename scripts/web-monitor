@@ -16,4 +16,4 @@ export MONITOR_SENDER
 export MONITOR_RECIPIENTS
 
 [ "$1" == "debug" ] && export DEBUG
-python3 $CMD_PATH/python/web-monitor.py check-alive $MONITOR_HOSTS
+python3 $CMD_PATH/python/web-monitor.py $MONITOR_HOSTS

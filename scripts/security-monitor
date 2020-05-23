@@ -26,14 +26,14 @@ case $1 in
   ;;
  no-rating)
   debug "Skip SSLLabs"
-  SKIP_SSL_RATING=true
-  export SKIP_SSL_RATING
+  SSL_GRADE=""
   ;;
  *)
+  SSL_GRADE="--get_ssl_grade"
   ;;
 esac
 
-python3 $CMD_PATH/python/web-monitor.py check-ssl $MONITOR_HOSTS
+python3 $CMD_PATH/python/web-monitor.py $MONITOR_HOSTS $SSL_GRADE
 [ "$?" == "0" ] && set_lastrun
 
 ####################################################################
