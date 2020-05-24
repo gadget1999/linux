@@ -6,18 +6,10 @@ import time, datetime
 # for struct-like class
 import copy
 from dataclasses import dataclass
-# for capturing Ctrl-C
-from signal import signal, SIGINT
 # for web APIs
+import socket
 import requests
 from urllib.parse import urlparse
-# for SSL
-import socket
-import ssl
-# for email and HTML body
-from jinja2 import Template
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, MimeType
 # for unittest
 import unittest
 # for logging and CLI arguments parsing
@@ -37,6 +29,31 @@ def get_ip_addresses(host, port):
       return None, f"Failed to get IP addresses for {host}"
   except Exception as e:
     return None, f"Failed to get IP addresses for {host}: {e}"
+
+def get_ip_location(ip):
+  try:
+    url = f"https://ipinfo.io/{ip}/json"
+    r = requests.get(url)
+    if r.status_code >= 400:
+      logger.warning(f"Failed to get location of IP: {ip} (status={r.status_code})")
+      return None, None, None
+    data = r.json()
+    city = data['city']
+    region = data['region']
+    country = data['country']
+    return city, region, country
+  except Exception as e:
+    logger.warning(f"Failed to get location of IP: {ip} ({e})")
+    return None, None, None
+
+def get_url_location(url):
+  try:
+    parsed_uri = urlparse(url)
+    ip = socket.gethostbyname(parsed_uri.hostname)
+    return get_ip_location(ip)
+  except Exception as e:
+    logger.warning(f"Failed to get location of url: {url} ({e})")
+    return None, None, None
 
 @dataclass
 class SSLRecord:
@@ -129,6 +146,8 @@ class SSLLabs:
       return [SSLRecord(url=url, grade='Error', error=f"{e}")]
 
   def __get_ssl_expiration_date(host, ip=None, port=443):
+    import ssl
+
     try:
       if not ip:
         ip = host
@@ -170,7 +189,6 @@ class SSLLabs:
       result = SSLRecord(url=url, ip=ip)
       expires, error = SSLLabs.__get_ssl_expiration_date(host, ip, port)
       if error:
-        result.expires = 'Error'
         result.error = error
       else:
         result.expires = (expires - datetime.datetime.now()).days
@@ -221,7 +239,7 @@ class SiteInfo:
     try:
       logger.debug(f"Checking [{url}] status...")
       r = requests.get(url)
-      if r.status_code < 404:
+      if r.status_code < 500:
         logger.debug(f"Online (status={r.status_code})")
         return True, True, None
       else:
@@ -327,9 +345,9 @@ class WebMonitor:
     <tr>
      <td>
       {% if site.online %}
-      <b style=\"color:green;\">Yes</b>
+      <b style=\"color:green;\">Y</b>
       {% else %}
-      <b style=\"color:red;\">No</b>
+      <b style=\"color:red;\">N</b>
       {% endif %}
      </td>
      <td>
@@ -391,6 +409,8 @@ class WebMonitor:
       return None
 
   def generate_html_body(report, outputfile=None):
+    from jinja2 import Template
+
     engine = Template(WebMonitor.__html_SSL_report_template)
     html = engine.render(sites=report)
     if outputfile:
@@ -398,7 +418,62 @@ class WebMonitor:
         f.write(html)
     return html
 
+  def generate_xlsx_report(report, outputfile=None):
+    import io
+    import xlsxwriter
+
+    # Create an in-memory Excel file and add a worksheet
+    with io.BytesIO() as output:
+      with xlsxwriter.Workbook(output, {'in_memory': True}) as workbook:
+        worksheet = workbook.add_worksheet('Site Report')
+        # Create header
+        bold = workbook.add_format({'bold': True})
+        header = [['On',2], ['Grade',4], ['Expires In (days)',4], ['URL',40], ['IP',15],
+                  ['City',10], ['Region',10], ['Country',3],
+                  ['Error',40] ]
+        for i in range(0, len(header)):
+          name = header[i][0]
+          width = header[i][1]
+          worksheet.write(0, i, name, bold)
+          worksheet.set_column(i, i, width)
+        # Fill in sheet with report data
+        good = workbook.add_format({'bold': True, 'font_color': 'green'})
+        bad = workbook.add_format({'bold': True, 'font_color': 'red'})
+        row = 1
+        for record in report:
+          if record.online:
+            worksheet.write(row, 0, 'Y', good)
+          else:
+            worksheet.write(row, 0, 'N', bad)
+          if record.ssl_rating and record.ssl_rating.startswith('A'):
+            worksheet.write(row, 1, record.ssl_rating, good)
+          else:
+            worksheet.write(row, 1, record.ssl_rating, bad)
+          if record.ssl_expires and record.ssl_expires > 60:
+            worksheet.write(row, 2, record.ssl_expires, good)
+          else:
+            worksheet.write(row, 2, record.ssl_expires, bad)
+          worksheet.write(row, 3, record.url)
+          worksheet.write(row, 4, record.ip)
+          city, region, country = get_url_location(record.url)
+          worksheet.write(row, 5, city)
+          worksheet.write(row, 6, region)
+          worksheet.write(row, 7, country)
+          worksheet.write(row, 8, record.error, bad if record.error else None)
+          row += 1
+      output.seek(0)
+      content = output.read()
+    if outputfile:
+      with open(outputfile, 'wb') as f:
+        f.write(content)
+    return content
+
   def send_email_report(report):
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
+      FileType, Disposition, ContentId)
+    import base64
+
     email_config = WebMonitor.__load_email_config()
     if not email_config or not report:
       return
@@ -411,6 +486,14 @@ class WebMonitor:
       today = time.strftime('%Y-%m-%d', time.localtime())
       email.subject = f"[{today}] Site Monitoring Report"
       email.add_content(WebMonitor.generate_html_body(report), MimeType.html)
+      # get attachment
+      content = WebMonitor.generate_xlsx_report(report)
+      attachment = Attachment()
+      attachment.file_content = base64.b64encode(content).decode()
+      attachment.file_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      attachment.file_name = f"{today}-Site-Report.xlsx"
+      attachment.disposition = "attachment"
+      email.add_attachment(attachment)
       # send email
       sendgrid = SendGridAPIClient(email_config.api_key)
       r = sendgrid.send(email)
@@ -471,8 +554,10 @@ class WebMonitor:
 
 class WebMonitorTestCase(unittest.TestCase):
   def test_webmonitor_report(self):
-    urls = ['https://www.google.com', 'https://www.google1.com', 'www.msn.com']
-    report, has_down = WebMonitor.get_report(urls, False)
+    urls = ['https://www.google.com', 'https://www.google1.com', 'insider-governance-api-north-europe.avepointonlineservices.com']
+    report, has_down = WebMonitor.get_report(urls, True)
+    WebMonitor.generate_xlsx_report(report, '/tmp/000.xlsx')
+    WebMonitor.send_email_report(report)
     self.assertEqual(len(report), 3, 'wrong number of records')
     report, has_down = WebMonitor.get_report(urls, True)
     self.assertEqual(len(report), 4, 'wrong number of records')
@@ -499,6 +584,9 @@ def handler(signal_received, frame):
   sys.exit(2)
 
 if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
+  # for capturing Ctrl-C
+  from signal import signal, SIGINT
+
   signal(SIGINT, handler)
   CLI_config = { 'func':check_sites, 'arguments': [
     {'name':'file', 'help':'File contains list of sites'}, 
