@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER="nessus"
+IMAGE="stevemcgrath/nessus_scanner"
+
+check_env "NESSUS_LICENSE NESSUS_ADMIN NESSUS_PASSWORD"
+
+#########################
+# Helper functions
+#########################
+
+function start_nessus() {
+ local internal_port=8834
+ [ "$NESSUS_PORT" != "" ] && $CMD_PATH/nginx nessus $NESSUS_PORT https://172.17.0.1:$internal_port
+
+ local run_vol=/tmp/$CONTAINER
+ [ ! -d $run_vol ] && mkdir $run_vol
+
+ EXTRA_OPTS=(
+  -e LICENSE=$NESSUS_LICENSE
+  -e SCANNER_NAME=NESSUS3723
+  -e ADMIN_USER=$NESSUS_ADMIN
+  -e ADMIN_PASS=$NESSUS_PASSWORD
+  -p $internal_port:8834
+  )
+
+ ENTRYPOINT=()
+
+ new_container_vm $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+}
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ stop)
+  stop_container $CONTAINER
+  ;;
+ delete)
+  delete_container $CONTAINER
+  ;;
+ debug)
+  DEBUG_POD=1
+  start_nessus
+  ;;
+ *)
+  start_nessus
+  ;;
+esac
