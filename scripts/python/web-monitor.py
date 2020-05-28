@@ -554,7 +554,7 @@ class WebMonitor:
 
 class WebMonitorTestCase(unittest.TestCase):
   def test_webmonitor_report(self):
-    urls = ['https://www.google.com', 'https://www.google1.com', 'insider-governance-api-north-europe.avepointonlineservices.com']
+    urls = ['https://www.google.com', 'https://www.google1.com']
     report, has_down = WebMonitor.get_report(urls, True)
     WebMonitor.generate_xlsx_report(report, '/tmp/000.xlsx')
     WebMonitor.send_email_report(report)
