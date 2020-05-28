@@ -2,9 +2,15 @@ server {
  listen {{external_port}} ssl http2;
  server_name {{dns_name}};
 
- add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+ # check https://securityheaders.com
+ add_header Strict-Transport-Security "max-age=63072000; includeSubdomains" always;
  add_header X-Frame-Options DENY;
- add_header X-Content-Type-Options nosniff;
+ add_header X-Content-Type-Options "nosniff";
+ add_header X-XSS-Protection "1; mode=block";
+ add_header Content-Security-Policy "default-src 'self'; font-src *;img-src * data:; script-src *; style-src *;";
+ add_header Referrer-Policy 'strict-origin';
+ add_header Expect-CT "enforce, max-age=300";
+ add_header Feature-Policy "geolocation none;midi none;notifications none;push none;sync-xhr none;microphone none;camera none;magnetometer none;gyroscope none;speaker self;vibrate none;fullscreen self;payment none;";
 
  ssl_certificate /etc/nginx/ssl/fullchain.pem;
  ssl_certificate_key /etc/nginx/ssl/privkey.pem;
