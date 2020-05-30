@@ -11,10 +11,21 @@ function dropbox_upload() {
  local object=$1
  local target=$2
 
- debug "Uploading $object..."
- dropbox upload $object /$target/$object
+ if [ ! -f $object ]; then
+  debug "Finding full path of $object ..."
+  object=$(which $object)
+  if [ "$object" == "" ]; then
+   debug "Cannot find the file."
+   return
+  fi
+ fi
+
+ local filename=$(basename $object)
+ local remote_path="/$target/$filename"
+ debug "Uploading $object to $remote_path ..."
+ dropbox upload $object $remote_path
 }
 
 for file in $FILE_PATTERN; do
- dropbox_upload $file $TODAY
+ dropbox_upload $file share/$TODAY
 done
