@@ -13,7 +13,7 @@ export AZURE_APP_ID
 export AZURE_APP_KEY
 
 if [ $# == 0 ]; then
- python3 $CMD_PATH/python/azure-vm.py list
+ python3 $CMD_PATH/python/azure-vm.py list --charged-only
 else
  (python3 $CMD_PATH/python/azure-vm.py $@) &
 fi

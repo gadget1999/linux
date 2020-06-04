@@ -59,10 +59,14 @@ class CLIParser:
         for cmd_param in cmd_params:
           param_name = cmd_param['name']
           param_help = cmd_param['help']
-          nargs = None
-          if 'multi-value' in cmd_param:
-            nargs = "+"
-          cmd_parser.add_argument(param_name, nargs=nargs, help=param_help)
+          if param_name.startswith('-'):
+            # parameter is a flag
+            action = cmd_param['action'] if 'action' in cmd_param else None
+            cmd_parser.add_argument(param_name, action=action, help=param_help)
+          else:
+            # named parameter
+            nargs = "+" if 'multi-value' in cmd_param else None
+            cmd_parser.add_argument(param_name, nargs=nargs, help=param_help)
     return parser
 
   def __get_arg_parser(parser, config):

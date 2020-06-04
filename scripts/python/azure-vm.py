@@ -203,7 +203,8 @@ def list_vms(args):
   logger.debug("Listing all virtual machines...")
   for vm in vm_cli.virtual_machines:
     status = vm.GetStatus()
-    print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
+    if not args.charged_only or status != VM_STATUS_DEALLOCATED:
+      print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
 
 def stop_idle_vms(args):
   logger.debug("Shutdown idle virtual machines...")
@@ -223,7 +224,8 @@ vm_cli = AzureCLI(TENANT, APP_ID, APP_KEY)
 
 if __name__ == "__main__":
   CLI_config = { 'commands': [
-    { 'name': 'list', 'help': 'List virtual machines', 'func': list_vms },
+    { 'name': 'list', 'help': 'List virtual machines', 'func': list_vms, 
+      'params': [{ 'name': '--charged-only', 'action': 'store_true', 'help': 'Only list ones not in deallocated status' }] },
     { 'name': 'stop-idle', 'help': 'Shutdown idle virtual machines', 'func': stop_idle_vms },
     { 'name': 'start', 'help': 'Start virtual machines', 'func': start_vms, 
       'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] },
