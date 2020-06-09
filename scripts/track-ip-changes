@@ -7,13 +7,23 @@ source $CMD_PATH/lib/email.sh
 check_env "MAIN_EMAIL"
 check_email_env
 
-CHECK_INTERVAL=3600
+CHECK_INTERVAL=600
 IP_CACHE=/tmp/ip-cache
 
 # single instance
 lock
 
 touch $IP_CACHE
+
+function update_ip_whitelist {
+ [ "$AZURE_NSG_RULE" == "" ] && return
+
+ local new_ip=$1
+ log "Adding new IP into whitelist: $new_ip"
+
+ local fixed_ip=$AZURE_FIXED_IP
+ $CMD_PATH/azvm add-ip $AZURE_NSG_RULE $new_ip $AZURE_FIXED_IP
+}
 
 function notify_ip_change {
  local old_ip=$1
@@ -42,6 +52,9 @@ function check_ip_change {
  
  # if old_ip is empty, most likely first run
  [ "$old_ip" == "" ] && return
+
+ # update IP whitelist
+ update_ip_whitelist $new_ip
 
  # send email to notify
  notify_ip_change $old_ip $new_ip
