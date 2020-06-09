@@ -132,6 +132,31 @@ class AzureCLI:
   # Public methods
   ########################################
 
+  def API_call(self, url, data=None, headers=None):
+    if (self.__access_token is not None):
+      headers = { "Authorization": f"Bearer {self.__access_token}" }
+    response = requests.get(url, data=data, headers=headers, timeout=60)
+    assert (response is not None), "API result is empty."
+    assert (response.status_code < 400), "API returned error: {response.status_code}"
+    content_type = response.headers['Content-Type']
+    assert ('application/json' in content_type), "API result is not in JSON formatreturned error: {content_type}"
+    return response.json()
+
+  def API_call_post(self, url, data=None, headers=None):
+    if (self.__access_token is not None):
+      headers = { "Authorization": f"Bearer {self.__access_token}" }
+    response = requests.post(url, data=data, headers=headers, timeout=60)
+    assert (response is not None), "API result is empty."
+    assert (response.status_code < 400), "API returned error: {response.status_code}"
+
+  def API_call_put(self, url, data=None, headers=None):
+    if (self.__access_token is not None):
+      headers = { "Authorization": f"Bearer {self.__access_token}",
+               "Content-Type": "application/json" }
+    response = requests.put(url, data=data, headers=headers, timeout=60)
+    assert (response is not None), "API result is empty."
+    assert (response.status_code < 400), "API returned error: {response.status_code}"
+
   @property
   def subscriptions(self):
     if not self.__subscriptions:
@@ -151,29 +176,30 @@ class AzureCLI:
         return vm
     return None
 
-  def API_call(self, url, data=None, headers=None):
-    if (self.__access_token is not None):
-      headers = { "Authorization": f"Bearer {self.__access_token}" }
-    response = requests.get(url, data=data, headers=headers, timeout=60)
-    assert (response is not None), "API result is empty."
-    assert (response.status_code < 400), "API returned error: {response.status_code}"
-    content_type = response.headers['Content-Type']
-    assert ('application/json' in content_type), "API result is not in JSON formatreturned error: {content_type}"
-    return response.json()
-
-  def API_call_post(self, url, data=None, headers=None):
-    if (self.__access_token is not None):
-      headers = { "Authorization": f"Bearer {self.__access_token}" }
-    response = requests.post(url, data=data, headers=headers, timeout=60)
-    assert (response is not None), "API result is empty."
-    assert (response.status_code < 400), "API returned error: {response.status_code}"
+  def add_ip_whitelist(self, rule_id, ip_list):
+    API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2020-04-01"
+    logger.info(f"Getting current NSG rule settings...")
+    response = self.API_call(API_URL)
+    rule = response['properties']
+    old_list = rule['sourceAddressPrefixes']
+    need_update = False
+    for ip in ip_list:
+      if ip not in old_list:
+        need_update = True
+    if need_update:
+      rule['sourceAddressPrefixes'] = ip_list
+      logger.info(f"Updating NSG rule settings...")
+      response = self.API_call_put(API_URL, data=str(response))
+      logger.info(f"Completed.")
+    else:
+      logger.info(f"No need to update NSG rule settings.")
   
 ########################################
 # CLI interface
 ########################################
 
 def restart_vms(args):
-  logger.debug(f"CMD - Restarting virtual machines: {args.names}")
+  #logger.debug(f"CMD - Restarting virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
@@ -182,7 +208,7 @@ def restart_vms(args):
       logger.error(f"VM was not found: {vm_name}")
 
 def start_vms(args):
-  logger.debug(f"CMD - Starting virtual machines: {args.names}")
+  #logger.debug(f"CMD - Starting virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
@@ -191,7 +217,7 @@ def start_vms(args):
       logger.error(f"VM was not found: {vm_name}")
 
 def stop_vms(args):
-  logger.debug(f"CMD - Stopping virtual machines: {args.names}")
+  #logger.debug(f"CMD - Stopping virtual machines: {args.names}")
   for vm_name in args.names:
     target_vm = vm_cli.find_virtual_machine(vm_name)
     if (target_vm is not None):
@@ -200,18 +226,23 @@ def stop_vms(args):
       logger.error(f"VM was not found: {vm_name}")
 
 def list_vms(args):
-  logger.debug("Listing all virtual machines...")
+  #logger.debug("Listing all virtual machines...")
   for vm in vm_cli.virtual_machines:
     status = vm.GetStatus()
     if not args.charged_only or status != VM_STATUS_DEALLOCATED:
       print(f"{vm.name:14}{vm.os:10}{vm.location:15}{vm.size:9}{status}")
 
 def stop_idle_vms(args):
-  logger.debug("Shutdown idle virtual machines...")
+  #logger.debug("Shutdown idle virtual machines...")
   for vm in vm_cli.virtual_machines:
     status = vm.GetStatus()
     if (status == VM_STATUS_STOPPED):
       vm.Stop()
+
+def add_ip_whitelist(args):
+  rule_id = args.rule_id
+  ip_list = args.ip
+  vm_cli.add_ip_whitelist(rule_id, ip_list)
 
 #################################
 # Program starts
@@ -227,6 +258,9 @@ if __name__ == "__main__":
     { 'name': 'list', 'help': 'List virtual machines', 'func': list_vms, 
       'params': [{ 'name': '--charged-only', 'action': 'store_true', 'help': 'Only list ones not in deallocated status' }] },
     { 'name': 'stop-idle', 'help': 'Shutdown idle virtual machines', 'func': stop_idle_vms },
+    { 'name': 'add-ip', 'help': 'Add current public IP to NSG rule whitelist', 'func': add_ip_whitelist, 
+      'params': [{ 'name': 'rule_id', 'help': 'NSG rule id' },
+                 { 'name': 'ip', 'help': 'IP ranges', 'multi-value':'yes' }] },
     { 'name': 'start', 'help': 'Start virtual machines', 'func': start_vms, 
       'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] },
     { 'name': 'stop', 'help': 'Stop virtual machines', 'func': stop_vms,
