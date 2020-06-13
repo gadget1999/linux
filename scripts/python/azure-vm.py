@@ -268,5 +268,9 @@ if __name__ == "__main__":
     { 'name': 'restart', 'help': 'Restart virtual machines', 'func': restart_vms,
       'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] }
     ]}
-  parser = CLIParser.get_parser(CLI_config)
-  CLIParser.run(parser)
+  try:
+   parser = CLIParser.get_parser(CLI_config)
+   CLIParser.run(parser)
+  except Exception as e:
+   logger.error(f"Exception happened: {e}")
+   sys.exit(1)

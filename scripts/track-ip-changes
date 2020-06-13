@@ -15,6 +15,18 @@ lock
 
 touch $IP_CACHE
 
+function invoke_azvm_api {
+ check_packages "python3"
+ check_env "AZURE_TENANT_ID AZURE_APP_ID AZURE_APP_KEY"
+
+ export AZURE_TENANT_ID
+ export AZURE_APP_ID
+ export AZURE_APP_KEY
+
+ python3 $CMD_PATH/python/azure-vm.py $@
+ [ "$?" != "0" ] && invoke_azvm_api="$?"
+}
+
 function update_ip_whitelist {
  [ "$AZURE_NSG_RULE" == "" ] && return
 
@@ -22,7 +34,12 @@ function update_ip_whitelist {
  log "Adding new IP into whitelist: $new_ip"
 
  local fixed_ip=$AZURE_FIXED_IP
- $CMD_PATH/azvm add-ip $AZURE_NSG_RULE $new_ip $AZURE_FIXED_IP
+ invoke_azvm_api add-ip $AZURE_NSG_RULE $new_ip $AZURE_FIXED_IP
+ if [ "$invoke_azvm_api" != "0" ]; then
+  update_ip_whitelist="Failed to add $new_ip to Azure NSG. Please check manually."
+ else
+  update_ip_whitelist="Adding $new_ip to Azure NSG succeeded."
+ fi
 }
 
 function notify_ip_change {
@@ -33,7 +50,7 @@ function notify_ip_change {
  send_email \
   $MAIN_EMAIL \
   "Public IP changed from [$old_ip] to [$new_ip]" \
-  "Please remember to change firewall accordingly."
+  "$update_ip_whitelist"
 }
 
 function check_ip_change {
