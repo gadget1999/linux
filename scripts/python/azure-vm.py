@@ -188,7 +188,7 @@ class AzureCLI:
         need_update = True
     if need_update:
       rule['sourceAddressPrefixes'] = ip_list
-      logger.info(f"Updating NSG rule settings...")
+      logger.info(f"Updating NSG rule settings with IPs: {ip_list}")
       response = self.API_call_put(API_URL, data=str(response))
       logger.info(f"Completed.")
     else:
