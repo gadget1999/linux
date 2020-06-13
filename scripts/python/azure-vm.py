@@ -137,9 +137,9 @@ class AzureCLI:
       headers = { "Authorization": f"Bearer {self.__access_token}" }
     response = requests.get(url, data=data, headers=headers, timeout=60)
     assert (response is not None), "API result is empty."
-    assert (response.status_code < 400), "API returned error: {response.status_code}"
+    assert (response.status_code < 400), f"API returned error: {response.status_code}"
     content_type = response.headers['Content-Type']
-    assert ('application/json' in content_type), "API result is not in JSON formatreturned error: {content_type}"
+    assert ('application/json' in content_type), f"API result is not in JSON formatreturned error: {content_type}"
     return response.json()
 
   def API_call_post(self, url, data=None, headers=None):
@@ -147,7 +147,7 @@ class AzureCLI:
       headers = { "Authorization": f"Bearer {self.__access_token}" }
     response = requests.post(url, data=data, headers=headers, timeout=60)
     assert (response is not None), "API result is empty."
-    assert (response.status_code < 400), "API returned error: {response.status_code}"
+    assert (response.status_code < 400), f"API returned error: {response.status_code}"
 
   def API_call_put(self, url, data=None, headers=None):
     if (self.__access_token is not None):
@@ -155,7 +155,7 @@ class AzureCLI:
                "Content-Type": "application/json" }
     response = requests.put(url, data=data, headers=headers, timeout=60)
     assert (response is not None), "API result is empty."
-    assert (response.status_code < 400), "API returned error: {response.status_code}"
+    assert (response.status_code < 400), f"API returned error: {response.status_code}"
 
   @property
   def subscriptions(self):

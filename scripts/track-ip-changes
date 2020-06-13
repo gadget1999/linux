@@ -35,7 +35,7 @@ function update_ip_whitelist {
 
  local fixed_ip=$AZURE_FIXED_IP
  invoke_azvm_api add-ip $AZURE_NSG_RULE $new_ip $AZURE_FIXED_IP
- if [ "$invoke_azvm_api" != "0" ]; then
+ if [ "$invoke_azvm_api" != "" ]; then
   update_ip_whitelist="Failed to add $new_ip to Azure NSG. Please check manually."
  else
   update_ip_whitelist="Adding $new_ip to Azure NSG succeeded."
