@@ -8,9 +8,6 @@ check_env "SENDGRID_API_KEY MONITOR_HOSTS MONITOR_RECIPIENTS"
 
 lock
 
-days_since_lastrun 28
-[ "$days_since_lastrun" == "false" ] && exit 0
-
 if [ "$MONITOR_HOSTS_REMOTE" != "" ]; then
  update_config_from_dropbox $MONITOR_HOSTS_REMOTE $MONITOR_HOSTS
 fi
@@ -31,6 +28,8 @@ case $1 in
   SSL_GRADE=""
   ;;
  *)
+  days_since_lastrun 27
+  [ "$days_since_lastrun" == "false" ] && exit 0
   SSL_GRADE="--get_ssl_grade"
   ;;
 esac
