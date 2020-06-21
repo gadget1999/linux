@@ -28,14 +28,15 @@ case $1 in
   SSL_GRADE=""
   ;;
  *)
-  days_since_lastrun 27
+  CYCLE_DAYS=27
+  days_since_lastrun $CYCLE_DAYS
   [ "$days_since_lastrun" == "false" ] && exit 0
   SSL_GRADE="--get_ssl_grade"
   ;;
 esac
 
 python3 $CMD_PATH/python/web-monitor.py $MONITOR_HOSTS $SSL_GRADE
-[ "$?" == "0" ] && set_lastrun
+[ "$?" == "0" ] && [ "$CYCLE_DAYS" != "" ] && set_lastrun
 
 ####################################################################
 # following is for using sslscan, will be removed in the future
