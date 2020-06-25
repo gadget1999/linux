@@ -7,16 +7,41 @@ source $CMD_PATH/lib/common.sh
 
 check_packages "curl jq"
 
+function get_image_modify_time() {
+ local image_name=$1
+ [ "$IMAGE_PREFIX" != "" ] && image_name=$IMAGE_PREFIX-$image_name
+
+ check_env "GITHUB_ID"
+ local api_url="https://hub.docker.com/v2/repositories/$GITHUB_ID/$image_name/"
+ local modify_time=$(curl --silent $api_url | jq -r '.last_updated')
+ [ "$modify_time" == "null" ] && log_error "Failed to get modify time for $image_name."
+ get_image_modify_time=$modify_time
+}
+
 function build_docker_hub_image() {
  local image_name=$1
- local trigger_name="trigger_$image_name"
+ local trigger_name="trigger_${image_name/-/_}"
 
  check_env "$trigger_name"
  local trigger_url="https://hub.docker.com/api/build/v1/source/${!trigger_name}/call/"
 
- log "Starting Docker Hub build: $image_name"
- local state=$(curl --silent -X POST "$trigger_url" | jq '.state')
+ get_image_modify_time $image_name
+ local modify_time=$get_image_modify_time
+ log "Starting Docker Hub build: $image_name (modified: $modify_time)"
+ local state=$(curl --silent -X POST "$trigger_url" | jq -r '.state')
  log $state
+ [ "$state" != "Success" ] && return
+
+ # wait for build to complete (up to 30 min)
+ for i in {1..30}; do
+  sleep 60
+  get_image_modify_time $image_name
+  local new_modify_time=$get_image_modify_time
+  if [ $new_modify_time != $modify_time ]; then
+   log "Build completed: $new_modify_time"
+   break
+  fi
+ done
 }
 
 function build_all() {
