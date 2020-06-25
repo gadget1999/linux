@@ -30,7 +30,10 @@ function build_docker_hub_image() {
  log "Starting Docker Hub build: $image_name (modified: $modify_time)"
  local state=$(curl --silent -X POST "$trigger_url" | jq -r '.state')
  log $state
- [ "$state" != "Success" ] && return
+
+ # now also wait even if status is not Success,
+ # as sometimes Docker Hub reports Failed even though it succeeded
+ #[ "$state" != "Success" ] && return
 
  # wait for build to complete (up to 30 min)
  for i in {1..30}; do
@@ -39,9 +42,12 @@ function build_docker_hub_image() {
   local new_modify_time=$get_image_modify_time
   if [ $new_modify_time != $modify_time ]; then
    log "Build completed: $new_modify_time"
-   break
+   return
   fi
  done
+
+ # when we reach here, the wait timed out
+ log "Build failed or did not finish in time."
 }
 
 function build_all() {
