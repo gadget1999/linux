@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 check_packages "python3"
-check_env "SENDGRID_API_KEY MONITOR_RECIPIENTS GITHUB_API_KEY GITHUB_KEYWORD"
+check_env "SENDGRID_API_KEY MONITOR_RECIPIENTS GITHUB_API_KEY GITHUB_KEYWORD GITHUB_WORKDIR"
 
 lock
 
@@ -16,4 +16,5 @@ export MONITOR_SENDER
 export MONITOR_RECIPIENTS
 
 [ "$GITHUB_EXCLUDE_OWNER" != "" ] && EXCLUDE_OPTION="--exclude_owner $GITHUB_EXCLUDE_OWNER"
-python3 $CMD_PATH/python/github-monitor.py $GITHUB_KEYWORD $EXCLUDE_OPTION
+python3 $CMD_PATH/python/github-monitor.py --keyword $GITHUB_KEYWORD \
+  --work_folder $GITHUB_WORKDIR $EXCLUDE_OPTION

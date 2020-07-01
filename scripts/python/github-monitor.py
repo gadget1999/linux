@@ -214,9 +214,12 @@ if 'UNIT_TEST' in os.environ:
 
 def monitor_github(args):
   keyword = args.keyword
+  work_folder = args.work_folder
   exclude_owner = args.exclude_owner
+  if not keyword or not work_folder:
+    raise Exception("Invalid arguments: keyword and work_folder are must-have.")
   app_name = CLIParser.get_app_name()
-  history_file = f"/tmp/{app_name}-{keyword}.txt"
+  history_file = f"{work_folder}/{app_name}-{keyword}.txt"
   monitor = GitHubMonitor(history_file)
   monitor.monitor_keyword(keyword, exclude_owner)
 
@@ -233,7 +236,8 @@ if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
 
   signal(SIGINT, handler)
   CLI_config = { 'func':monitor_github, 'arguments': [
-    {'name':'keyword', 'help':'Keyword being monitored'}, 
+    {'name':'--keyword', 'help':'Keyword being monitored'}, 
+    {'name':'--work_folder', 'help':'Working area to store data'}, 
     {'name':'--exclude_owner', 'help':'Owner to exclude from search'}
     ]}
   try:
