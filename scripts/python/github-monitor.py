@@ -194,9 +194,12 @@ class GitHubMonitor:
 
   def monitor_keyword(self, keyword, exclude_owner):
     results = GitHubSearch.search_code(keyword, self.__history, exclude_owner)
-    if len(results) > 0:
-      self.__save_history()
-      GitHubMonitor.send_email_report(results)
+    if len(results) == 0:
+      logger.info("No new entries found.")
+      return
+    # save new entries and send email
+    self.__save_history()
+    GitHubMonitor.send_email_report(results)
 
 class GitHubTestCase(unittest.TestCase):
   def test_search_github(self):
