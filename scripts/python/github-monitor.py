@@ -98,9 +98,10 @@ class GitHubMonitor:
   __html_GitHub_report_template = """
 <html>
  <head>
-  <title>GitHub Report</title>
+  <title>GitHub Monitoring Report</title>
  </head>
  <body>
+  <h1>GitHub Monitoring Report</h1>
   {% for owner in results %}
    <p>
     <b>Owner: {{ owner }}</b><br>
@@ -158,6 +159,7 @@ class GitHubMonitor:
       email.add_content(GitHubMonitor.generate_html_report(results), MimeType.html)
       # send email
       sendgrid = SendGridAPIClient(email_config.api_key)
+      logger.info(f"Sending email report...")
       r = sendgrid.send(email)
       if r.status_code > 400:
         logger.error(f"SendGrid API failed: error={r.status_code}")
