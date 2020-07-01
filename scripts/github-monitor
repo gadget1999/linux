@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "python3"
+check_env "SENDGRID_API_KEY MONITOR_RECIPIENTS GITHUB_API_KEY GITHUB_KEYWORD"
+
+lock
+
+MONITOR_SENDER=GitHubMonitor@linux.com
+
+export GITHUB_API_KEY
+export SENDGRID_API_KEY
+export MONITOR_SENDER
+export MONITOR_RECIPIENTS
+
+[ "$GITHUB_EXCLUDE_OWNER" != "" ] && EXCLUDE_OPTION="--exclude_owner $GITHUB_EXCLUDE_OWNER"
+python3 $CMD_PATH/python/github-monitor.py $GITHUB_KEYWORD $EXCLUDE_OPTION
