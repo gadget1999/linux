@@ -4,6 +4,7 @@ import os, sys
 import codecs
 import json
 import time, datetime
+import re
 # for struct-like class
 import copy
 from dataclasses import dataclass
@@ -18,11 +19,19 @@ from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
+@dataclass
+class GitHubItem:
+  owner: str
+  repo: str
+  path: str
+  url: str
+
 class GitHubSearch:
   # raw api layer
   def __api_call(url, headers, params=None):
     api_key = os.environ['GITHUB_API_KEY'].strip('\" ')
     headers['Authorization'] = f"token {api_key}"
+    logger.debug(f"Invoking GitHub API: {url}")
     r = requests.get(url, headers=headers, params=params)
     if r.status_code == 403:
       # retry after one minute
@@ -40,16 +49,7 @@ class GitHubSearch:
     return r
 
   # search code hits, load pages if needed
-  def __search_code(keyword, exclude_owner=None, language=None):
-    headers = {'Accept':'application/vnd.github.v3+json'}
-    query = urllib.parse.quote(keyword)
-    if language:      
-      query += f"+language:{urllib.parse.quote(language)}"
-    if exclude_owner:
-      query += f"+-org:{urllib.parse.quote(exclude_owner)}"
-    # build URL directly to avoid requests URL encoding q field, which GitHub does not support
-    url = f"https://api.github.com/search/code?q={query}&sort=indexed&order=desc"
-    logger.debug(f"Fetching results for: {query}")
+  def __paged_api_call(url, headers, params=None):
     r = GitHubSearch.__api_call(url, headers)
     r_json = r.json()
     logger.debug(f"Found {r_json['total_count']} hits.")
@@ -59,39 +59,49 @@ class GitHubSearch:
       next_link = r.links['next']['url']
       # slow down to avoid hitting throttling
       time.sleep(5)
-      logger.debug(f"Fetching paged results: {next_link}")
       r = GitHubSearch.__api_call(next_link, headers)
       items += r.json()['items']
     return items
 
-  def search_code(keyword, history, exclude_owner=None):
-    items = GitHubSearch.__search_code(keyword, exclude_owner, "JavaScript")
-    items += GitHubSearch.__search_code(keyword, exclude_owner, "C#")
-    results = {}
+  # search code hits, load pages if needed
+  def search_code(keyword, exclude_owner=None, language=None):
+    headers = {'Accept':'application/vnd.github.v3+json'}
+    query = urllib.parse.quote(keyword)
+    if language:      
+      query += f"+language:{urllib.parse.quote(language)}"
+    if exclude_owner:
+      query += f"+-org:{urllib.parse.quote(exclude_owner)}"
+    # build URL directly to avoid requests URL encoding q field, which GitHub does not support
+    url = f"https://api.github.com/search/code?q={query}&sort=indexed&order=desc"
+    items = GitHubSearch.__paged_api_call(url, headers)
+    records = []
     for item in items:
-      try:
-        path = item['path']
-        url = item['html_url']
-        owner_name = item['repository']['owner']['login']
-        if exclude_owner and owner_name == exclude_owner:
-          continue
-        repo_name = item['repository']['name']
-        full_path = f"{owner_name}/{repo_name}/{path}"
-        if full_path in history:
-          #logger.debug(f"Old entry: {full_path}")
-          continue
-        logger.info(f"New entry: {full_path}")
-        history.add(full_path)
-        if owner_name not in results:
-          results[owner_name] = {}
-        owner = results[owner_name]
-        if repo_name not in owner:
-          owner[repo_name] = []
-        repo = owner[repo_name]
-        repo.append({'path':path, 'url':url})
-      except Exception as e:
-        logger.error(f"Parsing {url} failed: {e}")
-    return results
+      owner_name = item['repository']['owner']['login']
+      repo_name = item['repository']['name']
+      path = item['path']
+      url = item['html_url']
+      records.append(GitHubItem(owner_name, repo_name, path, url))
+    return records
+
+  def search_issues(keyword, exclude_owner=None):
+    headers = {'Accept':'application/vnd.github.v3+json'}
+    query = urllib.parse.quote(keyword)
+    if exclude_owner:
+      query += f"+-org:{urllib.parse.quote(exclude_owner)}"
+    # build URL directly to avoid requests URL encoding q field, which GitHub does not support
+    url = f"https://api.github.com/search/issues?q={query}&sort=updated&order=desc"
+    items = GitHubSearch.__paged_api_call(url, headers)
+    records = []
+    for item in items:
+      url = item['html_url']
+      # assuming the url format is https://github.com/{owner}/{repo}/issues/{number}
+      pattern = '(?<!/)/([^/]+)/([^/]+)/(.+)'
+      matches = re.search(pattern, url)
+      owner_name = matches.group(1)
+      repo_name = matches.group(2)
+      path = matches.group(3)
+      records.append(GitHubItem(owner_name, repo_name, path, url))
+    return records
 
 @dataclass
 class EmailConfig:
@@ -122,11 +132,24 @@ class GitHubMonitor:
 </html>
 """
 
-  def generate_html_report(results, output_file=None):
+  def __get_tree_from_records(records):
+    tree = {}
+    for item in records:
+      if item.owner not in tree:
+        tree[item.owner] = {}
+      owner = tree[item.owner]
+      if item.repo not in owner:
+        owner[item.repo] = []
+      repo = owner[item.repo]
+      repo.append({'path':item.path, 'url':item.url})
+    return tree
+
+  def generate_html_report(new_items, output_file=None):
     from jinja2 import Template
 
     engine = Template(GitHubMonitor.__html_GitHub_report_template)
-    html = engine.render(results=results)
+    tree = GitHubMonitor.__get_tree_from_records(new_items)
+    html = engine.render(results=tree)
     if output_file:
       with codecs.open(output_file, 'w', "utf-8") as f:
         f.write(html)
@@ -144,14 +167,14 @@ class GitHubMonitor:
       logger.error(f"Email configuration incomplete: {e}")
       return None
 
-  def send_email_report(results):
+  def send_email_report(new_items):
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
       FileType, Disposition, ContentId)
     import base64
 
     email_config = GitHubMonitor.__load_email_config()
-    if not email_config or not results:
+    if not email_config or not new_items:
       return
     try:
       # construct email
@@ -161,7 +184,7 @@ class GitHubMonitor:
         email.add_to(recipient)
       today = time.strftime('%Y-%m-%d', time.localtime())
       email.subject = f"[{today}] GitHub Monitoring Report"
-      email.add_content(GitHubMonitor.generate_html_report(results), MimeType.html)
+      email.add_content(GitHubMonitor.generate_html_report(new_items), MimeType.html)
       # send email
       sendgrid = SendGridAPIClient(email_config.api_key)
       logger.info(f"Sending email report...")
@@ -200,13 +223,24 @@ class GitHubMonitor:
       json.dump(sorted(item_list), f, indent=1)
 
   def monitor_keyword(self, keyword, exclude_owner):
-    results = GitHubSearch.search_code(keyword, self.__history, exclude_owner)
-    if len(results) == 0:
+    items = GitHubSearch.search_code(keyword, exclude_owner, "JavaScript")
+    items += GitHubSearch.search_code(keyword, exclude_owner, "C#")
+    items += GitHubSearch.search_issues(keyword, exclude_owner)
+    new_items = []
+    for item in items:
+      full_path = f"{item.owner}/{item.repo}/{item.path}"
+      if full_path in self.__history:
+        #logger.debug(f"Old entry: {full_path}")
+        continue
+      logger.info(f"New entry: {full_path}")
+      self.__history.add(full_path)
+      new_items.append(item)
+    if len(new_items) == 0:
       logger.info("No new entries found.")
       return
     # save new entries and send email
     self.__save_history()
-    GitHubMonitor.send_email_report(results)
+    GitHubMonitor.send_email_report(new_items)
 
 class GitHubTestCase(unittest.TestCase):
   def test_search_github(self):
