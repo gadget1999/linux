@@ -10,7 +10,7 @@ from dataclasses import dataclass
 # for web APIs
 import socket
 import requests
-from urllib.parse import urlparse
+import urllib.parse
 # for unittest
 import unittest
 # for logging and CLI arguments parsing
@@ -40,28 +40,33 @@ class GitHubSearch:
     return r
 
   # search code hits, load pages if needed
-  def __search_code(keyword, exclude_owner=None):
-    url = 'https://api.github.com/search/code'
+  def __search_code(keyword, exclude_owner=None, language=None):
     headers = {'Accept':'application/vnd.github.v3+json'}
-    query = keyword
+    query = urllib.parse.quote(keyword)
+    if language:      
+      query += f"+language:{urllib.parse.quote(language)}"
     if exclude_owner:
-      query += f"+-org:{exclude_owner}"
-    params = {'q':query, 'sort':'indexed', 'order':'desc'}
+      query += f"+-org:{urllib.parse.quote(exclude_owner)}"
+    # build URL directly to avoid requests URL encoding q field, which GitHub does not support
+    url = f"https://api.github.com/search/code?q={query}&sort=indexed&order=desc"
     logger.debug(f"Fetching results for: {query}")
-    r = GitHubSearch.__api_call(url, headers, params)
-    items = r.json()['items']
+    r = GitHubSearch.__api_call(url, headers)
+    r_json = r.json()
+    logger.debug(f"Found {r_json['total_count']} hits.")
+    items = r_json['items']
     while 'next' in r.links:
       # need to fetch more pages until complete
       next_link = r.links['next']['url']
       # slow down to avoid hitting throttling
       time.sleep(5)
       logger.debug(f"Fetching paged results: {next_link}")
-      r = GitHubSearch.__api_call(next_link, headers, params)
+      r = GitHubSearch.__api_call(next_link, headers)
       items += r.json()['items']
     return items
 
   def search_code(keyword, history, exclude_owner=None):
-    items = GitHubSearch.__search_code(keyword, exclude_owner)
+    items = GitHubSearch.__search_code(keyword, exclude_owner, "JavaScript")
+    items += GitHubSearch.__search_code(keyword, exclude_owner, "C#")
     results = {}
     for item in items:
       try:
