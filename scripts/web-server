@@ -4,28 +4,19 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/certificate.sh
 
-check_env "WEB_SERVER_KEY"
+[ $# != 2 ] && show_usage "port path"
+
+check_env "DDNS_DOMAIN CERT_ROOT"
 
 PORT=$1
-[ "$PORT" == "" ] && PORT=24786
-
 ROOT_FOLDER=$2
-if [ "$ROOT_FOLDER" == "" ]; then
- ROOT_FOLDER=/download/web
-elif [ "$ROOT_FOLDER" == "." ]; then
- ROOT_FOLDER=$(pwd)
-fi
 
 # create TLS cert
 check_cert_env
-CERT="/tmp/$DDNS_DOMAIN.pem"
-cat $CERT_ROOT/$CERT_FULLCHAIN > $CERT
-cat $CERT_ROOT/$CERT_KEY >> $CERT
 
-debug "Starting web server on port $PORT (root:$ROOT_FOLDER)"
 cd $ROOT_FOLDER
 $SUDO python3 $CMD_PATH/python/web-server.py \
  $ROOT_FOLDER \
  $PORT \
- --cert_file $CERT \
+ --cert_file $CERT_ROOT/$CERT_FULLCHAIN \
  --key_file $WEB_SERVER_KEY
