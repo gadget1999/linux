@@ -19,4 +19,4 @@ $SUDO python3 $CMD_PATH/python/web-server.py \
  $ROOT_FOLDER \
  $PORT \
  --cert_file $CERT_ROOT/$CERT_FULLCHAIN \
- --key_file $WEB_SERVER_KEY
+ --key_file $CERT_ROOT/$CERT_KEY
