@@ -31,7 +31,7 @@ case $1 in
   CYCLE_DAYS=26
   days_since_lastrun
   log "$days_since_lastrun days since last run."
-  (( $days_since <= $CYCLE_DAYS )) && exit 0
+  (( $days_since_lastrun <= $CYCLE_DAYS )) && exit 0
   SSL_GRADE="--get_ssl_grade"
   ;;
 esac
