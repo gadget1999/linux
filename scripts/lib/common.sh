@@ -160,18 +160,11 @@ function should_continue() {
 ###### Cron (track run time for schedules not supported by cron ######
 
 function days_since_lastrun()   {
- local days_to_test=$(($1 - 1))
  local track_file=/home/share/.$PROGRAM.lastrun
  local lastrun_time=0
  local now=$(date +%s)
  [ -s $track_file ] && read -r lastrun_time < $track_file
- local days_since=$(((now-lastrun_time)/86400))
- debug "$days_since days since last run ($lastrun_time)"
- if (( $days_since > $days_to_test )); then
-  days_since_lastrun="true"
- else
-  days_since_lastrun="false"
- fi
+ days_since_lastrun=$(((now-lastrun_time)/86400))
 }
 
 function set_lastrun()   {
