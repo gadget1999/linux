@@ -10,13 +10,14 @@ check_env "DDNS_DOMAIN CERT_ROOT"
 
 PORT=$1
 ROOT_FOLDER=$2
-
-# create TLS cert
-check_cert_env
+CERT=$CERT_STORAGE/fullchain.pem
+[ ! -e $CERT ] && fatal_error "Cert file [$CERT] not found"
+KEY=$CERT_STORAGE/privkey.pem
+[ ! -e $KEY ] && fatal_error "Key file [$KEY] not found"
 
 cd $ROOT_FOLDER
 $SUDO python3 $CMD_PATH/python/web-server.py \
  $ROOT_FOLDER \
  $PORT \
- --cert_file $CERT_ROOT/$CERT_FULLCHAIN \
- --key_file $CERT_ROOT/$CERT_KEY
+ --cert_file $CERT \
+ --key_file $KEY
