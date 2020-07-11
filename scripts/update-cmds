@@ -216,9 +216,9 @@ conditional_copy pwsh $TMP_CMD_FOLDER/azure $CMD_PATH/azure
 conditional_copy adb $TMP_CMD_FOLDER/android $CMD_PATH/android
 conditional_copy_links adb $CMD_PATH/android $CMD_PATH
 conditional_copy docker $TMP_CMD_FOLDER/docker $CMD_PATH/docker
-conditional_copy_links adb $CMD_PATH/docker $CMD_PATH
+conditional_copy_links docker $CMD_PATH/docker $CMD_PATH
 conditional_copy mosquitto_sub $TMP_CMD_FOLDER/mqtt $CMD_PATH/mqtt
-conditional_copy_links adb $CMD_PATH/mqtt $CMD_PATH
+conditional_copy_links mosquitto_sub $CMD_PATH/mqtt $CMD_PATH
 conditional_copy python3 $TMP_CMD_FOLDER/python $CMD_PATH/python
 conditional_copy docker-compose $TMP_CMD_FOLDER/kubernetes $CMD_PATH/kubernetes
 
