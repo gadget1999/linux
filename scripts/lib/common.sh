@@ -185,6 +185,7 @@ function copy_file() {
  local source=$1
  local target=$2
  local overwrite=$3
+ local creat_link=$4 # TODO: later add link logic so that can use git directly
 
  # see if this is a regular file
  [ ! -f $source ] && return 0
@@ -233,11 +234,25 @@ function copy_file() {
 function copy_files() {
  local files=$1
  local folder=$2
+ local creat_link=$3
 
  for filepath in $files; do
   filename=$(basename "$filepath")
   target=$folder/$filename
-  copy_file $filepath $target
+  copy_file $filepath $target "TBD" $creat_link
+ done
+}
+
+function move_files() {
+ local files=$1
+ local folder=$2
+
+ for filepath in $files; do
+  [ ! -e "$filepath" ] && continue
+  filename=$(basename "$filepath")
+  target=$folder/$filename
+  log "Moving file [$filename] to [$target]..."
+  mv $filepath $target
  done
 }
 
@@ -245,13 +260,14 @@ function conditional_copy() {
  local condition="$1"
  local src_folder=$2
  local dst_folder=$3
+ local creat_link=$4
 
  # condition is to test if the command exists
  [ ! -x "$(command -v $condition)" ] && return
 
  #debug "Found command: $condition. Will copy related files to $dst_folder."
  [ ! -d $dst_folder ] && $SUDO mkdir $dst_folder
- copy_files "$src_folder/*" $dst_folder
+ copy_files "$src_folder/*" $dst_folder $creat_link
 }
 
 function update_config_from_dropbox() {
