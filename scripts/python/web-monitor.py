@@ -62,6 +62,13 @@ def is_ipv6(ip):
   except:
     return False
 
+def is_valid_dns(fqdn):
+  try:
+    socket.gethostbyname(fqdn)
+    return True, None
+  except Exception as e:
+    return False, f"Failed to resolve {fqdn}: {e}"
+
 @dataclass
 class SSLRecord:
   url: str
@@ -233,6 +240,7 @@ class SiteRecord:
   error: str = None
   ssl_expires: str = None
   ssl_rating: str = None
+  ssl_report: str = None
 
 class SiteInfo:
   def is_valid_url(url):
@@ -289,6 +297,8 @@ class SiteInfo:
       if record.error:
         # SSL rating error has higher priority
         report.error = record.error
+      if record.report:
+        report.ssl_report = record.report
       final_reports.append(report)
     return final_reports
 
@@ -355,27 +365,31 @@ class WebMonitor:
     <tr>
      <td>
       {% if site.online %}
-      <b style=\"color:green;\">Y</b>
+       <b style=\"color:green;\">Y</b>
       {% else %}
-      <b style=\"color:red;\">N</b>
+       <b style=\"color:red;\">N</b>
       {% endif %}
      </td>
      <td>
       {% if site.ssl_rating and site.ssl_rating.startswith('A') %}
-      <b style=\"color:green;\">{{ site.ssl_rating }}</b>
+       <b style=\"color:green;\">{{ site.ssl_rating }}</b>
       {% else %}
-      <b style=\"color:red;\">{{ site.ssl_rating if site.ssl_rating }}</b>
+       <b style=\"color:red;\">{{ site.ssl_rating if site.ssl_rating }}</b>
       {% endif %}
      </td>
      <td>
       {% if site.ssl_expires and (site.ssl_expires|int < 60) %}
-      <b style=\"color:red;\">{{ site.ssl_expires }}</b>
+       <b style=\"color:red;\">{{ site.ssl_expires }}</b>
       {% else %}
-      {{ site.ssl_expires if site.ssl_expires }}
+       {{ site.ssl_expires if site.ssl_expires }}
       {% endif %}
      </td>
      <td>
-      <a href="{{ site.report }}">{{ site.url }}</a>
+      {% if site.ssl_report %}
+       <a href="{{ site.ssl_report }}">{{ site.url }}</a>
+      {% else %}
+       <a href="{{ site.url }}">{{ site.url }}</a>
+      {% endif %}
      </td>
      <td>
       {{ site.ip if site.ip }}
@@ -566,11 +580,8 @@ class WebMonitorTestCase(unittest.TestCase):
   def test_webmonitor_report(self):
     urls = ['https://www.google.com', 'https://www.google1.com']
     report, has_down = WebMonitor.get_report(urls, True)
+    self.assertEqual(len(report), 2, 'wrong number of records')
     WebMonitor.generate_xlsx_report(report, '/tmp/000.xlsx')
-    WebMonitor.send_email_report(report)
-    self.assertEqual(len(report), 3, 'wrong number of records')
-    report, has_down = WebMonitor.get_report(urls, True)
-    self.assertEqual(len(report), 4, 'wrong number of records')
     html = WebMonitor.generate_html_body(report, '/tmp/000.html')
     WebMonitor.send_email_report(report)
 
