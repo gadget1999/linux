@@ -145,6 +145,41 @@ function conditional_copy() {
  copy_files "$src_folder/*" $dst_folder
 }
 
+function copy_links() {
+ local files=$1
+ local folder=$2
+
+ for filepath in $files; do
+  [ ! -e "$filepath" ] && continue
+
+  filename=$(basename "$filepath")
+  link=$folder/$filename
+  # see if this is already a link (assuming OK if so, skip using 'readlink -f file'
+  [ -h $link ] && continue
+
+  if [ -e $link ]; then
+   # file already exists and not link
+   log "Deleting non-link file [$link]"
+   $SUDO rm $link
+  fi
+
+  log "Creating link [$link] -> [$filepath]..."
+  $SUDO ln -s $filepath $link
+  $SUDO chmod +x $link
+ done
+}
+
+function conditional_copy_links() {
+ local condition="$1"
+ local src_folder=$2
+ local dst_folder=$3
+
+ # condition is to test if the command exists
+ [ ! -x "$(command -v $condition)" ] && return
+
+ copy_links "$src_folder/*" $dst_folder
+}
+
 ################################################################
 
 check_packages "unzip"
@@ -178,9 +213,12 @@ copy_files "$TMP_CMD_FOLDER/*" $CMD_PATH
 copy_files "$TMP_CMD_FOLDER/lib/*" $CMD_LIB
 
 conditional_copy pwsh $TMP_CMD_FOLDER/azure $CMD_PATH/azure
-conditional_copy adb $TMP_CMD_FOLDER/android $CMD_PATH
-conditional_copy docker $TMP_CMD_FOLDER/docker $CMD_PATH
-conditional_copy mosquitto_sub $TMP_CMD_FOLDER/mqtt $CMD_PATH
+conditional_copy adb $TMP_CMD_FOLDER/android $CMD_PATH/android
+conditional_copy_links adb $CMD_PATH/android $CMD_PATH
+conditional_copy docker $TMP_CMD_FOLDER/docker $CMD_PATH/docker
+conditional_copy_links adb $CMD_PATH/docker $CMD_PATH
+conditional_copy mosquitto_sub $TMP_CMD_FOLDER/mqtt $CMD_PATH/mqtt
+conditional_copy_links adb $CMD_PATH/mqtt $CMD_PATH
 conditional_copy python3 $TMP_CMD_FOLDER/python $CMD_PATH/python
 conditional_copy docker-compose $TMP_CMD_FOLDER/kubernetes $CMD_PATH/kubernetes
 
