@@ -7,7 +7,7 @@ import time, datetime
 import copy
 from dataclasses import dataclass
 # for web APIs
-import socket
+import socket, ipaddress
 import requests
 from urllib.parse import urlparse
 # for unittest
@@ -54,6 +54,13 @@ def get_url_location(url):
   except Exception as e:
     logger.warning(f"Failed to get location of url: {url} ({e})")
     return None, None, None
+
+def is_ipv6(ip):
+  try:
+    ipaddress.IPv6Address(ip)
+    return True
+  except:
+    return False
 
 @dataclass
 class SSLRecord:
@@ -134,6 +141,9 @@ class SSLLabs:
       report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
       for endpoint in endpoints:
         rating = SSLRecord(url=url, report=report_url, ip=endpoint['ipAddress'])
+        if is_ipv6(rating.ip):
+          # skip non IPv4 address as Azure VM doesn't support it well yet
+          continue
         if endpoint['statusMessage'].lower() != 'ready':
           rating.error = endpoint['statusMessage']
           rating.grade = 'Error'
