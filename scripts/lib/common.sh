@@ -247,18 +247,18 @@ function move_files() {
  local patterns=$3
 
  for pattern in ${patterns[*]}; do
-  local files=$source_folder/$pattern
   # use IFS to avoid space-in-file-name issue
-  # BE CAREFUL: if use this will break command line with arguments
+  # NOTE: unset ASAP as it will break command line with arguments
   IFS=$'\n'
+  local files=$source_folder/$pattern
   for filepath in $files; do
+   unset IFS
    [ ! -e "$filepath" ] && continue
    local filename=$(basename "$filepath")
    local target=$target_folder/$filename
-   log "Moving file [$filename] to [$target]..."
-   mv $filepath $target
+   log "Moving file [$filepath] to [$target]..."
+   mv "$filepath" "$target"
   done
-  unset IFS
  done
 }
 
