@@ -126,11 +126,15 @@ function copy_files() {
  local files=$1
  local folder=$2
 
+ # use IFS to avoid space-in-file-name issue
+ local old=$IFS
+ IFS=$(echo -en "\n\b")
  for filepath in $files; do
   filename=$(basename "$filepath")
   target=$folder/$filename
   copy_file $filepath $target
  done
+ IFS=old
 }
 
 function conditional_copy() {
@@ -150,6 +154,9 @@ function copy_links() {
  local files=$1
  local folder=$2
 
+ # use IFS to avoid space-in-file-name issue
+ local old=$IFS
+ IFS=$(echo -en "\n\b")
  for filepath in $files; do
   [ ! -e "$filepath" ] && continue
 
@@ -168,6 +175,7 @@ function copy_links() {
   $SUDO ln -s $filepath $link
   $SUDO chmod +x $link
  done
+ IFS=old
 }
 
 function conditional_copy_links() {

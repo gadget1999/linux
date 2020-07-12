@@ -234,17 +234,24 @@ function copy_files() {
  local files=$1
  local folder=$2
 
+ # use IFS to avoid space-in-file-name issue
+ local old=$IFS
+ IFS=$(echo -en "\n\b")
  for filepath in $files; do
   filename=$(basename "$filepath")
   target=$folder/$filename
   copy_file $filepath $target
  done
+ IFS=old
 }
 
 function move_files() {
  local files=$1
  local folder=$2
 
+ # use IFS to avoid space-in-file-name issue
+ local old=$IFS
+ IFS=$(echo -en "\n\b")
  for filepath in $files; do
   [ ! -e "$filepath" ] && continue
   filename=$(basename "$filepath")
@@ -252,6 +259,7 @@ function move_files() {
   log "Moving file [$filename] to [$target]..."
   mv $filepath $target
  done
+ IFS=old
 }
 
 function conditional_copy() {
