@@ -234,15 +234,11 @@ function copy_files() {
  local files=$1
  local folder=$2
 
- # use IFS to avoid space-in-file-name issue
- local old=$IFS
- IFS=$(echo -en "\n\b")
  for filepath in $files; do
   filename=$(basename "$filepath")
   target=$folder/$filename
   copy_file $filepath $target
  done
- IFS=old
 }
 
 function move_files() {
@@ -250,6 +246,7 @@ function move_files() {
  local folder=$2
 
  # use IFS to avoid space-in-file-name issue
+ # BE CAREFUL: if use this will break command line with arguments
  local old=$IFS
  IFS=$(echo -en "\n\b")
  for filepath in $files; do
