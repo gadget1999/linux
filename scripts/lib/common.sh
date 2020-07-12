@@ -242,21 +242,24 @@ function copy_files() {
 }
 
 function move_files() {
- local files=$1
- local folder=$2
+ local source_folder=$1
+ local target_folder=$2
+ local patterns=$3
 
- # use IFS to avoid space-in-file-name issue
- # BE CAREFUL: if use this will break command line with arguments
- local old=$IFS
- IFS=$(echo -en "\n\b")
- for filepath in $files; do
-  [ ! -e "$filepath" ] && continue
-  filename=$(basename "$filepath")
-  target=$folder/$filename
-  log "Moving file [$filename] to [$target]..."
-  mv $filepath $target
+ for pattern in ${patterns[*]}; do
+  local files=$source_folder/$pattern
+  # use IFS to avoid space-in-file-name issue
+  # BE CAREFUL: if use this will break command line with arguments
+  IFS=$'\n'
+  for filepath in $files; do
+   [ ! -e "$filepath" ] && continue
+   local filename=$(basename "$filepath")
+   local target=$target_folder/$filename
+   log "Moving file [$filename] to [$target]..."
+   mv $filepath $target
+  done
+  unset IFS
  done
- IFS=old
 }
 
 function conditional_copy() {
