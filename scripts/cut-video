@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[[ $# < 2 ]] && show_usage "input_file start_time(s) [end_time(s)]"
+check_packages "ffmpeg"
+
+INFILE=$1
+START=$2
+END=$3
+
+FILENAME=$(basename $INFILE)
+DIR=$(dirname $INFILE)
+OUTFILE="$DIR/[$START-$END]$FILENAME"
+
+[ "$END" != "" ] && ARG_END="-to $END"
+ARGS="-ss $START -i $INFILE $ARG_END -c copy $OUTFILE"
+debug "Starting processing: (args=$ARGS)"
+ffmpeg $ARGS
