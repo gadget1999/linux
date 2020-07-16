@@ -460,6 +460,8 @@ class WebMonitor:
           width = header[i][1]
           worksheet.write(0, i, name, bold)
           worksheet.set_column(i, i, width)
+        # Auto-filter
+        worksheet.autofilter(0, 0, len(report)-1, len(header)-1)
         # Fill in sheet with report data
         good = workbook.add_format({'bold': True, 'font_color': 'green'})
         bad = workbook.add_format({'bold': True, 'font_color': 'red'})
