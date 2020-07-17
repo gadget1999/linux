@@ -479,7 +479,10 @@ class WebMonitor:
             worksheet.write(row, 2, record.ssl_expires, good)
           else:
             worksheet.write(row, 2, record.ssl_expires, bad)
-          worksheet.write(row, 3, record.url)
+          if record.ssl_report:
+            worksheet.write_url(row, 3, record.ssl_report, string=record.url)
+          else:
+            worksheet.write(row, 3, record.url)
           worksheet.write(row, 4, record.ip)
           city, region, country = get_url_location(record.url)
           worksheet.write(row, 5, city)
