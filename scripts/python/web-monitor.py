@@ -267,7 +267,10 @@ class SiteInfo:
     except Exception as e:
       error = f"Network error: {e}"
       logger.error(error)
-      return False, False, error
+      if type(e).__name__ == 'ConnectionError':
+        return False, False, error
+      else:
+        return True, False, error
 
   def get_report(url, include_ssl_rating=False):
     url = url.strip(' \r\'\"\n').lower()
@@ -528,6 +531,8 @@ class WebMonitor:
       r = sendgrid.send(email)
       if r.status_code > 400:
         logger.error(f"SendGrid API failed: error={r.status_code}")
+      else:
+        logger.info(f"Report was sent successfully.")
     except Exception as e:
       logger.error(f"Failed to send Site SSL Report: {e}")
 
