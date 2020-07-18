@@ -584,6 +584,13 @@ class WebMonitor:
     # send email if ssl rating included, or has failed sites
     if include_ssl_rating or has_down_sites:
       WebMonitor.send_email_report(full_report)
+      # also archive the report locally, in case email gets lost
+      now = datetime.datetime.now()
+      archive_folder = '/tmp/dropbox_archive'
+      if not os.path.exists(archive_folder):
+        os.makedirs(archive_folder)
+      report_file = f"{archive_folder}/Site-Report-{now.strftime('%Y-%m-%d_%H_%M_%S')}.xlsx"
+      WebMonitor.generate_xlsx_report(full_report, report_file)
 
   def check_sites_in_file(url_list_file, include_ssl_rating=False):
     urls = WebMonitor.__load_urls(url_list_file)

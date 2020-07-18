@@ -34,7 +34,24 @@ function upload_log() {
  $CMD_PATH/dropbox upload $logfile $remotefile >> $LOG
 }
 
+function archive_to_dropbox() {
+ local archive_folder="/tmp/dropbox_archive"
+
+ for file in $archive_folder/*; do
+  [ ! -e $file ] && continue
+ 
+  local filename=$(basename $file)
+  local remotefile="Archive/$HOST/$TODAY/$filename"
+  log "Uploading [$file] to dropbox [$remotefile] ..."
+  $CMD_PATH/dropbox upload $file $remotefile >> $LOG
+  debug "Deleting [$file]"
+  rm $file
+ done
+}
+
 for APP in ${APP_LOGS[*]}; do
  APPLOG="/tmp/$APP.log"
  upload_log $APP $APPLOG
 done
+
+archive_to_dropbox
