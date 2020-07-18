@@ -297,6 +297,9 @@ class SiteInfo:
       if ssl_expiration_info.error:
         report.error = ssl_expiration_info.error
       report.ssl_rating = record.grade
+      if (not report.online) and (record.grade in ['A+', 'A', 'B']):
+        # if SSLLabs can analyze, assume it's OK then
+        report.online = True
       if record.error:
         # SSL rating error has higher priority
         report.error = record.error
