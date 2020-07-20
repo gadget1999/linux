@@ -24,7 +24,7 @@ function update_NVD() {
 }
 
 function start_openvas() {
- local internal_port=12345
+ local internal_port=12443
  [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT $internal_port 1.2
 
  local run_vol=/tmp/$CONTAINER
