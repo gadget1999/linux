@@ -13,6 +13,7 @@ grant_container_access $CONTAINER_CONFIG_ROOT/$CONTAINER $CERT_STORAGE
 
 MAX_RAM="50m"
 EXTRA_OPTS=(
+ --log-driver none
  -p 1883:1883
  -p 8883:8883
  -v $CONTAINER_CONFIG_ROOT/$CONTAINER:/config/mosquitto:ro

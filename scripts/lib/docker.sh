@@ -175,7 +175,6 @@ function new_container() {
   -v /etc/localtime:/etc/localtime:ro
   --tmpfs /run
   --tmpfs /tmp
-  --log-driver none
   --name $container_name
   -h $container_host
   "${extra_options[@]}"

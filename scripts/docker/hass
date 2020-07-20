@@ -14,12 +14,13 @@ grant_container_access $HOST_PATH $CERT_STORAGE
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
-  -p 14104:8123
-  -v $HOST_PATH/config:/config/homeassistant:ro
-  -v $HOST_PATH/bin:/cmd:ro
-  -v $CERT_STORAGE:/config/letsencrypt
-  -u $CONTAINER_UID
-  -m $MAX_RAM
+ --log-driver none
+ -p 14104:8123
+ -v $HOST_PATH/config:/config/homeassistant:ro
+ -v $HOST_PATH/bin:/cmd:ro
+ -v $CERT_STORAGE:/config/letsencrypt
+ -u $CONTAINER_UID
+ -m $MAX_RAM
  )
 
 ENTRYPOINT=(

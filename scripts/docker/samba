@@ -14,6 +14,7 @@ grant_container_access $SAMBA_LOCAL_PATH
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
+ --log-driver none
  -p 139:10139
  -p 445:10445
  -p 137:10137/udp
