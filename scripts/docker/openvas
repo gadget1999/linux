@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
 CONTAINER="openvas"
-IMAGE="mikesplain/openvas"
+IMAGE="securecompliance/gvm"
 
 #########################
 # Helper functions
@@ -24,17 +24,17 @@ function update_NVD() {
 }
 
 function start_openvas() {
- local internal_port=12443
- [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT https://172.17.0.1:$internal_port
+ local internal_port=12345
+ [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT $internal_port 1.2
 
  local run_vol=/tmp/$CONTAINER
  [ ! -d $run_vol ] && mkdir $run_vol
 
  EXTRA_OPTS=(
-  -v $run_vol:/var/run/redis
-  -v $CONTAINER:/var/lib/openvas/mgr/
-  -e PUBLIC_HOSTNAME=$DDNS_DOMAIN
-  -p $internal_port:443
+  -v $CONTAINER:/data
+  -e VIRTUAL_HOST=$DDNS_DOMAIN
+  -e HTTPS=false
+  -p $internal_port:9392
   )
 
  ENTRYPOINT=()
