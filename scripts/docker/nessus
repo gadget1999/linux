@@ -21,6 +21,7 @@ function start_nessus() {
  [ ! -d $run_vol ] && mkdir $run_vol
 
  EXTRA_OPTS=(
+  --tmpfs /run
   -e LICENSE=$NESSUS_LICENSE
   -e SCANNER_NAME=NESSUS3723
   -e ADMIN_USER=$NESSUS_ADMIN

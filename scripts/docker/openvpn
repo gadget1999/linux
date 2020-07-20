@@ -11,6 +11,7 @@ MAX_RAM="100m"
 EXTRA_OPTS=(
  -p 43268:1194/tcp
  --cap-add=NET_ADMIN
+ --tmpfs /run
  -v $CONTAINER:/etc/$CONTAINER
  -m $MAX_RAM
  )

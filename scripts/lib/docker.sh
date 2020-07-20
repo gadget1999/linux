@@ -173,7 +173,6 @@ function new_container() {
  local docker_options=(
   run --init
   -v /etc/localtime:/etc/localtime:ro
-  --tmpfs /run
   --tmpfs /tmp
   --name $container_name
   -h $container_host

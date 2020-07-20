@@ -73,6 +73,7 @@ grant_container_access $SSL_CONFIG
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
+ --tmpfs /run
  -v $NGINX_CONFIG:/etc/nginx/nginx.conf:ro
  -v $APP_CONFIG:/etc/nginx/conf.d/default.conf:ro
  -v $SSL_CONFIG:/etc/nginx/ssl:ro

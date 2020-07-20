@@ -15,6 +15,7 @@ grant_container_access $HOST_PATH $CERT_STORAGE
 MAX_RAM="100m"
 EXTRA_OPTS=(
  --log-driver none
+ --tmpfs /run
  -p 14104:8123
  -v $HOST_PATH/config:/config/homeassistant:ro
  -v $HOST_PATH/bin:/cmd:ro

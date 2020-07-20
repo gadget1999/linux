@@ -14,6 +14,7 @@ grant_container_access $HOST_DOWNLOAD_ROOT/$CONTAINER $CERT_STORAGE
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -p 14102:8000
+ --tmpfs /run
  -v "$HOST_DOWNLOAD_ROOT/$CONTAINER:/downloads"
  -v $CONTAINER:/home
  -v $CERT_STORAGE:/ssl:ro
