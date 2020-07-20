@@ -16,7 +16,7 @@ server {
  ssl_certificate_key /etc/nginx/ssl/privkey.pem;
  ssl_dhparam /etc/nginx/ssl/dhparams.pem;
 
- ssl_protocols TLSv1.3;
+ ssl_protocols TLSv{{tls_version}};
  ssl_ciphers EECDH+AESGCM:EDH+AESGCM:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4:!3DES;
  ssl_ecdh_curve X25519;
  ssl_prefer_server_ciphers on;
