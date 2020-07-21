@@ -25,7 +25,7 @@ function update_NVD() {
 
 function start_openvas() {
  local internal_port=12443
- [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT $internal_port 1.2
+ [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT https://local:$internal_port
 
  local run_vol=/tmp/$CONTAINER
  [ ! -d $run_vol ] && mkdir $run_vol
@@ -33,7 +33,6 @@ function start_openvas() {
  EXTRA_OPTS=(
   -v $CONTAINER:/data
   -e VIRTUAL_HOST=$DDNS_DOMAIN
-  -e HTTPS=false
   -p $internal_port:9392
   )
 
