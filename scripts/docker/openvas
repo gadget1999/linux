@@ -25,10 +25,6 @@ function update_NVD() {
 
 function start_openvas() {
  local internal_port=12443
- [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT https://local:$internal_port
-
- local run_vol=/tmp/$CONTAINER
- [ ! -d $run_vol ] && mkdir $run_vol
 
  EXTRA_OPTS=(
   -v $CONTAINER:/data
@@ -39,6 +35,9 @@ function start_openvas() {
  ENTRYPOINT=()
 
  new_container_vm $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+
+ # start web front-end
+ [ "$OPENVAS_PORT" != "" ] && $CMD_PATH/nginx openvas $OPENVAS_PORT https://local:$internal_port
 
  docker logs -f $CONTAINER
 }
