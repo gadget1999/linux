@@ -24,7 +24,7 @@ function mount_cifs_share() {
 
  if [ ! -d $MOUNT_ROOT ] ; then
   debug "Creating mount point root: $MOUNT_ROOT"
-  sudo mkdir $MOUNT_ROOT
+  sudo mkdir -p $MOUNT_ROOT
  fi
 
  if [ ! -d $mount_point ] ; then

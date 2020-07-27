@@ -271,7 +271,7 @@ function conditional_copy() {
  [ ! -x "$(command -v $condition)" ] && return
 
  #debug "Found command: $condition. Will copy related files to $dst_folder."
- [ ! -d $dst_folder ] && $SUDO mkdir $dst_folder
+ [ ! -d $dst_folder ] && $SUDO mkdir -p $dst_folder
  copy_files "$src_folder/*" $dst_folder
 }
 
