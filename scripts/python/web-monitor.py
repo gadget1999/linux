@@ -33,6 +33,7 @@ def get_ip_addresses(host, port):
 def get_ip_location(ip):
   try:
     url = f"https://ipinfo.io/{ip}/json"
+    time.sleep(2)   # avoid throttling
     r = requests.get(url)
     if r.status_code >= 400:
       logger.warning(f"Failed to get location of IP: {ip} (status={r.status_code})")
@@ -72,11 +73,11 @@ def is_valid_dns(fqdn):
 @dataclass
 class SSLRecord:
   url: str
-  report: str = None
-  ip: str = None
-  grade: str = None
-  expires: str = None
-  error: str = None
+  report: str = ''
+  ip: str = ''
+  grade: str = ''
+  expires: str = ''
+  error: str = ''
 
 class APIThrottlingException(Exception):
    """Raised when the API throttling happens"""
@@ -236,11 +237,11 @@ class SiteRecord:
   url: str
   alive: bool = False
   online: bool = False
-  ip: str = None
-  error: str = None
-  ssl_expires: str = None
-  ssl_rating: str = None
-  ssl_report: str = None
+  ip: str = ''
+  error: str = ''
+  ssl_expires: str = ''
+  ssl_rating: str = ''
+  ssl_report: str = ''
 
 class SiteInfo:
   def is_valid_url(url):
@@ -582,6 +583,10 @@ class WebMonitor:
     # reconfirm failed sites
     if has_down_sites:
       has_down_sites = WebMonitor.__reconfirm_sites(full_report)
+    # sort list to move items with error to front
+    if len(full_report) > 0:
+      full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
+      full_report.sort(key=lambda i: i.online)
     # send email if ssl rating included, or has failed sites
     if include_ssl_rating or has_down_sites:
       WebMonitor.send_email_report(full_report)
