@@ -27,11 +27,16 @@ case $1 in
   debug "Skip SSLLabs"
   SSL_GRADE=""
   ;;
+ force)
+  debug "Forcing an out-of-band scan"
+  SSL_GRADE="--get_ssl_grade"
+  ;;
  *)
-  CYCLE_DAYS=26
-  days_since_lastrun
-  log "$days_since_lastrun days since last run."
-  (( $days_since_lastrun <= $CYCLE_DAYS )) && exit 0
+  # first Saturday only
+  if (( $(date +%-d) > 7 )); then
+   log "Not first week of month, exiting..."
+   exit 0
+  fi
   SSL_GRADE="--get_ssl_grade"
   ;;
 esac
