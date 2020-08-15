@@ -586,6 +586,7 @@ class WebMonitor:
     # sort list to move items with error to front
     if len(full_report) > 0:
       full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
+      full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
       full_report.sort(key=lambda i: i.online)
     # send email if ssl rating included, or has failed sites
     if include_ssl_rating or has_down_sites:
