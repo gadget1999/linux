@@ -32,9 +32,9 @@ case $1 in
   SSL_GRADE="--get_ssl_grade"
   ;;
  *)
-  # first Saturday only
-  if (( $(date +%-d) > 7 )); then
-   log "Not first week of month, exiting..."
+  # 4th Saturday only
+  if (( $(date +%-d) < 22 )); then
+   log "Not 4th week of month, exiting..."
    exit 0
   fi
   SSL_GRADE="--get_ssl_grade"
