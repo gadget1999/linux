@@ -28,7 +28,6 @@ EXTRA_OPTS=(
  -e WEATHER_API_KEY_3=$WEATHER_API_KEY_3
  -e GPS_COORDINATES=$GPS_COORDINATES
  -e QUOTE_FILE=/quotes/idioms.csv
-# -e QUOTE_FORMAT=False
  -v $WORK_DIR/quotes:/quotes:ro
  -v $LOG:$LOG
  -p $WEATHER_PORT:8080
