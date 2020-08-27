@@ -278,7 +278,7 @@ function backup_container()    {
   sudo docker export -o $filename $container
 
   # verify if the docker image backup is valid
-  if ! tar tf $filename &> /dev/null; then
+  if ! sudo tar tf $filename &> /dev/null; then
     log "Container backup failed."
   else
     log "Container backup succeeded."
@@ -292,13 +292,13 @@ function backup_volume()    {
   debug "Exporting docker volume [$volume] to: $filename..."
   sudo docker run -d -v $volume:/backup --name "backup-$volume" alpine sh
   sudo docker cp backup-$volume:/backup /tmp/backup-$volume
-  tar -C /tmp/backup-$volume -cvf $filename .
+  sudo tar -C /tmp/backup-$volume -cvf $filename .
   sudo docker stop backup-$volume
   sudo docker rm backup-$volume
   sudo rm -rf /tmp/backup-$volume
 
   # verify if the docker image backup is valid
-  if ! tar tf $filename &> /dev/null; then
+  if ! sudo tar tf $filename &> /dev/null; then
     debug "Volume backup failed."
   else
     debug "Volume backup succeeded: $filename"
