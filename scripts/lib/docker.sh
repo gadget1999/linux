@@ -27,7 +27,8 @@ function grant_container_access() {
  for volume in "$@"; do
   # avoid changing system patch by mistake (should at least be 3 levels below /)
   var=${volume//[!\/]}
-  (( ${#var} < 3 )) && fatal_error "Potentially risk: changing permission for $volume"
+  (( ${#var} < 3 )) && [[ ${volume} != *"/tmp/"* ]] && \
+   fatal_error "Blocked risky action: changing permission for $volume"
 
   if [[ $volume = /* ]]; then
    local uid=$(stat -c '%u' $volume)
