@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_packages "partclone.ext4"
+
+BACKUP_FOLDER="/media/USBHDD/Share/Backup/System/RPi2"
+BACKUP_FILE_PREFIX="$BACKUP_FOLDER/rpi2-$TODAY"
+
+# Raspberry Pi disk and partitions
+# the partition layout is /boot, /root (main), /root (backup)
+# when need to backup, boot into backup root, then run this command
+DISK=mmcblk0
+BOOT=mmcblk0p1
+ROOT=mmcblk0p2
+
+BACKUP_FILE="$BACKUP_FILE_PREFIX-sfdisk-$DISK.txt"
+log "Backup [/dev/$DISK] partition table to: $BACKUP_FILE"
+sudo sfdisk -d /dev/$DISK > $BACKUP_FILE
+
+BACKUP_FILE="$BACKUP_FILE_PREFIX-boot-$BOOT.img"
+log "Backup boot partition [/dev/$BOOT] to: $BACKUP_FILE"
+sudo dd if=/dev/$BOOT of=$BACKUP_FILE
+
+BACKUP_FILE="$BACKUP_FILE_PREFIX-root-$ROOT.img"
+log "Backup root partition [/dev/$ROOT] to: $BACKUP_FILE"
+sudo partclone.ext4 -c -s /dev/$ROOT -o $BACKUP_FILE
+
+grant_container_access $BACKUP_ROOT_FOLDER/*
