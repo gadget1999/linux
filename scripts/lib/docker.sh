@@ -25,6 +25,10 @@ function grant_container_access() {
  setup_container_user
 
  for volume in "$@"; do
+  # avoid changing system patch by mistake (should at least be 3 levels below /)
+  var=${volume//[!\/]}
+  (( ${#var} < 3 )) && fatal_error "Potentially risk: changing permission for $volume"
+
   if [[ $volume = /* ]]; then
    local uid=$(stat -c '%u' $volume)
    [ "$uid" == "$CONTAINER_UID" ] && continue
