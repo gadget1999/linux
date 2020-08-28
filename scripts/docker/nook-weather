@@ -9,7 +9,7 @@ check_env "WEATHER_API_PROVIDER_1 WEATHER_API_KEY_1 WEATHER_PORT GPS_COORDINATES
 CONTAINER="nook"
 IMAGE="gadget1999/rpi-nook-weather"
 
-WORK_DIR=/download/nook
+WORK_DIR=/download/container/nook
 grant_container_access $WORK_DIR
 
 sudo rm -R $LOG
