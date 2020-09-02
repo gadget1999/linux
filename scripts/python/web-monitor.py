@@ -460,9 +460,9 @@ class WebMonitor:
         worksheet = workbook.add_worksheet('Site Report')
         # Create header
         bold = workbook.add_format({'bold': True})
-        header = [['On',2], ['Grade',4], ['Expires In (days)',4], ['URL',40], ['IP',15],
-                  ['City',10], ['Region',10], ['Country',3],
-                  ['Error',40] ]
+        header = [['On',2], ['Grade',4], ['Expires In (days)',4], ['URL',40], ['IP',15], ['Error',40],
+                  ['City',10], ['Region',10], ['Country',3]
+                 ]
         for i in range(0, len(header)):
           name = header[i][0]
           width = header[i][1]
@@ -492,11 +492,12 @@ class WebMonitor:
           else:
             worksheet.write(row, 3, record.url)
           worksheet.write(row, 4, record.ip)
-          city, region, country = get_url_location(record.url)
-          worksheet.write(row, 5, city)
-          worksheet.write(row, 6, region)
-          worksheet.write(row, 7, country)
-          worksheet.write(row, 8, record.error, bad if record.error else None)
+          worksheet.write(row, 5, record.error, bad if record.error else None)
+          if record.ssl_rating:
+            city, region, country = get_url_location(record.url)
+            worksheet.write(row, 6, city)
+            worksheet.write(row, 7, region)
+            worksheet.write(row, 8, country)
           row += 1
       output.seek(0)
       content = output.read()
@@ -505,7 +506,7 @@ class WebMonitor:
         f.write(content)
     return content
 
-  def send_email_report(report):
+  def send_email_report(report, subject = None):
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
       FileType, Disposition, ContentId)
@@ -521,7 +522,8 @@ class WebMonitor:
       for recipient in email_config.recipients:
         email.add_to(recipient)
       today = time.strftime('%Y-%m-%d', time.localtime())
-      email.subject = f"[{today}] Site Monitoring Report"
+      subject = subject if subject else "Site Monitoring Report"
+      email.subject = f"[{today}] {subject}"
       email.add_content(WebMonitor.generate_html_body(report), MimeType.html)
       # get attachment
       content = WebMonitor.generate_xlsx_report(report)
@@ -581,8 +583,10 @@ class WebMonitor:
   def check_sites(urls, include_ssl_rating=False):
     full_report, has_down_sites = WebMonitor.get_report(urls, include_ssl_rating)
     # reconfirm failed sites
-    if has_down_sites:
+    retries = 0
+    while has_down_sites and retries < 3:
       has_down_sites = WebMonitor.__reconfirm_sites(full_report)
+      retries += 1
     # sort list to move items with error to front
     if len(full_report) > 0:
       full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
@@ -590,7 +594,8 @@ class WebMonitor:
       full_report.sort(key=lambda i: i.online)
     # send email if ssl rating included, or has failed sites
     if include_ssl_rating or has_down_sites:
-      WebMonitor.send_email_report(full_report)
+      subject = "SSL Monitor Report" if include_ssl_rating else None
+      WebMonitor.send_email_report(full_report, subject)
       # also archive the report locally, in case email gets lost
       now = datetime.datetime.now()
       archive_folder = '/tmp/dropbox_archive'
