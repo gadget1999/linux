@@ -1,20 +1,20 @@
 version: '3'
 services:
   influxdb:
-    image: influxdb:1.8.2
+    image: influxdb:1.8.2-alpine
     container_name: statusok-db
     restart: unless-stopped
     environment:
       - PRE_CREATE_DB="statusok"
     volumes:
-      - /download/container/statusok/db:/data
+      - /download/container/statusok/db:/var/lib/influxdb
     networks:
       - statusok-net
   statusok:
     image: gadget1999/statusok
     container_name: statusok
     volumes:
-      - /download/container/statusok/config:/config
+      - /download/container/statusok/config:/app
     depends_on:
       - influxdb
     networks:
