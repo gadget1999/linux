@@ -1,0 +1,31 @@
+version: '3'
+services:
+  influxdb:
+    image: influxdb:1.8.2
+    container_name: statusok-db
+    restart: unless-stopped
+    environment:
+      - PRE_CREATE_DB="statusok"
+    volumes:
+      - /download/container/statusok/db:/data
+    networks:
+      - statusok-net
+  statusok:
+    image: gadget1999/statusok
+    container_name: statusok
+    volumes:
+      - /download/container/statusok/config:/config
+    depends_on:
+      - influxdb
+    networks:
+      - statusok-net
+  grafana:
+    image: grafana/grafana
+    container_name: statusok-web
+    ports:
+      - 53000:3000
+    networks:
+      - statusok-net
+
+networks:
+  statusok-net:
