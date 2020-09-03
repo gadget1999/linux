@@ -258,8 +258,9 @@ class SiteInfo:
     try:
       logger.debug(f"Checking [{url}] status...")
       headers = {"Accept-Language": "en-US,en;q=0.5"}
+      time.sleep(1)
       r = requests.get(url, headers=headers)
-      if r.status_code < 404:
+      if r.status_code < 400:
         logger.debug(f"Online (status={r.status_code})")
         return True, True, None
       else:
