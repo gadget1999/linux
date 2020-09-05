@@ -22,7 +22,7 @@ function load_env() {
  if [ -e $ENV_FILE ]; then
   source $ENV_FILE
  else
-  fatal_error "ENV file not found: $ENV_FILE"
+  log_error "ENV file not found: $ENV_FILE"
  fi
 }
 
