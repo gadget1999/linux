@@ -3,4 +3,5 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
+touch $ENV_FILE
 nano -c $ENV_FILE
