@@ -1,0 +1,74 @@
+<html>
+ <head>
+  <title>Web Site Report</title>
+  <style>
+   table {
+    font-family: arial, sans-serif;
+    table-layout: auto;
+    border-collapse: collapse;
+    width: 100%;
+   }
+   td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 2px;
+   }
+   tr:nth-child(even) {
+    background-color: #dddddd;
+   }
+  </style>
+ </head>
+ <body>
+  <p>
+  SSL rating report from API provided by: https://www.ssllabs.com/ssltest/index.html
+  </p>
+  <table>
+    <tr>
+     <th>Online</th>
+     <th>Grade</th>
+     <th>Expires (days)</th>
+     <th>URL</th>
+     <th>IP</th>
+     <th>Error</th>
+    </tr>
+    {%- for site in sites %}
+    <tr>
+     <td>
+      {% if site.online %}
+       <b style=\"color:green;\">Y</b>
+      {% else %}
+       <b style=\"color:red;\">N</b>
+      {% endif %}
+     </td>
+     <td>
+      {% if site.ssl_rating and site.ssl_rating.startswith('A') %}
+       <b style=\"color:green;\">{{ site.ssl_rating }}</b>
+      {% else %}
+       <b style=\"color:red;\">{{ site.ssl_rating if site.ssl_rating }}</b>
+      {% endif %}
+     </td>
+     <td>
+      {% if site.ssl_expires and (site.ssl_expires|int < 60) %}
+       <b style=\"color:red;\">{{ site.ssl_expires }}</b>
+      {% else %}
+       {{ site.ssl_expires if site.ssl_expires }}
+      {% endif %}
+     </td>
+     <td>
+      {% if site.ssl_report %}
+       <a href="{{ site.ssl_report }}">{{ site.url }}</a>
+      {% else %}
+       <a href="{{ site.url }}">{{ site.url }}</a>
+      {% endif %}
+     </td>
+     <td>
+      {{ site.ip if site.ip }}
+     </td>
+     <td>
+      {{ site.error if site.error }}
+     </td>
+    </tr>
+    {%- endfor %}
+  </table>
+ </body>
+</html>

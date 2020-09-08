@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 # for unittest
 import unittest
 # for logging and CLI arguments parsing
+import configparser
 from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
@@ -330,90 +331,24 @@ if 'UNIT_TEST' in os.environ:
 
 @dataclass
 class EmailConfig:
-  api_key: str
-  sender: str
-  recipients: str
+  api_key: str = None
+  sender: str = None
+  recipients: str = None
+  subject_formatter: str = None
+  body_template: str = None
+
+@dataclass
+class WebHookConfig:
+  endpoint: str = None
+  content_formatter: str = None
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
-  __html_SSL_report_template = """
-<html>
- <head>
-  <title>Web Site Report</title>
-  <style>
-   table {
-    font-family: arial, sans-serif;
-    table-layout: auto;
-    border-collapse: collapse;
-    width: 100%;
-   }
-   td, th {
-    border: 1px solid #dddddd;
-    text-align: left;
-    padding: 2px;
-   }
-   tr:nth-child(even) {
-    background-color: #dddddd;
-   }
-  </style>
- </head>
- <body>
-  <p>
-  SSL rating report from API provided by: https://www.ssllabs.com/ssltest/index.html
-  </p>
-  <table>
-    <tr>
-     <th>Online</th>
-     <th>Grade</th>
-     <th>Expires (days)</th>
-     <th>URL</th>
-     <th>IP</th>
-     <th>Error</th>
-    </tr>
-    {%- for site in sites %}
-    <tr>
-     <td>
-      {% if site.online %}
-       <b style=\"color:green;\">Y</b>
-      {% else %}
-       <b style=\"color:red;\">N</b>
-      {% endif %}
-     </td>
-     <td>
-      {% if site.ssl_rating and site.ssl_rating.startswith('A') %}
-       <b style=\"color:green;\">{{ site.ssl_rating }}</b>
-      {% else %}
-       <b style=\"color:red;\">{{ site.ssl_rating if site.ssl_rating }}</b>
-      {% endif %}
-     </td>
-     <td>
-      {% if site.ssl_expires and (site.ssl_expires|int < 60) %}
-       <b style=\"color:red;\">{{ site.ssl_expires }}</b>
-      {% else %}
-       {{ site.ssl_expires if site.ssl_expires }}
-      {% endif %}
-     </td>
-     <td>
-      {% if site.ssl_report %}
-       <a href="{{ site.ssl_report }}">{{ site.url }}</a>
-      {% else %}
-       <a href="{{ site.url }}">{{ site.url }}</a>
-      {% endif %}
-     </td>
-     <td>
-      {{ site.ip if site.ip }}
-     </td>
-     <td>
-      {{ site.error if site.error }}
-     </td>
-    </tr>
-    {%- endfor %}
-  </table>
- </body>
-</html>
-"""
+  #########################################
+  # Internal helper functions
+  #########################################
 
-  def __load_urls(url_list_file):
+  def _load_urls(self, url_list_file):
     try:
       urls = []
       with open(url_list_file, 'r') as f:
@@ -429,29 +364,80 @@ class WebMonitor:
       logger.critical(f"Cannot load site list file: {e}")
       sys.exit(1)
 
-  def __load_email_config():
+  def _load_email_config(self, emailconfig):
     try:
-      api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
-      sender = os.environ['MONITOR_SENDER'].strip('\" ')
-      white_spaces = ' \n'
-      clean_string = os.environ['MONITOR_RECIPIENTS'].translate({ord(i): None for i in white_spaces})
-      recipients = clean_string.split(';')
-      return EmailConfig(api_key=api_key, sender=sender, recipients=recipients)
+      settings = EmailConfig()
+      settings.api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
+      settings.sender = emailconfig["Sender"].strip('\" ')
+      raw_recipients = emailconfig["Recipients"].strip('\" ')
+      if raw_recipients:
+        white_spaces = ' \n'
+        settings.recipients = raw_recipients.translate({ord(i): None for i in white_spaces})
+      settings.subject_formatter = emailconfig["Subject"].strip('\" ')
+      template_file = emailconfig["BodyTemplate"].strip('\" ')
+      with open(template_file, 'r') as f:
+        settings.body_template = f.read()
+      return settings
     except Exception as e:
-      logger.error(f"Email configuration incomplete: {e}")
-      return None
+      logger.error(f"Email configuration is invalid: {e}")
+      raise
 
-  def generate_html_body(report, outputfile=None):
+  def _load_webhook_config(self, webhookconfig):
+    try:
+      settings = WebHookConfig()
+      settings.endpoint = webhookconfig["EndPoint"].strip('\" ')
+      settings.content_formatter = webhookconfig["Content"].strip('\" ')
+      return settings
+    except Exception as e:
+      logger.error(f"WebHook configuration is invalid: {e}")
+      raise
+
+  def _get_report(self, urls, include_ssl_rating=False):
+    full_report = []
+    has_down_sites = False
+    total = len(urls)
+    i = 1
+    for url in urls:
+      if '://' not in url:
+        # assume https
+        url = f"https://{url}"
+      if not SiteInfo.is_valid_url(url):
+        logger.warning(f"Skipping invalid URL: {url}")
+        continue
+      logger.debug(f"Analyzing site ({i}/{total}): {url}")
+      result = SiteInfo.get_report(url, include_ssl_rating)
+      i += 1
+      if not result[0].online:
+        has_down_sites = True
+      for record in result:
+        full_report.append(record)
+    return full_report, has_down_sites
+
+  def _reconfirm_sites(self, report):
+    has_down_sites = False
+    for record in report:
+      if not record.online:
+        alive, online, error = SiteInfo.is_online(record.url)
+        record.alive = alive
+        record.online = online
+        record.error = error
+        if not online:
+          has_down_sites = True
+        else:
+          logger.info(f"Site is now online: {record.url}")
+    return has_down_sites
+
+  def _generate_html_body(self, report, outputfile=None):
     from jinja2 import Template
 
-    engine = Template(WebMonitor.__html_SSL_report_template)
+    engine = Template(self._email_settings.body_template)
     html = engine.render(sites=report)
     if outputfile:
       with open(outputfile, 'w') as f:
         f.write(html)
     return html
 
-  def generate_xlsx_report(report, outputfile=None):
+  def _generate_xlsx_report(self, report, outputfile=None):
     import io
     import xlsxwriter
 
@@ -507,27 +493,25 @@ class WebMonitor:
         f.write(content)
     return content
 
-  def send_email_report(report, subject = None):
+  def _send_email_report(self, report):
     from sendgrid import SendGridAPIClient
     from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
       FileType, Disposition, ContentId)
     import base64
 
-    email_config = WebMonitor.__load_email_config()
-    if not email_config or not report:
-      return
     try:
+      email_config = self._email_settings
       # construct email
       email = Mail()
       email.from_email = email_config.sender
-      for recipient in email_config.recipients:
+      recipients = email_config.recipients.split(';')
+      for recipient in recipients:
         email.add_to(recipient)
       today = time.strftime('%Y-%m-%d', time.localtime())
-      subject = subject if subject else "Site Monitoring Report"
-      email.subject = f"[{today}] {subject}"
-      email.add_content(WebMonitor.generate_html_body(report), MimeType.html)
+      email.subject = email_config.subject_formatter.format(today=today)
+      email.add_content(self._generate_html_body(report), MimeType.html)
       # get attachment
-      content = WebMonitor.generate_xlsx_report(report)
+      content = self._generate_xlsx_report(report)
       attachment = Attachment()
       attachment.file_content = base64.b64encode(content).decode()
       attachment.file_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -544,70 +528,59 @@ class WebMonitor:
     except Exception as e:
       logger.error(f"Failed to send Site SSL Report: {e}")
 
-  def __reconfirm_sites(report):
-    logger.info("Wait some time and retry failed sites.")
-    time.sleep(120)
-    has_down_sites = False
-    for record in report:
-      if not record.online:
-        alive, online, error = SiteInfo.is_online(record.url)
-        record.alive = alive
-        record.online = online
-        record.error = error
-        if not online:
-          has_down_sites = True
-        else:
-          logger.info(f"Site is now online: {record.url}")
-    return has_down_sites
+  def _send_webhook_notice(self, report):
+    return
 
-  def get_report(urls, include_ssl_rating=False):
-    full_report = []
-    has_down_sites = False
-    total = len(urls)
-    i = 1
-    for url in urls:
-      if '://' not in url:
-        # assume https
-        url = f"https://{url}"
-      if not SiteInfo.is_valid_url(url):
-        logger.warning(f"Skipping invalid URL: {url}")
-        continue
-      logger.debug(f"Analyzing site ({i}/{total}): {url}")
-      result = SiteInfo.get_report(url, include_ssl_rating)
-      i += 1
-      if not result[0].online:
-        has_down_sites = True
-      for record in result:
-        full_report.append(record)
-    return full_report, has_down_sites
+  #########################################
+  # Public methods
+  #########################################
 
-  def check_sites(urls, include_ssl_rating=False):
-    full_report, has_down_sites = WebMonitor.get_report(urls, include_ssl_rating)
+  def __init__(self, configfile):
+    try:
+      config = configparser.ConfigParser()
+      config.read(configfile)
+      self._retry_delay = config.getint("Global", "RetryDelay", fallback=120)
+      self._max_retries = config.getint("Global", "MaxRetries", fallback=5)
+      self._include_SSL_report = config.getboolean("SSL", "GetSSLReport", fallback=False)
+      url_list_file = config["Global"]["URLFile"]
+      self._URLs = self._load_urls(url_list_file)
+      self._webhook_settings = None
+      self._email_settings = None
+      if "WebHook" in config:
+        self._webhook_settings = self._load_webhook_config(config["WebHook"])
+      if "Email" in config:
+        self._email_settings = self._load_email_config(config["Email"])
+    except Exception as e:
+      logger.error(f"Config file {configfile} is invalid: {e}")
+      raise
+
+  def check_sites(self):
+    full_report, has_down_sites = self._get_report(self._URLs, self._include_SSL_report)
     # reconfirm failed sites
     retries = 0
-    while has_down_sites and retries < 3:
-      has_down_sites = WebMonitor.__reconfirm_sites(full_report)
+    while has_down_sites and retries < self._max_retries:
       retries += 1
+      logger.info(f"Wait some time and retry failed sites (retry #{retries})")
+      time.sleep(self._retry_delay)
+      has_down_sites = self._reconfirm_sites(full_report)
     # sort list to move items with error to front
     if len(full_report) > 0:
       full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
       full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
       full_report.sort(key=lambda i: i.online)
     # send email if ssl rating included, or has failed sites
-    if include_ssl_rating or has_down_sites:
-      subject = "SSL Monitor Report" if include_ssl_rating else None
-      WebMonitor.send_email_report(full_report, subject)
+    if self._include_SSL_report or has_down_sites:
+      if self._email_settings:
+        self._send_email_report(full_report)
+      if self._webhook_settings:
+        self._send_webhook_notice(full_report)
       # also archive the report locally, in case email gets lost
       now = datetime.datetime.now()
       archive_folder = '/tmp/dropbox_archive'
       if not os.path.exists(archive_folder):
         os.makedirs(archive_folder)
       report_file = f"{archive_folder}/Site-Report-{now.strftime('%Y-%m-%d_%H_%M_%S')}.xlsx"
-      WebMonitor.generate_xlsx_report(full_report, report_file)
-
-  def check_sites_in_file(url_list_file, include_ssl_rating=False):
-    urls = WebMonitor.__load_urls(url_list_file)
-    WebMonitor.check_sites(urls, include_ssl_rating)
+      self._generate_xlsx_report(full_report, report_file)
 
 class WebMonitorTestCase(unittest.TestCase):
   def test_webmonitor_report(self):
@@ -627,8 +600,8 @@ if 'UNIT_TEST' in os.environ:
 ########################################
 
 def check_sites(args):
-  logger.debug(f"CMD - Check sites in [{args.file}] (include SSL grade: {args.get_ssl_grade})")
-  WebMonitor.check_sites_in_file(args.file, args.get_ssl_grade)
+  monitor = WebMonitor(args.config)
+  monitor.check_sites()
 
 #################################
 # Program starts
@@ -643,8 +616,7 @@ if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
 
   signal(SIGINT, handler)
   CLI_config = { 'func':check_sites, 'arguments': [
-    {'name':'file', 'help':'File contains list of sites'}, 
-    {'name':'--get_ssl_grade', 'help':'Include SSL rating', 'action':'store_true'}
+    {'name':'config', 'help':'Config file for monitor'} 
     ]}
   try:
    parser = CLIParser.get_parser(CLI_config)
