@@ -271,7 +271,8 @@ class SiteInfo:
     except Exception as e:
       error = f"Network error: {e}"
       logger.error(error)
-      if type(e).__name__ == 'ConnectionError':
+      fatal_errors = ['ConnectionError', 'Timeout']
+      if type(e).__name__ in fatal_errors:
         return False, False, error
       else:
         return True, False, error
@@ -336,6 +337,7 @@ class EmailConfig:
   recipients: str = None
   subject_formatter: str = None
   body_template: str = None
+  include_attachment: bool = True
 
 @dataclass
 class WebHookConfig:
@@ -375,8 +377,11 @@ class WebMonitor:
         settings.recipients = raw_recipients.translate({ord(i): None for i in white_spaces})
       settings.subject_formatter = emailconfig["Subject"].strip('\" ')
       template_file = emailconfig["BodyTemplate"].strip('\" ')
+      if template_file == os.path.basename(template_file):
+        template_file = os.path.join(self._config_dir, template_file)
       with open(template_file, 'r') as f:
         settings.body_template = f.read()
+      settings.include_attachment = emailconfig.getboolean('Attachment', fallback=True)
       return settings
     except Exception as e:
       logger.error(f"Email configuration is invalid: {e}")
@@ -508,17 +513,21 @@ class WebMonitor:
       recipients = email_config.recipients.split(';')
       for recipient in recipients:
         email.add_to(recipient)
+      # formatter variables
       today = time.strftime('%Y-%m-%d', time.localtime())
-      email.subject = email_config.subject_formatter.format(today=today)
-      email.add_content(self._generate_html_body(report), MimeType.html)
+      now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+      mapping = { 'now': now, 'today': today }
+      email.subject = email_config.subject_formatter.format_map(mapping)
+      email.add_content(self._render_template(email_config.body_template, report), MimeType.html)
       # get attachment
-      content = self._render_template(email_config.body_template, report)
-      attachment = Attachment()
-      attachment.file_content = base64.b64encode(content).decode()
-      attachment.file_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      attachment.file_name = f"{today}-Site-Report.xlsx"
-      attachment.disposition = "attachment"
-      email.add_attachment(attachment)
+      if email_config.include_attachment:
+        content = self._generate_xlsx_report(report)
+        attachment = Attachment()
+        attachment.file_content = base64.b64encode(content).decode()
+        attachment.file_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        attachment.file_name = f"{today}-Site-Report.xlsx"
+        attachment.disposition = "attachment"
+        email.add_attachment(attachment)
       # send email
       sendgrid = SendGridAPIClient(email_config.api_key)
       r = sendgrid.send(email)
@@ -560,10 +569,13 @@ class WebMonitor:
     try:
       config = configparser.ConfigParser()
       config.read(configfile)
+      self._config_dir = os.path.dirname(configfile)
       self._retry_delay = config.getint("Global", "RetryDelay", fallback=120)
       self._max_retries = config.getint("Global", "MaxRetries", fallback=5)
       self._include_SSL_report = config.getboolean("SSL", "GetSSLReport", fallback=False)
       url_list_file = config["Global"]["URLFile"]
+      if url_list_file == os.path.basename(url_list_file):
+        url_list_file = os.path.join(self._config_dir, url_list_file)
       self._URLs = self._load_urls(url_list_file)
       self._webhook_settings = None
       self._email_settings = None

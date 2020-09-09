@@ -1,0 +1,42 @@
+<html>
+ <head>
+  <title>Failed Sites Report</title>
+  <style>
+   table {
+    font-family: arial, sans-serif;
+    table-layout: auto;
+    border-collapse: collapse;
+    width: 100%;
+   }
+   td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 2px;
+   }
+   tr:nth-child(even) {
+    background-color: #dddddd;
+   }
+  </style>
+ </head>
+ <body>
+  <p>
+  Following sites may be down. Please check ASAP!
+  </p>
+  <table>
+    <tr>
+     <th>URL</th>
+     <th>Error</th>
+    </tr>
+    {%- for site in sites %}
+    <tr>
+     <td>
+      <a href="{{ site.url }}">{{ site.url }}</a>
+     </td>
+     <td>
+      {{ site.error if site.error }}
+     </td>
+    </tr>
+    {%- endfor %}
+  </table>
+ </body>
+</html>

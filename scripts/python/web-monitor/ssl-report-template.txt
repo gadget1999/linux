@@ -1,6 +1,6 @@
 <html>
  <head>
-  <title>Web Site Report</title>
+  <title>SSL Rating Report</title>
   <style>
    table {
     font-family: arial, sans-serif;

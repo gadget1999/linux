@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 check_packages "python3"
-check_env "SENDGRID_API_KEY MONITOR_HOSTS MONITOR_RECIPIENTS"
+check_env "SENDGRID_API_KEY SSL_REPORT_CONFIG MONITOR_HOSTS"
 
 lock
 
@@ -12,69 +12,15 @@ if [ "$MONITOR_HOSTS_REMOTE" != "" ]; then
  update_config_from_dropbox $MONITOR_HOSTS_REMOTE $MONITOR_HOSTS
 fi
 
-MONITOR_SENDER=SSLLabs@linux.com
-
 export SENDGRID_API_KEY
-export MONITOR_SENDER
-export MONITOR_RECIPIENTS
 
-case $1 in
- debug)
-  debug "DEBUG mode"
-  export DEBUG
-  ;;
- no-rating)
-  debug "Skip SSLLabs"
-  SSL_GRADE=""
-  ;;
- force)
-  debug "Forcing an out-of-band scan"
-  SSL_GRADE="--get_ssl_grade"
-  ;;
- *)
-  # 4th Saturday only
-  if (( $(date +%-d) < 22 )); then
-   log "Not 4th week of month, exiting..."
-   exit 0
-  fi
-  SSL_GRADE="--get_ssl_grade"
-  ;;
-esac
+[ "$1" == "debug" ] && export DEBUG
 
-python3 $CMD_PATH/python/web-monitor.py $MONITOR_HOSTS $SSL_GRADE
-[ "$?" == "0" ] && [ "$CYCLE_DAYS" != "" ] && set_lastrun
+# 4th Saturday only
+if (( $(date +%-d) < 22 )) && (( $(date +%-d) > 28 )); then
+ log "Not 4th week of month, exiting..."
+ exit 0
+fi
 
-####################################################################
-# following is for using sslscan, will be removed in the future
-####################################################################
-
-SSLSCAN_CLI=$CMD_PATH/sslscan
-SSLSCAN_OUTPUT=/tmp/sslscan.json
-
-function scan_one_server() {
- local server=$1
-
- if [[ $server = http:* ]]; then
-  log_error "Invalid server: $server"
-  return
- fi
-
- debug "Scanning $server..."
- $SSLSCAN_CLI $server
- if [ ! -e $SSLSCAN_OUTPUT ]; then
-  log_error "Failed to scan $server"
-  return
- fi
-
- # parse the output
- local issues=$(cat $SSLSCAN_OUTPUT | jq '.[] | "\(.id) (\(.severity)): \(.ip)"')
- log "Issues found for $server: \n$issues"
-}
-
-function scan_server_list() {
- local server_list=$1
-
- while IFS= read -r line; do
-  scan_one_server $line
- done < "$server_list"
-}
+python3 $CMD_PATH/python/web-monitor.py $SSL_REPORT_CONFIG
+[ "$?" == "0" ] && set_lastrun
