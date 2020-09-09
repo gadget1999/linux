@@ -33,7 +33,7 @@
       <a href="{{ site.url }}">{{ site.url }}</a>
      </td>
      <td>
-      {{ site.error if site.error }}
+      <b style="color:red;">{{ site.error if site.error }}</b>
      </td>
     </tr>
     {%- endfor %}

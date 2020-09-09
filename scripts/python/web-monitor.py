@@ -271,7 +271,7 @@ class SiteInfo:
     except Exception as e:
       error = f"Network error: {e}"
       logger.error(error)
-      fatal_errors = ['ConnectionError', 'Timeout']
+      fatal_errors = ['ConnectionError', 'Timeout', 'SSLError']
       if type(e).__name__ in fatal_errors:
         return False, False, error
       else:

@@ -35,21 +35,21 @@
     <tr>
      <td>
       {% if site.online %}
-       <b style=\"color:green;\">Y</b>
+       <b style="color:green;">Y</b>
       {% else %}
-       <b style=\"color:red;\">N</b>
+       <b style="color:red;">N</b>
       {% endif %}
      </td>
      <td>
       {% if site.ssl_rating and site.ssl_rating.startswith('A') %}
-       <b style=\"color:green;\">{{ site.ssl_rating }}</b>
+       <b style="color:green;">{{ site.ssl_rating }}</b>
       {% else %}
-       <b style=\"color:red;\">{{ site.ssl_rating if site.ssl_rating }}</b>
+       <b style="color:red;">{{ site.ssl_rating if site.ssl_rating }}</b>
       {% endif %}
      </td>
      <td>
       {% if site.ssl_expires and (site.ssl_expires|int < 60) %}
-       <b style=\"color:red;\">{{ site.ssl_expires }}</b>
+       <b style="color:red;">{{ site.ssl_expires }}</b>
       {% else %}
        {{ site.ssl_expires if site.ssl_expires }}
       {% endif %}
@@ -65,7 +65,7 @@
       {{ site.ip if site.ip }}
      </td>
      <td>
-      {{ site.error if site.error }}
+      <b style="color:red;">{{ site.error if site.error }}</b>
      </td>
     </tr>
     {%- endfor %}
