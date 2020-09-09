@@ -427,10 +427,11 @@ class WebMonitor:
           logger.info(f"Site is now online: {record.url}")
     return has_down_sites
 
-  def _generate_html_body(self, report, outputfile=None):
+  # render output based on list of SiteRecord objects
+  def _render_template(self, template, report, outputfile=None):
     from jinja2 import Template
 
-    engine = Template(self._email_settings.body_template)
+    engine = Template(template)
     html = engine.render(sites=report)
     if outputfile:
       with open(outputfile, 'w') as f:
@@ -511,7 +512,7 @@ class WebMonitor:
       email.subject = email_config.subject_formatter.format(today=today)
       email.add_content(self._generate_html_body(report), MimeType.html)
       # get attachment
-      content = self._generate_xlsx_report(report)
+      content = self._render_template(email_config.body_template, report)
       attachment = Attachment()
       attachment.file_content = base64.b64encode(content).decode()
       attachment.file_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -529,7 +530,27 @@ class WebMonitor:
       logger.error(f"Failed to send Site SSL Report: {e}")
 
   def _send_webhook_notice(self, report):
-    return
+    # get post body
+    content = "Following sites may be down:<br>"
+    for record in report:
+      if not record.online:
+        content += f"{record.url} ({record.error})<br>"
+
+    # contruct payload
+    webhook_config = self._webhook_settings
+    # make string json safe
+    content = content.replace('\r', '').replace('\n', '').replace('\\', '\\\\').replace('"', '\\"')
+    payload = webhook_config.content_formatter.format(content=content)
+
+    # send over notification
+    try:
+      logger.debug("Sending webhook notification...")
+      headers = {"Content-Type": "application/json"}
+      r = requests.post(webhook_config.endpoint, headers=headers, data=payload)
+      if r.status_code > 400:
+        logger.error(f"Post to webhook failed: {r.status_code}")
+    except Exception as e:
+      logger.error(f"Post to webhook failed: {error}")
 
   #########################################
   # Public methods
