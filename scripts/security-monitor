@@ -17,7 +17,7 @@ export SENDGRID_API_KEY
 [ "$1" == "debug" ] && export DEBUG
 
 # 4th Saturday only
-if (( $(date +%-d) < 22 )) && (( $(date +%-d) > 28 )); then
+if (( $(date +%-d) < 22 )) || (( $(date +%-d) > 28 )); then
  log "Not 4th week of month, exiting..."
  exit 0
 fi
