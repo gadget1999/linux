@@ -10,7 +10,7 @@ IGNORE_DRIVES=""
 SUDO="sudo"
 SHIM_DIR="/tmp"
 
-check_package "hdparm"
+check_packages "hdparm"
 
 # Find all removable USB drives, so we can ignore them later,
 # see http://unix.stackexchange.com/questions/40143/how-to-know-if-dev-sdx-is-a-connected-usb-or-hdd
