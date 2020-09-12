@@ -325,7 +325,7 @@ function restore_volume()    {
   rm  restore-$volume.tar
 
   debug "Restoring volume content..."
-  sudo docker run -d --rm -v $volume:/restore --name "restore-$volume" alpine
+  sudo docker run -d -v $volume:/restore --name "restore-$volume" alpine sh
   sudo docker cp /tmp/restore-$volume/. restore-$volume:/restore
   sudo docker rm restore-$volume
 
