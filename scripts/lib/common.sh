@@ -64,6 +64,12 @@ function check_packages() {
  done
 }
 
+function assert_success() {
+ local msg=$1
+
+ [ "$?" != "0" ] && fatal_error "$msg failed ($?)."
+}
+
 function check_root() {
  [ "$REQUIRES_ROOT" == "" ] && return
  [ "$(id -u)" == "0" ] && return

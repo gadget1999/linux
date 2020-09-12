@@ -8,8 +8,10 @@ source $CMD_PATH/lib/docker.sh
 
 check_packages "partclone.ext4"
 
-BACKUP_FOLDER="/media/USBHDD/Share/Backup/System/RPi2"
-BACKUP_FILE_PREFIX="$BACKUP_FOLDER/rpi2-$TODAY"
+BACKUP_FOLDER="/media/USBHDD/Share/Backup/System/RPi2/image-$TODAY"
+BACKUP_FILE_PREFIX="$BACKUP_FOLDER/rpi4-$TODAY"
+mkdir -p $BACKUP_FOLDER
+assert_success "Creating backup folder [$BACKUP_FOLDER]"
 
 # Raspberry Pi disk and partitions
 # the partition layout is /boot, /root (main), /root (backup)
@@ -21,13 +23,16 @@ ROOT=mmcblk0p2
 BACKUP_FILE="$BACKUP_FILE_PREFIX-sfdisk-$DISK.txt"
 log "Backup [/dev/$DISK] partition table to: $BACKUP_FILE"
 sudo sfdisk -d /dev/$DISK > $BACKUP_FILE
+assert_success "Backup partition table [/dev/$DISK]"
 
 BACKUP_FILE="$BACKUP_FILE_PREFIX-boot-$BOOT.img"
 log "Backup boot partition [/dev/$BOOT] to: $BACKUP_FILE"
 sudo dd if=/dev/$BOOT of=$BACKUP_FILE
+assert_success "Backing up boot partition [/dev/$BOOT]"
 
 BACKUP_FILE="$BACKUP_FILE_PREFIX-root-$ROOT.img"
 log "Backup root partition [/dev/$ROOT] to: $BACKUP_FILE"
 sudo partclone.ext4 -c -s /dev/$ROOT -o $BACKUP_FILE
+assert_success "Backing up root partition [/dev/$ROOT]"
 
-grant_container_access $BACKUP_ROOT_FOLDER/*
+grant_container_access $BACKUP_FOLDER/*
