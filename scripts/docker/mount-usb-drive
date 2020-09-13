@@ -7,8 +7,10 @@ source $CMD_PATH/lib/common.sh
 
 # get device UUID from following cmd:
 # lsblk -o UUID,NAME,FSTYPE,SIZE,MOUNTPOINT,LABEL,MODEL
-UUID=b01b11e9-ab2d-4379-9870-a2a72b8fa5d5
-MOUNT_POINT=/media/USBHDD
+#DEV_UUID=
+#MOUNT_POINT=/media/USBHDD
+
+[ "$DEV_UUID" == "" ] || [ "$MOUNT_POINT" == "" ] && exit 0
 
 if [ "$(df | grep ""$MOUNT_POINT"")" ]; then
  debug "Device already mounted."
