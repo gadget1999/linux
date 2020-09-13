@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[ "$#" != "2" ] && show_usage "path text"
+
+sudo grep -rn "$1" -e "$2"
