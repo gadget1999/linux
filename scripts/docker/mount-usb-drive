@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+# get device UUID from following cmd:
+# lsblk -o UUID,NAME,FSTYPE,SIZE,MOUNTPOINT,LABEL,MODEL
+UUID=b01b11e9-ab2d-4379-9870-a2a72b8fa5d5
+MOUNT_POINT=/media/USBHDD
+
+if [ "$(df | grep ""$MOUNT_POINT"")" ]; then
+ debug "Device already mounted."
+ exit 0
+fi
+
+log "Mount device $UUID to [$MOUNT_POINT]"
+sudo mount -U $UUID $MOUNT_POINT
+assert_success "Mount device $UUID to [$MOUNT_POINT]"
