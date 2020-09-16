@@ -33,6 +33,7 @@ assert_success "Backing up boot partition [/dev/$BOOT]"
 
 BACKUP_FILE="$BACKUP_FILE_PREFIX-root-$ROOT.img"
 log "Backup root partition [/dev/$ROOT] to: $BACKUP_FILE"
+sudo umount /dev/$ROOT
 sudo partclone.ext4 -c -s /dev/$ROOT -o $BACKUP_FILE
 assert_success "Backing up root partition [/dev/$ROOT]"
 
