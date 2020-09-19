@@ -94,3 +94,8 @@ function start_firebase_agent {
   sleep 10
  done
 }
+
+####################
+# Bootstraping
+####################
+check_firebase_env
