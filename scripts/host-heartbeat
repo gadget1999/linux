@@ -8,7 +8,7 @@ source $CMD_PATH/lib/firebase.sh
 
 function get_cpu_temperature() {
  local temperature_file=/sys/class/thermal/thermal_zone*/temp
- [ ! -f $temperature_file ] && return
+ [ ! -f $temperature_file ] && echo "N/A" && return
 
  local temperature=$(( $(cat $temperature_file) / 1000 ))
  echo $temperature
@@ -28,5 +28,8 @@ function fb_send_metrics() {
  debug "Send metrics: $msg"
  firebase_send "heartbeat/$host" "$msg"
 }
+
+[ "METRICS_FB_URL" != "" ] && \
+ firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
 
 fb_send_metrics
