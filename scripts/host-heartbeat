@@ -6,14 +6,24 @@ source $CMD_PATH/lib/firebase.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
+function get_cpu_temperature() {
+ local temperature_file=/sys/class/thermal/thermal_zone*/temp
+ [ ! -f $temperature_file ] && return
+
+ local temperature=$(( $(cat $temperature_file) / 1000 ))
+ echo $temperature
+}
+
 function fb_send_metrics() {
  local host=$(hostname)
+ local temperature=$(get_cpu_temperature)
  local msg=$( \
-   jq -n '{timestamp:$epoch, updated:$time}' \
+   jq -n '{timestamp:$epoch, updated:$time, temperature:$temperature}' \
     --arg epoch $EPOCH \
     --arg time $NOW \
+    --arg temperature $temperature \
    }
-  ) 
+  )
 
  debug "Send metrics: $msg"
  firebase_send "heartbeat/$host" "$msg"

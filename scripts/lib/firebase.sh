@@ -8,6 +8,11 @@ function check_firebase_env {
  check_packages "curl jq"
 }
 
+function firebase_setup() {
+ FB_BASE_URL=$1
+ FB_KEY=$2
+}
+
 function firebase_response() {
  local timestamp=$(date +"%H:%M:%S")
  local path=$1
