@@ -7,8 +7,12 @@ source $CMD_PATH/lib/firebase.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
-[ $# == 0 ] && show_usage "host1 [host2]"
-check_env "SENDGRID_API_KEY MAIN_EMAIL"
+if [ $# == 0 ]; then
+ check_env "SENDGRID_API_KEY MAIN_EMAIL HOST_WATCHLIST"
+else
+ check_env "SENDGRID_API_KEY MAIN_EMAIL"
+ HOST_WATCHLIST="$*"
+fi
 
 MAX_DELAY=3600
 
@@ -22,11 +26,11 @@ function check_alive() {
 
  local delta=$(( $(date +%s) - $timestamp ))
  if (( $delta > $MAX_DELAY )); then
-  send_host_report $host "$delta seconds passed since last update. Host [$host] may be down."
+  send_host_report $host "[$host]: $delta seconds passed since last update. Host may be down."
   return
  fi
 
- debug "$delta seconds passed since last update."
+ debug "[$host]: $delta seconds passed since last update."
 }
 
 function send_host_report() {
@@ -40,6 +44,6 @@ function send_host_report() {
   "$error"
 }
 
-for host in "$@"; do
+for host in ${HOST_WATCHLIST[*]}; do
   check_alive $host
 done
