@@ -29,7 +29,7 @@ function fb_send_metrics() {
  firebase_send "heartbeat/$host" "$msg"
 }
 
-[ "METRICS_FB_URL" != "" ] && \
+[ $METRICS_FB_URL ] && \
  firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
 
 fb_send_metrics
