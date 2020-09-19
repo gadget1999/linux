@@ -44,6 +44,9 @@ function send_host_report() {
   "$error"
 }
 
+[ $METRICS_FB_URL ] && \
+ firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
+
 for host in ${HOST_WATCHLIST[*]}; do
   check_alive $host
 done
