@@ -29,6 +29,19 @@ function firebase_send() {
  curl -X PUT -d "$msg" "$url"
 }
 
+function firebase_get_json() {
+ local path=$1
+ local url="$FB_BASE_URL/$path.json?auth=$FB_KEY"
+ curl -s "$url"
+}
+
+function firebase_get_attr() {
+ local path=$1
+ local attr=$2
+ local msg=$(firebase_get_json $path)
+ echo $msg | jq -r ".$attr"
+}
+
 function trim_str() {
  local str=${1//\"/}
  str=${str//\\/}
