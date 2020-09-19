@@ -4,23 +4,25 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 function check_firebase_env {
- check_env "FB_BASE_URL FB_KEY FB_ENDPOINT FB_AGENT"
+ check_env "FB_BASE_URL FB_KEY"
  check_packages "curl jq"
- FIREBASE_ENDPOINT=$FB_BASE_URL
- FIREBASE_KEY=$FB_KEY
+ FIREBASE_API_ENDPOINT=$FB_BASE_URL
+ FIREBASE_API_KEY=$FB_KEY
 }
 
 function firebase_setup() {
- FIREBASE_ENDPOINT=$1
- FIREBASE_KEY=$2
+ FIREBASE_API_ENDPOINT=$1
+ FIREBASE_API_KEY=$2
 }
 
 function firebase_response() {
+ check_env "FB_ENDPOINT FB_AGENT"
+
  local timestamp=$(date +"%H:%M:%S")
  local path=$1
  local state=$2
  local msg='{"status":"'"$state $NOW"'"}'
- local url="$FIREBASE_ENDPOINT/$FB_ENDPOINT/response/$FB_AGENT/$path.json?auth=$FIREBASE_KEY"
+ local url="$FIREBASE_API_ENDPOINT/$FB_ENDPOINT/response/$FB_AGENT/$path.json?auth=$FIREBASE_API_KEY"
  local fullpath="/$path"
  
  debug "Sending firebase message to [$url]: $msg"
@@ -30,7 +32,7 @@ function firebase_response() {
 function firebase_send() {
  local path=$1
  local msg=$2
- local url="$FIREBASE_ENDPOINT/$path.json?auth=$FIREBASE_KEY"
+ local url="$FIREBASE_API_ENDPOINT/$path.json?auth=$FIREBASE_API_KEY"
 
  debug "Sending firebase message to [$url]: $msg"
  curl -X PUT -d "$msg" "$url"
@@ -38,7 +40,7 @@ function firebase_send() {
 
 function firebase_get_json() {
  local path=$1
- local url="$FIREBASE_ENDPOINT/$path.json?auth=$FIREBASE_KEY"
+ local url="$FIREBASE_API_ENDPOINT/$path.json?auth=$FIREBASE_API_KEY"
  curl -s "$url"
 }
 
@@ -76,8 +78,9 @@ function event_handler() {
 }
 
 function firebase_listen() {
- # httpie is used to handle streaming events from Firebase
- FB_REQUEST_URL="$FIREBASE_ENDPOINT/$FB_ENDPOINT/request.json?auth=$FIREBASE_KEY"
+ check_env "FB_ENDPOINT FB_AGENT"
+
+ FB_REQUEST_URL="$FIREBASE_API_ENDPOINT/$FB_ENDPOINT/request.json?auth=$FIREBASE_API_KEY"
  curl -s -N --http2 -H "Accept:text/event-stream" $FB_REQUEST_URL | \
 # /usr/bin/http --stream "$FB_REQUEST_URL" Accept:'text/event-stream' | \
  while read -r line ; do
