@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/firebase.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+function fb_send_metrics() {
+ local host=$(hostname)
+ local msg=$( \
+   jq -n '{timestamp:$epoch, updated:$time}' \
+    --arg epoch $EPOCH \
+    --arg time $NOW \
+   }
+  ) 
+
+ debug "Send metrics: $msg"
+ firebase_send "heartbeat/$host" "$msg"
+}
+
+fb_send_metrics
