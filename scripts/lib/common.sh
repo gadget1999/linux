@@ -5,6 +5,7 @@ CMD_PATH=$(dirname "$0")
 # Common variables
 NOW=$(date +"%Y_%m_%d-%H_%M_%S")
 TODAY=$(date +%y_%m_%d)
+EPOCH=$(date +%s)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 ENABLE_LOGGING=1
