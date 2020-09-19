@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/email.sh
+source $CMD_PATH/lib/firebase.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[ $# == 0 ] && show_usage "host1 [host2]"
+check_env "SENDGRID_API_KEY MAIN_EMAIL"
+
+MAX_DELAY=3600
+
+function check_alive() {
+ local host=$1
+ local timestamp=$(firebase_get_attr "heartbeat/$host" "timestamp")
+ if [ "$timestamp" == "null" ] || [ "$timestamp" == "" ] ; then
+  send_host_report $host "Failed to get heartbeat for host [$host]."
+  return
+ fi
+
+ local delta=$(( $(date +%s) - $timestamp ))
+ if (( $delta > $MAX_DELAY )); then
+  send_host_report $host "$delta seconds passed since last update. Host [$host] may be down."
+  return
+ fi
+
+ debug "$delta seconds passed since last update."
+}
+
+function send_host_report() {
+ local host=$1
+ local error=$2
+ log_error "Sending error report: $error"
+ check_email_env
+ send_email \
+  $MAIN_EMAIL \
+  "Server [$host] may be down" \
+  "$error"
+}
+
+for host in "$@"; do
+  check_alive $host
+done
