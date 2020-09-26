@@ -16,7 +16,8 @@ if [ ! -x "$(command -v $CMD)" ]; then
 fi
 
 TARGET="$HOST_DOWNLOAD_ROOT/Youtube"
-[ ! -d $TARGET ] && mkdir $TARGET
+[ ! -d $TARGET ] && mkdir -p $TARGET
+[ ! -d $TARGET ] && fatal_error "Failed to create folder: $TARGET"
 cd $TARGET
 
 [ "$DOWNLOAD_SPEED_LIMIT" != "" ] && CMD="$CMD -r $DOWNLOAD_SPEED_LIMIT"
