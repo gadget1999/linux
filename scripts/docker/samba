@@ -23,6 +23,7 @@ EXTRA_OPTS=(
  -p 138:10138/udp
  --tmpfs /run
  --tmpfs /var/cache/samba
+ --tmpfs /ram
  -v $SAMBA_LOCAL_PATH:/data
  -e SMB_VER="SMB2_10"
  -e PUID=$CONTAINER_UID
