@@ -2,7 +2,11 @@
 
 CMD_PATH=$(dirname "$0")
 
-[ -f $CMD_PATH/env.conf ] && source $CMD_PATH/env.conf
+ENV_FILE=$HOME/.env.conf
+[ -f $ENV_FILE ] &&
+ echo "Using env file: $ENV_FILE" &&
+ source $ENV_FILE
+
 DEBUG=1
 
 ################################################################
