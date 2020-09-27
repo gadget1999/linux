@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 
 ENV_FILE=$HOME/.env.conf
 [ -f $ENV_FILE ] &&
- echo "Using env file: $ENV_FILE" &&
+ #echo "Using env file: $ENV_FILE" &&
  source $ENV_FILE
 
 DEBUG=1
