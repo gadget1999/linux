@@ -13,6 +13,7 @@ else
  check_env "SENDGRID_API_KEY MAIN_EMAIL"
  HOST_WATCHLIST="$*"
 fi
+check_packages "jq"
 
 MAX_DELAY=3600
 
