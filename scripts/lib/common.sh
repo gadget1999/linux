@@ -319,6 +319,21 @@ function move_to_tmpfs() {
   ls -l $filepath
 }
 
+function move_locked_file() {
+ local file=$1
+ local service=$2
+
+ [ -e ${file} ] && debug "Skipping good link: $file" && return
+
+ debug "Shutdown service: $service"
+ sudo systemctl stop $service
+
+ move_to_tmpfs $file
+
+ debug "Start service: $service"
+ sudo systemctl start $service
+}
+
 function update_config_from_dropbox() {
  local remote_file=$1
  local local_file=$2
