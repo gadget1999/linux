@@ -311,7 +311,8 @@ function move_to_tmpfs() {
 
   debug "Copying $filepath to $tmpfile"
   sudo cp -p $filepath $tmpfile
-  sudo rm $filepath
+  sudo rm "$filepath.sav"
+  sudo mv $filepath "$filepath.sav"
 
   log "Linking $filepath to $tmpfile"
   sudo ln -s $tmpfile $filepath
