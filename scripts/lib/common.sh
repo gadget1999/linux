@@ -323,7 +323,8 @@ function move_locked_file() {
  local file=$1
  local service=$2
 
- [ -e ${file} ] && debug "Skipping good link: $file" && return
+ [ -L ${file} ] && [ -e ${file} ] &&
+  debug "Skipping good link: $file" && return
 
  debug "Shutdown service: $service"
  sudo systemctl stop $service
