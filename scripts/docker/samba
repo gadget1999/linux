@@ -23,6 +23,7 @@ EXTRA_OPTS=(
  -p 138:10138/udp
  --tmpfs /run
  --tmpfs /var/cache/samba
+ --mount type=tmpfs,destination=/var/lib/samba/private/msg.sock,tmpfs-mode=700 
  --tmpfs /ram
  -v $SAMBA_LOCAL_PATH:/data
  -e SMB_VER="SMB2_10"
