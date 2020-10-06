@@ -281,6 +281,43 @@ function conditional_copy() {
  [ ! -d $dst_folder ] && $SUDO mkdir -p $dst_folder
  copy_files "$src_folder/*" $dst_folder
 }
+function move_to_tmpfs() {
+  local filepath=$1
+  local bakfile="$filepath.sav"
+  local filename=${1##*/}  # get leaf name
+  local tmpfile=/tmp/$filename
+
+  debug "Checking $filepath link status"
+  if sudo test -L $filepath ; then
+    if sudo test -e $filepath ; then
+      debug "Good link"
+      return 0
+    else
+      debug "Broken link"
+      if sudo test -e $bakfile ; then
+        log "Copying $bakfile to $tmpfile"
+        sudo cp -p $bakfile $tmpfile
+        return 0
+      fi
+      return 3
+    fi
+  elif sudo test -e $filepath ; then
+    debug "Not a link"
+  else
+    debug "Missing file"
+    return 2
+  fi
+
+  # up to this point, converting regular file to link
+  debug "Copying $filepath to $tmpfile"
+  sudo cp -p $filepath $tmpfile
+  sudo mv $filepath $bakfile
+
+  log "Linking $filepath to $tmpfile"
+  sudo ln -s $tmpfile $filepath
+
+  sudo ls -l $filepath
+}
 
 function move_to_tmpfs() {
   local filepath=$1
