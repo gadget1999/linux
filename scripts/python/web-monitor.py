@@ -265,12 +265,12 @@ class SiteInfo:
         logger.debug(f"Online (status={r.status_code})")
         return True, True, None
       else:
-        error = f"{url}: HTTP error code: {r.status_code}"
-        logger.error(error)
+        error = f"HTTP error code: {r.status_code}"
+        logger.error(f"{url} failed: {error}")
         return True, False, error
     except Exception as e:
-      error = f"{url}: Network error: {e}"
-      logger.error(error)
+      error = f"Network error: {e}"
+      logger.error(f"{url} failed: {error}")
       fatal_errors = ['ConnectionError', 'Timeout', 'SSLError']
       if type(e).__name__ in fatal_errors:
         return False, False, error
