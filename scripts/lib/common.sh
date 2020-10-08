@@ -312,7 +312,7 @@ function move_to_tmpfs() {
   # up to this point, converting regular file to link
   debug "Copying $filepath to $tmpfile"
   sudo cp -p $filepath $tmpfile
-  sudo mv $filepath $bakfile
+  sudo mv -n $filepath $bakfile
 
   log "Linking $filepath to $tmpfile"
   sudo ln -s $tmpfile $filepath
