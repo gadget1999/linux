@@ -214,11 +214,12 @@ function new_container_service() {
  if [ "$DEBUG_DOCKER" != "0" ]; then
   # override to foreground if in DEBUG mode
   background="foreground"
- else
+  #################### move auto-restart as stateless is easier to maintain
+# else
   # if it's service, best to restart until stopped
-  extra_args=("${extra_args[@]}" --restart unless-stopped)
+#  extra_args=("${extra_args[@]}" --restart unless-stopped)
   # docker run --restart conflicts with --rm, so set to stateful
-  stateless="stateful"
+#  stateless="stateful"
  fi
 
  # delete existing container (assuming service containers do not need to persist)
