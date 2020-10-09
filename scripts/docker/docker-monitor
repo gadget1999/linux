@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+source $CMD_PATH/lib/email.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_email_env
+
+function send_alert() {
+ local container_name=$1
+
+ send_email \
+  $MAIN_EMAIL \
+  "[$(hostname)]: Container $container_name is down!" \
+  "Please check it out!"
+}
+
+function check_container() {
+ local container_name=$1
+ [ $(is_container_running $container_name) == "true" ] && return
+
+ log_error "Container [$container_name] is down. Restarting..."
+ # assuming start container command name is the same
+ $CMD_PATH/$container_name
+
+ sleep 5
+ if [ $(is_container_running $container_name) == "true" ]; then
+  log "Completed."
+ else
+  log_error "Failed. Sending alert..."
+  send_alert $container_name
+ fi
+}
+
+check_env "CONTAINERS"
+for container in ${CONTAINERS[*]}; do
+ check_container $container
+done
