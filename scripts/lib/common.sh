@@ -312,7 +312,13 @@ function move_to_tmpfs() {
   # up to this point, converting regular file to link
   debug "Copying $filepath to $tmpfile"
   sudo cp -p $filepath $tmpfile
-  sudo mv -n $filepath $bakfile
+  if sudo test -e $bakfile ; then
+   debug "Backup file exists, deleting file to be linked"
+   sudo rm $filepath
+  else
+   log "Backing up file to $bakfile"
+   sudo mv -n $filepath $bakfile
+  fi
 
   log "Linking $filepath to $tmpfile"
   sudo ln -s $tmpfile $filepath
