@@ -20,7 +20,8 @@ function send_alert() {
 
 function check_container() {
  local container_name=$1
- [ $(is_container_running $container_name) == "true" ] && return
+ [ $(is_container_running $container_name) == "true" ] &&
+  debug "[$container_name] is running." && return
 
  log_error "Container [$container_name] is down. Restarting..."
  # assuming start container command name is the same
