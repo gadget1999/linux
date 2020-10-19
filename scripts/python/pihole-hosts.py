@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
 
 import os, sys
-import json
-import time, datetime
-# for struct-like class
-import copy
-from dataclasses import dataclass
-# for web APIs
-import socket, ipaddress
 import requests
-from urllib.parse import urlparse
 # for logging and CLI arguments parsing
 import configparser
 from common import Logger, CLIParser
