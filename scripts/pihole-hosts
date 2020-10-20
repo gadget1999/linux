@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "python3"
+check_env "PIHOLE_CONFIG"
+
+lock
+
+LISTS_FILENAME=blocked-list.txt
+LISTS_FILEPATH=/tmp/$LISTS_FILENAME
+python3 $CMD_PATH/python/pihole-hosts.py $PIHOLE_CONFIG
+[ "$?" != "0" ] || [ ! -s $LISTS_FILEPATH ] &&
+ log_error "Failed to get compiled list." && exit 1
+
+log "Uploading aggregated hosts file"
+$CMD_PATH/dropbox upload $LISTS_FILEPATH /pihole/$LISTS_FILENAME
