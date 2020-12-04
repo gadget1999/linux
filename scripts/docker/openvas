@@ -14,10 +14,10 @@ IMAGE="securecompliance/gvm"
 function update_NVD() {
  local DOCKER_CMD="docker exec $CONTAINER"
  
- $DOCKER_CMD greenbone-nvt-sync
+ $DOCKER_CMD /usr/local/bin/greenbone-nvt-sync
  $DOCKER_CMD openvasmd --rebuild --progress
- $DOCKER_CMD greenbone-certdata-sync
- $DOCKER_CMD greenbone-scapdata-sync
+ $DOCKER_CMD /usr/local/sbin/greenbone-certdata-sync
+ $DOCKER_CMD /usr/local/sbin/greenbone-scapdata-sync
  $DOCKER_CMD openvasmd --update --verbose --progress
  $DOCKER_CMD /etc/init.d/openvas-manager restart
  $DOCKER_CMD /etc/init.d/openvas-scanner restart
