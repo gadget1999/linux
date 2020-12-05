@@ -363,7 +363,7 @@ function squash_image()    {
 
 function delete_orphan_images()    {
   sudo docker images --quiet --filter=dangling=true | \
-    xargs --no-run-if-empty docker rmi
+    xargs --no-run-if-empty sudo docker rmi
 }
 
 function delete_orphan_volumes()    {
