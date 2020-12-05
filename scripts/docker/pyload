@@ -7,24 +7,23 @@ source $CMD_PATH/lib/docker.sh
 check_env "HOST_DOWNLOAD_ROOT CERT_STORAGE CONTAINER_UID"
 
 CONTAINER="pyload"
-IMAGE="pyload"
+IMAGE="ghcr.io/linuxserver/pyload"
 
 grant_container_access $HOST_DOWNLOAD_ROOT/$CONTAINER $CERT_STORAGE
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -p 14102:8000
- --tmpfs /run
+ -e PUID=$CONTAINER_UID
+ -e PGID=$CONTAINER_UID
  -v "$HOST_DOWNLOAD_ROOT/$CONTAINER:/downloads"
- -v $CONTAINER:/home
+ -v $CONTAINER_CONFIG_ROOT/$CONTAINER:/config
  -v $CERT_STORAGE:/ssl:ro
- -u $CONTAINER_UID
  -m $MAX_RAM
  )
 
 ENTRYPOINT=(
 # bash
- /usr/share/pyload/pyLoadCore.py
  )
 
 [ "$1" == "debug" ] && DEBUG_DOCKER=1
