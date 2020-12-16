@@ -45,6 +45,7 @@ grant_container_access $CERT_STORAGE
 MAX_RAM="100m"
 EXTRA_OPTS=(
  --read-only
+ --restart unless-stopped
  --tmpfs /run
  -e "$V2RAY_ARGS"
  -v $CERT_STORAGE:$CONTAINER_CERT_ROOT:ro
