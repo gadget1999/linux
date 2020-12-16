@@ -19,6 +19,7 @@ grant_container_access $LOG
 MAX_RAM="100m"
 EXTRA_OPTS=(
  --read-only
+ --restart unless-stopped
  --tmpfs /run
  -e WEATHER_API_PROVIDER_1=$WEATHER_API_PROVIDER_1
  -e WEATHER_API_KEY_1=$WEATHER_API_KEY_1
