@@ -210,7 +210,10 @@ class SSLLabs:
       if error:
         result.error = error
       else:
-        result.expires = (expires - datetime.datetime.now()).days
+        expires_in_days = (expires - datetime.datetime.now()).days
+        result.expires = expires_in_days
+        if (expires_in_days < 7):
+          result.error = "Certificate will expire soon!"
       results.append(result)
     return results
 
