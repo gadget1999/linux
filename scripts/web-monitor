@@ -8,6 +8,10 @@ check_env "SENDGRID_API_KEY MONITOR_CONFIG"
 
 lock
 
+if [ "$MONITOR_HOSTS_REMOTE" != "" ]; then
+  update_config_from_dropbox $MONITOR_HOSTS_REMOTE $MONITOR_HOSTS
+fi
+
 export SENDGRID_API_KEY
 
 [ "$1" == "debug" ] && export DEBUG
