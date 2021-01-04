@@ -10,7 +10,8 @@
       "type": "python",
       "request": "launch",
       "program": "${file}",
-      "args": ["/tmp/web-config.cfg"],
+      "args": ["c:\\tmp\\web-monitor.cfg"],
+      "env": {"SENDGRID_API_KEY":"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"},
       "console": "integratedTerminal"
     }
   ]

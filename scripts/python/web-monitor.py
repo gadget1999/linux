@@ -172,14 +172,14 @@ class SSLLabs:
         ip = host
       if not port:
         port = 443
-      logger.debug(f"Getting SSL certificate info: {ip}:{port}")
+      #logger.debug(f"Getting SSL certificate info: {ip}:{port}")
       context = ssl.create_default_context()
       with socket.create_connection((ip, port)) as sock:
         with context.wrap_socket(sock, server_hostname=host) as ssock:
           cert_info = ssock.getpeercert()
           ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
           expire_time = datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
-          logger.debug(f"Expiration time: {expire_time.strftime('%Y-%m-%d')}")          
+          logger.debug(f"SSL expiration date: {expire_time.strftime('%Y-%m-%d')}")          
           return expire_time, None
     except Exception as e:
       error = f"Failed to get expiration date for {host}: {e}"
@@ -214,6 +214,7 @@ class SSLLabs:
         result.expires = expires_in_days
         if (expires_in_days < 7):
           result.error = "Certificate will expire soon!"
+          logger.error(result.error)
       results.append(result)
     return results
 
@@ -570,6 +571,8 @@ class WebMonitor:
 
   def __init__(self, configfile):
     try:
+      if not os.path.isfile(configfile):
+        raise Exception(f"Config file [{configfile}] does not exist.")
       config = configparser.ConfigParser()
       config.read(configfile)
       self._config_dir = os.path.dirname(configfile)
@@ -604,8 +607,15 @@ class WebMonitor:
       full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
       full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
       full_report.sort(key=lambda i: i.online)
-    # send email if ssl rating included, or has failed sites
-    if self._include_SSL_report or has_down_sites:
+
+    has_errors = False
+    for record in full_report:
+      if record.error:
+        has_errors = True
+        break
+
+    # send email if ssl rating included, or has failed sites, or has errors
+    if self._include_SSL_report or has_down_sites or has_errors:
       if self._email_settings:
         self._send_email_report(full_report)
       if self._webhook_settings:
