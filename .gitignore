@@ -8,4 +8,3 @@
 *.log
 /scripts/python/__pycache__
 .vscode/launch.json
-.vscode/launch.json
