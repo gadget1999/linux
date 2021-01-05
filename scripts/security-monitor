@@ -16,10 +16,12 @@ export SENDGRID_API_KEY
 
 [ "$1" == "debug" ] && export DEBUG
 
-# 4th Saturday only
-if (( $(date +%-d) < 22 )) || (( $(date +%-d) > 28 )); then
- log "Not 4th week of month, exiting..."
- exit 0
+if [ "$1" != "force" ]; then
+ # 4th Saturday only
+ if (( $(date +%-d) < 22 )) || (( $(date +%-d) > 28 )); then
+  log "Not 4th week of month, exiting..."
+  exit 0
+ fi
 fi
 
 python3 $CMD_PATH/python/web-monitor.py $SSL_REPORT_CONFIG
