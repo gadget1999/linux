@@ -119,7 +119,7 @@ class SSLLabs:
 
     payload = { 'host': url, 'fromCache': 'on', 'maxAge': 24 }
     result = SSLLabs.__analyze_api_call(payload)
-    for i in range(0, 6):
+    for i in range(0, 20):
       if result['status'].lower() == 'ready':
         return result
       elif result['status'].lower() == 'error':
@@ -143,7 +143,7 @@ class SSLLabs:
       except APIThrottlingException:
         # retry after a while if throttled
         logger.info("Sleeping for a while to avoid further throttling.")
-        time.sleep(900)
+        time.sleep(1000)
         result = SSLLabs.__analyze_server(url)
       endpoints = result['endpoints']
       parsed_uri = urlparse(url)
@@ -163,6 +163,109 @@ class SSLLabs:
     except Exception as e:
       logger.error(f"{e}")
       return [SSLRecord(url=url, grade='Error', error=f"{e}")]
+
+### SSLLabs reports is slow and subject to heavy throttling, switching to local scan based on TestSSL.sh
+class TestSSL_sh:
+  def __exec_Testssl_sh(url):
+    testssl_cmd = args['testssl_cmd']
+    timestamp = args['timestamp']
+    my_working_dir = args['my_working_dir']
+    testssl_path_if_missing = args['testssl_path_if_missing']
+
+    cmd_result = { "success":False,
+                   "orig_cmd":testssl_cmd,
+                   "timestamp":timestamp,
+                   "testssl_path_if_missing":testssl_path_if_missing }
+
+    logging.info("Processing testssl_cmd: '%s'", testssl_cmd)
+
+    start = datetime.datetime.now()
+
+    try:
+        # Where our output dir is
+        # for path arguments in the command
+        # that are relative and not absolute
+        outputdir_root = args['outputdir_root']
+
+        # testssl.sh missing path?
+        # prepend it with testssl_path_if_missing
+        if testssl_cmd.startswith('testssl.sh') or testssl_cmd.startswith('./testssl.sh'):
+            # my_dir
+            my_dir = os.path.realpath(__file__)
+            my_dir,file = os.path.split(my_dir)
+            if not os.path.exists(my_dir+"/testssl.sh") or not os.path.isfile(my_dir+"/testssl.sh"):
+                if testssl_path_if_missing.startswith('./'):
+                    testssl_path_if_missing = my_dir + "/" + testssl_path_if_missing.replace("./","")
+                    testssl_cmd = testssl_path_if_missing + "/" + testssl_cmd.replace("./","")
+
+        # capture the actual cmd we are now executing
+        # and note the current working dir
+        cmd_result["actual_cmd"] = testssl_cmd
+        cmd_result["cwd"] = outputdir_root
+
+        # split the string into array
+        cmd_parts = testssl_cmd.split()
+
+        # make any required dirs
+        # contained in paths embedded in the command
+        # as testssl.sh does not make them if missing
+        mkdirs(cmd_parts,outputdir_root)
+
+        # execute the command
+        run_result = subprocess.run(testssl_cmd.split(),
+                                    cwd=outputdir_root,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
+        logging.debug("Command finished: exit code: " + str(run_result.returncode) +
+            " stdout.len:" +str(len(run_result.stdout)) +
+            " stderr.len:" +str(len(run_result.stderr)) +
+            " cmd: " + testssl_cmd)
+
+        cmd_result["returncode"] = run_result.returncode
+        cmd_result["stdout"] = run_result.stdout.decode('utf-8')
+        cmd_result["stderr"] = run_result.stderr.decode('utf-8')
+
+        if run_result.stderr is not None and len(run_result.stderr) > 0:
+            cmd_result["success"] = False
+        else:
+            cmd_result["success"] = True
+
+    except Exception as e:
+        logging.exception("Unexpected error in spawning testssl.sh command: " + testssl_cmd + " error:" + str(sys.exc_info()[:2]))
+        cmd_result["success"] = False
+        cmd_result["exception"] = str(sys.exc_info()[:2])
+
+    finally:
+        cmd_result['exec_ms'] = (datetime.datetime.now() - start).total_seconds() * 1000
+
+    return cmd_result
+  
+  def get_site_rating(url):
+    ratings = []
+    try:
+      logger.info(f"Checking SSL rating for {url}...")
+      result = TestSSL_sh.__exec_Testssl_sh(url)
+      endpoints = result['endpoints']
+      for endpoint in endpoints:
+        rating = SSLRecord(url=url, report=report_url, ip=endpoint['ipAddress'])
+        if is_ipv6(rating.ip):
+          # skip non IPv4 address as Azure VM doesn't support it well yet
+          continue
+        if endpoint['statusMessage'].lower() != 'ready':
+          rating.error = endpoint['statusMessage']
+          rating.grade = 'Error'
+        else:
+          rating.grade = endpoint['grade']
+        ratings.append(rating)
+      return ratings
+    except Exception as e:
+      logger.error(f"{e}")
+      return [SSLRecord(url=url, grade='Error', error=f"{e}")]
+
+class SSLReport:
+  def get_site_rating(url):
+    return SSLLabs.get_site_rating(url)
 
   def __get_ssl_expiration_date(host, ip=None, port=443):
     import ssl
@@ -206,7 +309,7 @@ class SSLLabs:
     results = []
     for ip in addresses:
       result = SSLRecord(url=url, ip=ip)
-      expires, error = SSLLabs.__get_ssl_expiration_date(host, ip, port)
+      expires, error = SSLReport.__get_ssl_expiration_date(host, ip, port)
       if error:
         result.error = error
       else:
@@ -220,16 +323,16 @@ class SSLLabs:
 
 class SSLLabsTestCase(unittest.TestCase):
   def test_get_ssl_ratings(self):
-    rating = SSLLabs.get_site_rating("https://www.google.com")
+    rating = SSLReport.get_site_rating("https://www.google.com")
     self.assertEqual(len(rating), 2, 'wrong number of records')
-    rating = SSLLabs.get_site_rating("https://www.google1.com")
+    rating = SSLReport.get_site_rating("https://www.google1.com")
     self.assertEqual(len(rating), 1, 'wrong number of records')
   def test_get_ssl_expiration(self):
-    report = SSLLabs.get_ssl_expires_in_days("https://www.indiaglitz.com", check_endpoints=True)
+    report = SSLReport.get_ssl_expires_in_days("https://www.indiaglitz.com", check_endpoints=True)
     self.assertEqual(len(report), 4, 'wrong number of records')
-    report = SSLLabs.get_ssl_expires_in_days("https://www.indiaglitz.com")
+    report = SSLReport.get_ssl_expires_in_days("https://www.indiaglitz.com")
     self.assertEqual(len(report), 1, 'wrong number of records')
-    report = SSLLabs.get_ssl_expires_in_days("https://www.google1.com")
+    report = SSLReport.get_ssl_expires_in_days("https://www.google1.com")
     self.assertEqual(len(report), 1, 'wrong number of records')
 
 if 'UNIT_TEST' in os.environ:
@@ -290,18 +393,18 @@ class SiteInfo:
       return [site_info]
     if not include_ssl_rating:
       # only basic SSL info
-      ssl_expiration_info = SSLLabs.get_ssl_expires_in_days(url)[0]
+      ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)[0]
       site_info.ssl_expires = ssl_expiration_info.expires
       if ssl_expiration_info.error:
         site_info.error = ssl_expiration_info.error
       return [site_info]
     # get full SSL report
     final_reports = []
-    ssl_rating_info = SSLLabs.get_site_rating(url)
+    ssl_rating_info = SSLReport.get_site_rating(url)
     for record in ssl_rating_info:
       report = copy.copy(site_info)
       report.ip = record.ip
-      ssl_expiration_info = SSLLabs.get_ssl_expires_in_days(url, record.ip)[0]
+      ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url, record.ip)[0]
       report.ssl_expires = ssl_expiration_info.expires
       if ssl_expiration_info.error:
         report.error = ssl_expiration_info.error
