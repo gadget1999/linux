@@ -172,6 +172,7 @@ class TestSSL_sh:
     TestSSL_sh._show_progress = show_progress
 
   def __exec_cmd(args):
+    time.sleep(15) # adding some delay to reduce server impact
     import subprocess
     if TestSSL_sh._show_progress:
       run_result = subprocess.run(args.split())
@@ -183,7 +184,7 @@ class TestSSL_sh:
   def get_site_rating(url):
     import random
     ratings = []
-    try:      
+    try:
       logger.debug(f"Checking SSL rating for {url}... (Testssl.sh)")
       # execute testssl.sh and get json output
       jsonfile = f"/tmp/{random.randint(1, 1000000)}.json"
