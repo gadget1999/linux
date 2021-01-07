@@ -470,9 +470,10 @@ class WebMonitor:
     try:
       settings = SSLScannerConfig()
       settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=True)
-      settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')
-      settings.openssl_path = sslscannerconfig["OpenSSLPath"].strip('\" ')
-      settings.show_progress = sslscannerconfig.getboolean("ShowProgress", fallback=False)
+      if not settings.use_ssllabs:
+        settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')
+        settings.openssl_path = sslscannerconfig["OpenSSLPath"].strip('\" ')
+        settings.show_progress = sslscannerconfig.getboolean("ShowProgress", fallback=False)
       return settings
     except Exception as e:
       logger.error(f"SSLScanner configuration is invalid: {e}")
