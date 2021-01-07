@@ -7,4 +7,3 @@
 /scripts/azure/azcopy.exe
 *.log
 /scripts/python/__pycache__
-.vscode/launch.json

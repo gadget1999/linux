@@ -138,7 +138,7 @@ class SSLLabs:
         SSLLabs.__track_server_load()
       # start new assessment
       try:
-        logger.info(f"Checking SSL rating for {url}...")
+        logger.debug(f"Checking SSL rating for {url}...")
         result = SSLLabs.__analyze_server(url)
       except APIThrottlingException:
         # retry after a while if throttled
@@ -166,106 +166,68 @@ class SSLLabs:
 
 ### SSLLabs reports is slow and subject to heavy throttling, switching to local scan based on TestSSL.sh
 class TestSSL_sh:
-  def __exec_Testssl_sh(url):
-    testssl_cmd = args['testssl_cmd']
-    timestamp = args['timestamp']
-    my_working_dir = args['my_working_dir']
-    testssl_path_if_missing = args['testssl_path_if_missing']
+  def set_config(local_scanner, openssl_path, show_progress):
+    TestSSL_sh._local_scanner = local_scanner
+    TestSSL_sh._openssl_scanner = openssl_path
+    TestSSL_sh._show_progress = show_progress
 
-    cmd_result = { "success":False,
-                   "orig_cmd":testssl_cmd,
-                   "timestamp":timestamp,
-                   "testssl_path_if_missing":testssl_path_if_missing }
-
-    logging.info("Processing testssl_cmd: '%s'", testssl_cmd)
-
-    start = datetime.datetime.now()
-
-    try:
-        # Where our output dir is
-        # for path arguments in the command
-        # that are relative and not absolute
-        outputdir_root = args['outputdir_root']
-
-        # testssl.sh missing path?
-        # prepend it with testssl_path_if_missing
-        if testssl_cmd.startswith('testssl.sh') or testssl_cmd.startswith('./testssl.sh'):
-            # my_dir
-            my_dir = os.path.realpath(__file__)
-            my_dir,file = os.path.split(my_dir)
-            if not os.path.exists(my_dir+"/testssl.sh") or not os.path.isfile(my_dir+"/testssl.sh"):
-                if testssl_path_if_missing.startswith('./'):
-                    testssl_path_if_missing = my_dir + "/" + testssl_path_if_missing.replace("./","")
-                    testssl_cmd = testssl_path_if_missing + "/" + testssl_cmd.replace("./","")
-
-        # capture the actual cmd we are now executing
-        # and note the current working dir
-        cmd_result["actual_cmd"] = testssl_cmd
-        cmd_result["cwd"] = outputdir_root
-
-        # split the string into array
-        cmd_parts = testssl_cmd.split()
-
-        # make any required dirs
-        # contained in paths embedded in the command
-        # as testssl.sh does not make them if missing
-        mkdirs(cmd_parts,outputdir_root)
-
-        # execute the command
-        run_result = subprocess.run(testssl_cmd.split(),
-                                    cwd=outputdir_root,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-
-        logging.debug("Command finished: exit code: " + str(run_result.returncode) +
-            " stdout.len:" +str(len(run_result.stdout)) +
-            " stderr.len:" +str(len(run_result.stderr)) +
-            " cmd: " + testssl_cmd)
-
-        cmd_result["returncode"] = run_result.returncode
-        cmd_result["stdout"] = run_result.stdout.decode('utf-8')
-        cmd_result["stderr"] = run_result.stderr.decode('utf-8')
-
-        if run_result.stderr is not None and len(run_result.stderr) > 0:
-            cmd_result["success"] = False
-        else:
-            cmd_result["success"] = True
-
-    except Exception as e:
-        logging.exception("Unexpected error in spawning testssl.sh command: " + testssl_cmd + " error:" + str(sys.exc_info()[:2]))
-        cmd_result["success"] = False
-        cmd_result["exception"] = str(sys.exc_info()[:2])
-
-    finally:
-        cmd_result['exec_ms'] = (datetime.datetime.now() - start).total_seconds() * 1000
-
-    return cmd_result
+  def __exec_cmd(args):
+    import subprocess
+    if TestSSL_sh._show_progress:
+      run_result = subprocess.run(args.split())
+    else:
+      run_result = subprocess.run(args.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if run_result.stderr:
+      logger.error(f"Error: {run_result.stderr}")
   
   def get_site_rating(url):
+    import random
     ratings = []
-    try:
-      logger.info(f"Checking SSL rating for {url}...")
-      result = TestSSL_sh.__exec_Testssl_sh(url)
-      endpoints = result['endpoints']
-      for endpoint in endpoints:
-        rating = SSLRecord(url=url, report=report_url, ip=endpoint['ipAddress'])
-        if is_ipv6(rating.ip):
-          # skip non IPv4 address as Azure VM doesn't support it well yet
-          continue
-        if endpoint['statusMessage'].lower() != 'ready':
-          rating.error = endpoint['statusMessage']
-          rating.grade = 'Error'
-        else:
-          rating.grade = endpoint['grade']
-        ratings.append(rating)
+    try:      
+      logger.debug(f"Checking SSL rating for {url}... (Testssl.sh)")
+      # execute testssl.sh and get json output
+      jsonfile = f"/tmp/{random.randint(1, 1000000)}.json"
+      args = f"{TestSSL_sh._local_scanner} " \
+             f"--openssl={TestSSL_sh._openssl_scanner} --ip one " \
+             f"--quiet --overwrite --jsonfile-pretty {jsonfile} " \
+             f"{url}"
+      TestSSL_sh.__exec_cmd(args)
+      cmd_json_out = {}
+      with open(jsonfile, "r") as f:
+        cmd_json_out = json.load(f)
+      os.remove(jsonfile)
+      # parse json file
+      list_ratings = cmd_json_out['scanResult'][0]['rating']
+      json_rating = next(x for x in list_ratings if x["id"] == "overall_grade")
+      grade = json_rating["finding"]
+      logger.info(f"SSL rating: {grade}")
+      # assemble report
+      rating = SSLRecord(url=url)
+      rating.grade = grade
+      ratings.append(rating)
       return ratings
     except Exception as e:
       logger.error(f"{e}")
       return [SSLRecord(url=url, grade='Error', error=f"{e}")]
 
+@dataclass
+class SSLScannerConfig:
+  use_ssllabs: bool = True
+  local_scanner: str = None
+  openssl_path: str = None
+  show_progress: bool = False
+
 class SSLReport:
+  def set_config(settings):
+    SSLReport._settings = settings
+    if not settings.use_ssllabs:
+      TestSSL_sh.set_config(settings.local_scanner, settings.openssl_path, settings.show_progress)
+
   def get_site_rating(url):
-    return SSLLabs.get_site_rating(url)
+    if (SSLReport._settings.use_ssllabs):
+      return SSLLabs.get_site_rating(url)
+    else :
+      return TestSSL_sh.get_site_rating(url)    
 
   def __get_ssl_expiration_date(host, ip=None, port=443):
     import ssl
@@ -282,7 +244,7 @@ class SSLReport:
           cert_info = ssock.getpeercert()
           ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
           expire_time = datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
-          logger.debug(f"SSL expiration date: {expire_time.strftime('%Y-%m-%d')}")          
+          logger.info(f"SSL expiration date: {expire_time.strftime('%Y-%m-%d')}")          
           return expire_time, None
     except Exception as e:
       error = f"Failed to get expiration date for {host}: {e}"
@@ -369,7 +331,7 @@ class SiteInfo:
       time.sleep(1)
       r = requests.get(url, headers=headers)
       if r.status_code < 400:
-        logger.debug(f"Online (status={r.status_code})")
+        logger.info(f"Online (status={r.status_code})")
         return True, True, None
       else:
         error = f"HTTP error code: {r.status_code}"
@@ -504,6 +466,18 @@ class WebMonitor:
       logger.error(f"WebHook configuration is invalid: {e}")
       raise
 
+  def _load_sslscanner_config(self, sslscannerconfig):
+    try:
+      settings = SSLScannerConfig()
+      settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=True)
+      settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')
+      settings.openssl_path = sslscannerconfig["OpenSSLPath"].strip('\" ')
+      settings.show_progress = sslscannerconfig.getboolean("ShowProgress", fallback=False)
+      return settings
+    except Exception as e:
+      logger.error(f"SSLScanner configuration is invalid: {e}")
+      raise
+
   def _get_report(self, urls, include_ssl_rating=False):
     full_report = []
     has_down_sites = False
@@ -516,7 +490,7 @@ class WebMonitor:
       if not SiteInfo.is_valid_url(url):
         logger.warning(f"Skipping invalid URL: {url}")
         continue
-      logger.debug(f"Analyzing site ({i}/{total}): {url}")
+      logger.info(f"Analyzing site ({i}/{total}): {url}")
       result = SiteInfo.get_report(url, include_ssl_rating)
       i += 1
       if not result[0].online:
@@ -692,6 +666,8 @@ class WebMonitor:
         self._webhook_settings = self._load_webhook_config(config["WebHook"])
       if "Email" in config:
         self._email_settings = self._load_email_config(config["Email"])
+      if self._include_SSL_report:
+        SSLReport.set_config(self._load_sslscanner_config(config["SSL"]))
     except Exception as e:
       logger.error(f"Config file {configfile} is invalid: {e}")
       raise
