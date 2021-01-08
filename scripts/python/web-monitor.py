@@ -189,7 +189,7 @@ class TestSSL_sh:
       # execute testssl.sh and get json output
       jsonfile = f"/tmp/{random.randint(1, 1000000)}.json"
       args = f"{TestSSL_sh._local_scanner} " \
-             f"--openssl={TestSSL_sh._openssl_scanner} --ip one " \
+             f"--openssl={TestSSL_sh._openssl_scanner} --fast --ip one " \
              f"--quiet --overwrite --jsonfile-pretty {jsonfile} " \
              f"{url}"
       TestSSL_sh.__exec_cmd(args)
@@ -203,7 +203,9 @@ class TestSSL_sh:
       grade = json_rating["finding"]
       logger.info(f"SSL rating: {grade}")
       # assemble report
-      rating = SSLRecord(url=url)
+      parsed_uri = urlparse(url)
+      report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
+      rating = SSLRecord(url=url, report=report_url)      
       rating.grade = grade
       ratings.append(rating)
       return ratings
