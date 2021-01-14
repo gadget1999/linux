@@ -23,7 +23,7 @@ def get_temp():
 
     return int(temp_str) / 1000
   except Exception as e:
-    raise Exception(f"Could not read CPU temperature: {e}")
+    logger.error(f"Could not read CPU temperature: {e}")
 
 if __name__ == '__main__':
   # Validate the on and off thresholds

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+lock
+
+sudo python3 $CMD_PATH/python/rpi-fan.py
