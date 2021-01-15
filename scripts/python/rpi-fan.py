@@ -47,6 +47,6 @@ if __name__ == '__main__':
       logger.info(f"Turn off fan. (temperature={temp})")
       fan.off()
 
-    if 'DEBUG' in os.environ:
+    if 'DEBUG' in os.environ or fan.value == 1:
       logger.debug(f"Temp={temp}, PIN state={fan.value}")
     time.sleep(SLEEP_INTERVAL)
