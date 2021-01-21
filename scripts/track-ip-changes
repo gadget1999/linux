@@ -28,18 +28,20 @@ function invoke_azvm_api {
 }
 
 function update_ip_whitelist {
- [ "$AZURE_NSG_RULE" == "" ] && return
+ check_env "AZURE_NSG_RULES"
+ [ "$AZURE_NSG_RULES" == "" ] && return
 
- local new_ip=$1
- log "Adding new IP into whitelist: $new_ip"
+ for RULE in ${AZURE_NSG_RULES[*]}; do
+  local new_ip=$1
+  log "Adding new IP ($new_ip) into NSG rule ($RULE)"
 
- local fixed_ip=$AZURE_FIXED_IP
- invoke_azvm_api add-ip $AZURE_NSG_RULE $new_ip $AZURE_FIXED_IP
- if [ "$invoke_azvm_api" != "" ]; then
-  update_ip_whitelist="Failed to add $new_ip to Azure NSG. Please check manually."
- else
-  update_ip_whitelist="Adding $new_ip to Azure NSG succeeded."
- fi
+  invoke_azvm_api add-ip $RULE $new_ip $AZURE_FIXED_IP
+  if [ "$invoke_azvm_api" != "" ]; then
+   update_ip_whitelist="Failed to add $new_ip to Azure NSG. Please check manually."
+  else
+   update_ip_whitelist="Adding $new_ip to Azure NSG succeeded."
+  fi
+ done
 }
 
 function notify_ip_change {
