@@ -327,14 +327,17 @@ class SiteInfo:
       return False
 
   # return alive (if reachable), online (if functional) and error if any
-  def is_online(url):
+  def is_online(url):    
     try:
       logger.debug(f"Checking [{url}] status...")
       headers = {"Accept-Language": "en-US,en;q=0.5"}
       time.sleep(1)
+      t_start = time.perf_counter_ns()
       r = requests.get(url, headers=headers)
+      t_stop = time.perf_counter_ns()
+      t_elapsed_ms = int((t_stop - t_start) / 1000000)
       if r.status_code < 400:
-        logger.info(f"Online (status={r.status_code})")
+        logger.info(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
         return True, True, None
       else:
         error = f"HTTP error code: {r.status_code}"
