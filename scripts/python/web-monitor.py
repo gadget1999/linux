@@ -327,7 +327,8 @@ class SiteInfo:
       return False
 
   # return alive (if reachable), online (if functional) and error if any
-  def is_online(url):    
+  def is_online(url):
+    error = None
     try:
       logger.debug(f"Checking [{url}] status...")
       headers = {"Accept-Language": "en-US,en;q=0.5"}
@@ -338,7 +339,9 @@ class SiteInfo:
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
       if r.status_code < 400:
         logger.info(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
-        return True, True, None
+        if (t_elapsed_ms > 2000):
+          logger.error(f"Response time too long: {t_elapsed_ms}ms")
+        return True, True, error
       else:
         error = f"HTTP error code: {r.status_code}"
         logger.error(f"{url} failed: {error}")
