@@ -17,7 +17,7 @@ function firebase_response() {
  local timestamp=$(date +"%H:%M:%S")
  local path=$1
  local state=$2
- local msg='{"status":"'"$state $NOW"'"}'
+ local msg='{"status":"'"$state $timestamp"'"}'
  local url="$FB_BASE_URL/$FB_ENDPOINT/response/$FB_AGENT/$path.json?auth=$FB_KEY"
  local fullpath="/$path"
  
