@@ -327,7 +327,8 @@ class SiteInfo:
       return False
 
   # return alive (if reachable), online (if functional) and error if any
-  def is_online(url):    
+  def is_online(url):
+    error = None
     try:
       logger.debug(f"Checking [{url}] status...")
       headers = {"Accept-Language": "en-US,en;q=0.5"}
@@ -338,7 +339,9 @@ class SiteInfo:
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
       if r.status_code < 400:
         logger.info(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
-        return True, True, None
+        if (t_elapsed_ms > 2000):
+          logger.error(f"Response time too long: {t_elapsed_ms}ms")
+        return True, True, error
       else:
         error = f"HTTP error code: {r.status_code}"
         logger.error(f"{url} failed: {error}")
@@ -688,20 +691,16 @@ class WebMonitor:
       logger.info(f"Wait some time and retry failed sites (retry #{retries})")
       time.sleep(self._retry_delay)
       has_down_sites = self._reconfirm_sites(full_report)
+    if len(full_report) == 0:
+      logger.error(f"Site report list is empty.")
+      return
     # sort list to move items with error to front
-    if len(full_report) > 0:
-      full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
-      full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
-      full_report.sort(key=lambda i: i.online)
-
-    has_errors = False
-    for record in full_report:
-      if record.error:
-        has_errors = True
-        break
-
+    full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
+    full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
+    full_report.sort(key=lambda i: i.online)
+    num_errors = sum(1 for x in full_report if x.error)
     # send email if ssl rating included, or has failed sites, or has errors
-    if self._include_SSL_report or has_down_sites or has_errors:
+    if self._include_SSL_report or has_down_sites or num_errors > 0:
       if self._email_settings:
         self._send_email_report(full_report)
       if self._webhook_settings:
@@ -713,6 +712,7 @@ class WebMonitor:
         os.makedirs(archive_folder)
       report_file = f"{archive_folder}/Site-Report-{now.strftime('%Y-%m-%d_%H_%M_%S')}.xlsx"
       self._generate_xlsx_report(full_report, report_file)
+      logger.error(f"Scan completed: {num_errors} of {len(full_report)} URLs have errors.")
 
 class WebMonitorTestCase(unittest.TestCase):
   def test_webmonitor_report(self):
