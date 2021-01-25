@@ -3,6 +3,13 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-lock
+check_env "INFLUXDB_API_ENDPOINT INFLUXDB_API_TOKEN
+           INFLUXDB_TENANT INFLUXDB_BUCKET"
 
-sudo python3 $CMD_PATH/python/rpi-fan.py
+export INFLUXDB_API_ENDPOINT
+export INFLUXDB_API_TOKEN
+export INFLUXDB_TENANT
+export INFLUXDB_BUCKET
+
+# use sudo -E to access exported variables
+sudo -E python3 $CMD_PATH/python/rpi-fan.py
