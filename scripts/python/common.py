@@ -1,8 +1,14 @@
 import logging
 import colorlog
 class Logger:
+  __logger = None
+
   def getLogger(app_name=None, log_to_file=True):
-    logger = colorlog.getLogger(app_name)
+    # reuse existing logger
+    if Logger.__logger:
+      return Logger.__logger
+    # create new logger
+    Logger.__logger = colorlog.getLogger(app_name)
     # console logger
     consoleHandler = logging.StreamHandler()
     console_log_format = "%(log_color)s%(asctime)s: %(message)s"
@@ -16,7 +22,7 @@ class Logger:
     console_log_formatter = colorlog.ColoredFormatter(console_log_format, log_colors=console_log_colors)
     consoleHandler.setFormatter(console_log_formatter)
     consoleHandler.setLevel(logging.DEBUG)
-    logger.addHandler(consoleHandler)
+    Logger.__logger.addHandler(consoleHandler)
     if log_to_file:
       if not app_name:
         app_name = CLIParser.get_app_name()
@@ -26,12 +32,12 @@ class Logger:
         file_log_format = "%(asctime)s: %(levelname)s - %(message)s"
         fileHandler.setFormatter(logging.Formatter(file_log_format))
         fileHandler.setLevel(logging.INFO)
-        logger.addHandler(fileHandler)
+        Logger.__logger.addHandler(fileHandler)
       except Exception as e:
-        logger.error(f"Cannot open log file [{app_logfile}]: {e}")
+        Logger.__logger.error(f"Cannot open log file [{app_logfile}]: {e}")
     # set log level
-    logger.setLevel(logging.DEBUG)
-    return logger
+    Logger.__logger.setLevel(logging.DEBUG)
+    return Logger.__logger
 
   def disable_http_tracing():
     logging.getLogger("requests").setLevel(logging.WARNING)
