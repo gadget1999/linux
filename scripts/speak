@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[ $# == 0 ] && show_usage "text"
+
+check_packages "espeak-ng"
+
+DEV_SOUND="plughw:CARD=Headphones,DEV=0"
+LANGUAGE="en-us"
+
+sudo espeak-ng -v $LANGUAGE -d $DEV_SOUND \
+ "'$*'"
