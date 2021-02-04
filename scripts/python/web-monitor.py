@@ -201,7 +201,7 @@ class TestSSL_sh:
       list_ratings = cmd_json_out['scanResult'][0]['rating']
       json_rating = next(x for x in list_ratings if x["id"] == "overall_grade")
       grade = json_rating["finding"]
-      logger.info(f"SSL rating: {grade}")
+      logger.debug(f"SSL rating: {grade}")
       # assemble report
       parsed_uri = urlparse(url)
       report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
@@ -247,7 +247,7 @@ class SSLReport:
           cert_info = ssock.getpeercert()
           ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
           expire_time = datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
-          logger.info(f"SSL expiration date: {expire_time.strftime('%Y-%m-%d')}")          
+          logger.debug(f"SSL expiration date: {expire_time.strftime('%Y-%m-%d')}")          
           return expire_time, None
     except Exception as e:
       error = f"Failed to get expiration date for {host}: {e}"
@@ -340,7 +340,7 @@ class SiteInfo:
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
       if r.status_code < 400:
-        logger.info(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
+        logger.debug(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
         if (t_elapsed_ms > 2000):
           logger.error(f"Response time too long: {t_elapsed_ms}ms")
         return True, True, error
@@ -531,7 +531,7 @@ class WebMonitor:
       if not SiteInfo.is_valid_url(url):
         logger.warning(f"Skipping invalid URL: {url}")
         continue
-      logger.info(f"Analyzing site ({i}/{total}): {url}")
+      logger.debug(f"Analyzing site ({i}/{total}): {url}")
       result = SiteInfo.get_report(url, include_ssl_rating)
       i += 1
       if not result[0].online:
