@@ -466,7 +466,7 @@ class WebMonitor:
             urls.append(line)
       return urls
     except Exception as e:
-      logger.critical(f"Cannot load site list file: {e}")
+      logger.critical(f"Cannot load site list file [{filepath}]: {e}")
       sys.exit(1)
 
   def _load_urls(self, filepath):
