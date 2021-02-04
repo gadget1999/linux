@@ -252,6 +252,8 @@ class SSLReport:
     except Exception as e:
       error = f"Failed to get expiration date for {host}: {e}"
       logger.error(error)
+      if "Temporary failure" in error:
+        error = None
       return None, error
 
   def get_ssl_expires_in_days(url, ip=None, check_endpoints=False):
