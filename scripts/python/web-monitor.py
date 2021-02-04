@@ -430,10 +430,33 @@ class WebMonitor:
   # Internal helper functions
   #########################################
 
-  def _load_urls(self, url_list_file):
+  def _load_urls_from_xlsx(self, filepath):
+    try:
+      from openpyxl import load_workbook
+
+      urls = []
+      workbook = load_workbook(filepath)
+      for sheet in workbook.worksheets:
+        url_count = 0        
+        for row in sheet['A']:
+          line = row.value
+          if not line:
+            break
+          line = line.lower().strip(' \r\'\"\n')
+          if line.startswith(("http://", "https://")):
+            urls.append(line)
+            url_count += 1
+        logger.info(f"Sheet [{sheet.title}]: found {url_count} URLs")
+      workbook.close()
+      return urls
+    except Exception as e:
+      logger.critical(f"Cannot load site list file [{filepath}]: {e}")
+      sys.exit(1)    
+
+  def _load_urls_from_txt(self, filepath):
     try:
       urls = []
-      with open(url_list_file, 'r') as f:
+      with open(filepath, 'r') as f:
         lines = f.readlines()
         for line in lines:
           line = line.strip(' \r\'\"\n')
@@ -445,6 +468,12 @@ class WebMonitor:
     except Exception as e:
       logger.critical(f"Cannot load site list file: {e}")
       sys.exit(1)
+
+  def _load_urls(self, filepath):
+    if filepath.lower().endswith('.xlsx'):
+      return self._load_urls_from_xlsx(filepath)
+    else:
+      return self._load_urls_from_txt(filepath)
 
   def _load_email_config(self, emailconfig):
     try:
@@ -753,8 +782,8 @@ if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
     {'name':'config', 'help':'Config file for monitor'} 
     ]}
   try:
-   parser = CLIParser.get_parser(CLI_config)
-   CLIParser.run(parser)
+    parser = CLIParser.get_parser(CLI_config)
+    CLIParser.run(parser)
   except Exception as e:
    logger.error(f"Exception happened: {e}")
    sys.exit(1)
