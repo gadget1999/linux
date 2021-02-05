@@ -446,7 +446,7 @@ class WebMonitor:
           if line.startswith(("http://", "https://")):
             urls.append(line)
             url_count += 1
-        logger.info(f"Sheet [{sheet.title}]: found {url_count} URLs")
+        logger.debug(f"Sheet [{sheet.title}]: found {url_count} URLs")
       workbook.close()
       return urls
     except Exception as e:
