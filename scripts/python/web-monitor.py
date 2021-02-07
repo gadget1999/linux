@@ -279,7 +279,7 @@ class SSLReport:
       expires, error = SSLReport.__get_ssl_expiration_date(host, ip, port)
       if error:
         result.error = error
-      else:
+      else if expires:
         expires_in_days = (expires - datetime.datetime.now()).days
         result.expires = expires_in_days
         if (expires_in_days < 7):
@@ -332,7 +332,7 @@ class SiteInfo:
   def is_online(url):
     error = None
     try:
-      logger.debug(f"Checking [{url}] status...")
+      #logger.debug(f"Checking [{url}] status...")
       headers = {"Accept-Language": "en-US,en;q=0.5"}
       time.sleep(1)
       t_start = time.perf_counter_ns()
