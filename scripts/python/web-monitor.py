@@ -279,7 +279,7 @@ class SSLReport:
       expires, error = SSLReport.__get_ssl_expiration_date(host, ip, port)
       if error:
         result.error = error
-      else if expires:
+      elif expires:
         expires_in_days = (expires - datetime.datetime.now()).days
         result.expires = expires_in_days
         if (expires_in_days < 7):
