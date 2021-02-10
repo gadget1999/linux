@@ -23,10 +23,13 @@ function get_diskstats() {
 }
 
 function reset_diskstats() {
- get_diskstats
- get_diskstats
+# get_diskstats
+# get_diskstats
+ return
 }
 
+# seems after a recent system update, hdparm -C will always cause diskstats to increase
+# even without waking up the disk. reset diskstats after every hdparm calls
 function spindown_disk() {
  local disk=$1
  local flag="$SPINDOWN_FLAG.$disk"
@@ -38,9 +41,16 @@ function spindown_disk() {
  fi
 
  # Check if drive has activities since last run
- if [ "$(diff $DISKSTATS1 $DISKSTATS2 | grep $disk )" !=  "" ]; then
-  log "/dev/$disk running"
-  [ -e $flag ] && $SUDO rm $flag
+ # test the partition instead of drive to avoid interference from hdparm
+ if [ "$(diff $DISKSTATS1 $DISKSTATS2 | grep "$disk""1" )" !=  "" ]; then
+  # noticed strange thing that diskstats changes between checks but disk not woke up
+  if [ "$($SUDO hdparm -C /dev/$disk | grep state)" = " drive state is:  active/idle" ]; then
+   log "/dev/$disk running"
+   [ -e $flag ] && $SUDO rm $flag
+  else
+   log "/dev/$disk ----"
+  fi
+  reset_diskstats
   return 
  fi
 
@@ -54,8 +64,6 @@ function spindown_disk() {
  fi
 
  # Already spindown, verify status
- # seems after a recent system update, hdparm -C will always cause diskstats to increase
- # even without waking up the disk. reset diskstats after it
  if [ "$($SUDO hdparm -C /dev/$disk | grep state)" = " drive state is:  active/idle" ]; then
   log "/dev/$disk running (unexpected)"
  else
