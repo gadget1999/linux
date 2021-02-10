@@ -4,40 +4,84 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 DEBUG=1
 
+lock
+
 # Specify any drives you want to ignore; separate multiple drives by spaces; e.g. "sda sdb"
 IGNORE_DRIVES=""
 
 SUDO="sudo"
-SHIM_DIR="/tmp"
+SPINDOWN_FLAG=/tmp/spindown
+DISKSTATS1=/tmp/diskstats_1
+DISKSTATS2=/tmp/diskstats_2
 
 check_packages "hdparm"
+
+function get_diskstats() {
+ # Create a file on the ramdisk and cycle it to test for disk activity
+ [ -f $DISKSTATS1 ] && $SUDO mv $DISKSTATS1 $DISKSTATS2
+ $SUDO cat /proc/diskstats > $DISKSTATS1
+}
+
+function reset_diskstats() {
+ get_diskstats
+ get_diskstats
+}
+
+function spindown_disk() {
+ local disk=$1
+ local flag="$SPINDOWN_FLAG.$disk"
+
+ # Check if drive exists
+ if [ ! -e /dev/$disk ]; then
+  error "/dev/$disk does not exist."
+  return
+ fi
+
+ # Check if drive has activities since last run
+ if [ "$(diff $DISKSTATS1 $DISKSTATS2 | grep $disk )" !=  "" ]; then
+  log "/dev/$disk running"
+  [ -e $flag ] && $SUDO rm $flag
+  return 
+ fi
+
+ # Spin down if not yet
+ if [ ! -e $flag ]; then
+  log "Spin down /dev/$disk"
+  $SUDO hdparm -y /dev/$disk
+  $SUDO touch $flag
+  reset_diskstats
+  return
+ fi
+
+ # Already spindown, verify status
+ # seems after a recent system update, hdparm -C will always cause diskstats to increase
+ # even without waking up the disk. reset diskstats after it
+ if [ "$($SUDO hdparm -C /dev/$disk | grep state)" = " drive state is:  active/idle" ]; then
+  log "/dev/$disk running (unexpected)"
+ else
+  log "/dev/$disk ...."
+ fi
+ reset_diskstats
+}
+
+get_diskstats
 
 # Find all removable USB drives, so we can ignore them later,
 # see http://unix.stackexchange.com/questions/40143/how-to-know-if-dev-sdx-is-a-connected-usb-or-hdd
 REMOVABLE_DRIVES=""
-debug "Getting list of removable drives..."
+#debug "Getting list of removable drives..."
 for _device in /sys/block/s*; do
  _disk=$(echo "$_device" | cut -f4 -d/)
- debug "checking $_device ($_disk)..."
+ #debug "checking $_device ($_disk)..."
  if [ -f $_device/removable ] && [ $(<$_device/removable) -gt 0 ]; then
-  debug "found removable disk: $_device ($_disk)"
+  #debug "found removable disk: $_device ($_disk)"
   REMOVABLE_DRIVES="$REMOVABLE_DRIVES $_disk"
  fi
 done
 
-# Create a file on the ramdisk and cycle it to test for disk activity
-if [ -f $SHIM_DIR/diskstats_1 ] ; then
- debug "saving old shm1 file..."
- $SUDO mv $SHIM_DIR/diskstats_1 $SHIM_DIR/diskstats_2
-# cat $SHIM_DIR/diskstats_2
-fi
-debug "creating new shm1 file..."
-$SUDO cat /proc/diskstats > $SHIM_DIR/diskstats_1
-#cat $SHIM_DIR/diskstats_1
-
 # Append detected removable drives to manually ignored drives
 IGNORE_DRIVES="$IGNORE_DRIVES $REMOVABLE_DRIVES"
-debug "list of ignored drives: $IGNORE_DRIVES"
+#debug "list of ignored drives: $IGNORE_DRIVES"
 
 # Loop through all the array disks and spin down the idle disks.
 # Will find all drives sda -> sdz AND sdaa -> sdaz...
@@ -53,21 +97,6 @@ do
   continue
  fi
 
- # Check if drive exists
- if [ -e /dev/$disk ]; then
-  debug "checking disk: /dev/$disk..."
-
-  # Check if drive is currently spinning
-  if [ "$($SUDO hdparm -C /dev/$disk | grep state)" = " drive state is:  active/idle" ]; then
-   log "/dev/$disk running"
-
-   # Check if drive has been non idle since last run
-   if [ "$(diff $SHIM_DIR/diskstats_1 $SHIM_DIR/diskstats_2 | grep $disk )" =  "" ]; then
-    log "/dev/$disk should spin-down"
-    $SUDO hdparm -y /dev/$disk
-   fi
-  else
-   log "/dev/$disk ...."
-  fi
- fi
+ # spin down disk
+ spindown_disk $disk
 done
