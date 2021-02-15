@@ -8,3 +8,4 @@
 *.log
 /scripts/python/__pycache__
 .vscode/launch.json
+.vscode/.ropeproject/objectdb
