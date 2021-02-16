@@ -43,9 +43,22 @@ class Logger:
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
+import signal
+class ExitSignal:
+  exit_flag = False
+
+  def __exit_handler(signum, frame):
+    exit_flag = True
+    logger.critical(f"Exit signal [{signal_received}] is captured, exiting...")
+    sys.exit(2)    
+
+  def register():
+    signal.signal(signal.SIGINT, ExitSignal.__exit_handler)
+    signal.signal(signal.SIGTERM, ExitSignal.__exit_handler)
+
 import argparse
 import os, sys
-class CLIParser:
+class CLIParser:  
   def get_app_name():
     script = sys.argv[0]
     file_name = os.path.basename(script)
@@ -95,6 +108,5 @@ class CLIParser:
       # no arguments provided
       parser.print_help()
       sys.exit(0)
-
     args = parser.parse_args()
     args.func(args)

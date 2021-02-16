@@ -10,7 +10,7 @@
       "program": "${file}",
       "console": "integratedTerminal",
       "args": [
-        "04d9:1702"
+        "1c4f:0002"
       ],
       "env": {
         "MQTT_SERVER": "test.mosquitto.org",

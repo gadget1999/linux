@@ -11,7 +11,7 @@ import usb.util
 # for sending MQTT messages
 from paho.mqtt import client as mqtt_client
 # logging
-from common import Logger, CLIParser
+from common import Logger, ExitSignal, CLIParser
 logger = Logger.getLogger()
 
 class USB_Keyboard:
@@ -91,15 +91,16 @@ class IR_MQTT_Bridge:
       mqtt_user = os.environ['MQTT_USER'].strip('\" ')
       mqtt_password = os.environ['MQTT_PASSWORD'].strip('\" ')
       self.__mqtt_client = mqtt_client.Client("IR_MQTT_Bridge")
-      self.__mqtt_client.on_connect = IR_MQTT_Bridge.on_mqtt_connect
-      self.__mqtt_client.on_disconnect = IR_MQTT_Bridge.on_mqtt_disconnect
+      self.__mqtt_client.on_connect = IR_MQTT_Bridge.__on_mqtt_connect
+      self.__mqtt_client.on_disconnect = IR_MQTT_Bridge.__on_mqtt_disconnect
+      self.__mqtt_client.on_publish = IR_MQTT_Bridge.__on_mqtt_publish
       if mqtt_user or mqtt_password:
         self.__mqtt_client.username_pw_set(mqtt_user, mqtt_password)
     except Exception as e:
       logger.error(f"MQTT configuration is invalid: {e}")
       raise
 
-  def on_mqtt_connect(client, userdata, flags, rc):
+  def __on_mqtt_connect(client, userdata, flags, rc):
     if rc == 0:
       client.connected_flag = True
       client.bad_connection_flag = False
@@ -109,10 +110,13 @@ class IR_MQTT_Bridge:
       client.bad_connection_flag = True
       logger.error(f"MQTT client connection error: {rc}")
 
-  def on_mqtt_disconnect(client, userdata, rc):
+  def __on_mqtt_disconnect(client, userdata, rc):
     logger.error(f"MQTT connection dropped: {rc}")
     client.connected_flag = False
     client.disconnect_flag = True
+
+  def __on_mqtt_publish(client, userdata, mid):
+    logger.info(f"Sent MQTT msg #{mid}")
 
   def __disconnect(self):
     self.__mqtt_client.loop_stop()
@@ -128,11 +132,7 @@ class IR_MQTT_Bridge:
   def __post_mqtt_message(self, topic, message):
     try:
       self.__connect()
-      result = self.__mqtt_client.publish(topic, message)
-      # result: [0, 1]
-      status = result[0]
-      if status != 0:
-        logger.error(f"Send \'{message}\' to topic \'{topic}\' failed.")
+      self.__mqtt_client.publish(topic, message)
     except Exception as e:
       logger.error(f"Send \'{message}\' to topic \'{topic}\' failed: {e}")
 
@@ -144,7 +144,8 @@ class IR_MQTT_Bridge:
       while True:
         try:
           key = keyboard.read_key()
-          if not key: continue
+          if not key:     continue
+          if key == 20:   break # 'q' to stop
           logger.info(f"Key: {key}")
           self.__post_mqtt_message(mqtt_bridge_topic, str(key))
         except Exception as e:
@@ -169,14 +170,9 @@ def start_bridge(args):
 #################################
 # Program starts
 #################################
-def handler(signal_received, frame):
-  logger.critical("Terminate signal is captured, exiting...")
-  sys.exit(2)
 
 if (__name__ == '__main__'):
-  # for capturing Kill signal
-  from signal import signal, SIGTERM
-  signal(SIGTERM, handler)
+  ExitSignal.register()
 
   CLI_config = { 'func':start_bridge, 'arguments': [
     {'name':'device', 'help':'USB device id (e.g., 80ee:0a21)'}
@@ -186,4 +182,3 @@ if (__name__ == '__main__'):
     CLIParser.run(parser)
   except Exception as e:
     logger.error(f"Exception happened: {e}")
-    sys.exit(1)
