@@ -9,7 +9,7 @@ source $CMD_PATH/lib/docker.sh
 check_packages "partclone.ext4"
 
 BACKUP_FOLDER="/media/USBHDD/Share/Backup/System/RPi/rpi4-image-$TODAY"
-BACKUP_FILE_PREFIX="$BACKUP_FOLDER/rpi4-$TODAY"
+BACKUP_FILE_PREFIX="$BACKUP_FOLDER/rpi4"
 sudo mkdir -p $BACKUP_FOLDER
 sudo chmod 777 $BACKUP_FOLDER
 assert_success "Creating backup folder [$BACKUP_FOLDER]"
