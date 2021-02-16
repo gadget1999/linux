@@ -49,12 +49,12 @@ class ExitSignal:
 
   def __exit_handler(signum, frame):
     exit_flag = True
+    logger = Logger.getLogger()
     logger.critical(f"Exit signal [{signal_received}] is captured, exiting...")
-    sys.exit(2)    
+    sys.exit(2)
 
   def register():
     signal.signal(signal.SIGINT, ExitSignal.__exit_handler)
-    signal.signal(signal.SIGTERM, ExitSignal.__exit_handler)
 
 import argparse
 import os, sys
