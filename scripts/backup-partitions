@@ -19,11 +19,17 @@ assert_success "Creating backup folder [$BACKUP_FOLDER]"
 # when need to backup, boot into backup root, then run this command
 DISK=mmcblk0
 BOOT=mmcblk0p1
-ROOT=mmcblk0p2
+CURRENT_ROOT=$(mount|grep ' / ' | cut -d ' ' -f 1)
+if [ "$CURRENT_ROOT" = "/dev/mmcblk0p2" ]; then
+  ROOT=mmcblk0p3
+else
+  ROOT=mmcblk0p2
+fi
+log "Root partition to backup: $ROOT"
 
 BACKUP_FILE="$BACKUP_FILE_PREFIX-sfdisk-$DISK.txt"
 log "Backup [/dev/$DISK] partition table to: $BACKUP_FILE"
-sudo sfdisk -d /dev/$DISK > $BACKUP_FILE
+sudo sfdisk -d /dev/$DISK | sudo tee $BACKUP_FILE > /dev/null
 assert_success "Backup partition table [/dev/$DISK]"
 
 BACKUP_FILE="$BACKUP_FILE_PREFIX-boot-$BOOT.img"
