@@ -36,7 +36,7 @@ class InfluxDBHelper:
       logger.debug(f"Initialize InfluxDB...")
       self._settings = influxDB_config
       self._client = InfluxDBClient(url=influxDB_config.api_endpoint, token=influxDB_config.api_key)
-      self._write_client = self._client.write_api()
+      self._write_client = self._client.write_api(write_options=SYNCHRONOUS)
     except Exception as e:
       logger.error(f"Failed to initialize InfluxDB: {e}")
 
@@ -46,6 +46,19 @@ class InfluxDBHelper:
         .tag("host", host) \
         .field(data, value) \
         .time(datetime.datetime.utcnow(), WritePrecision.NS)
+
+      self._write_client.write(self._settings.bucket, self._settings.tenant, point)
+    except Exception as e:
+      logger.error(f"Failed to report data to InfluxDB: {e}")
+
+  def report_data_list(self, category, host, data):
+    try:
+      point = Point(category)
+      point.tag("host", host)
+      for field_key, field_value in data:
+        print(f"{field_key}={field_value}")
+        point.field(field_key, field_value)
+      point.time(datetime.datetime.utcnow(), WritePrecision.NS)
 
       self._write_client.write(self._settings.bucket, self._settings.tenant, point)
     except Exception as e:
