@@ -2,6 +2,7 @@
 
 import os, time
 from gpiozero import OutputDevice
+import psutil
 from influxdb import InfluxDBHelper
 from common import Logger, CLIParser
 logger = Logger.getLogger()
@@ -11,9 +12,13 @@ OFF_THRESHOLD = 40  # (degress Celsius) Fan shuts off at this temperature.
 SLEEP_INTERVAL = 10  # (seconds) How often we check the core temperature.
 GPIO_PIN = 18  # Which GPIO pin you're using to control the fan.
 
-INFLUXDB_TOPIC = "Temperature"
+INFLUXDB_TOPIC = "Metrics"
 INFLUXDB_HOST = os.uname()[1]
-INFLUXDB_PROP_NAME = "CPU_Temp"
+INFLUXDB_PROP_CPU = "CPU_Load"
+INFLUXDB_PROP_TEMP = "CPU_Temp"
+
+def get_cpu():
+  return psutil.cpu_percent()
 
 def get_temp():
   """Get the core temperature.
@@ -39,8 +44,10 @@ if __name__ == '__main__':
   settings = InfluxDBHelper.load_influxDB_config()
   writer = InfluxDBHelper(settings)  
   while True:
+    cpu = get_cpu()
     temp = get_temp()
-    writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_NAME, temp)
+    writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_CPU, cpu)
+    writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_TEMP, temp)
 
     # Start the fan if the temperature has reached the limit and the fan
     # isn't already running.
