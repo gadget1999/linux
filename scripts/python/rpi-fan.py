@@ -9,64 +9,99 @@ logger = Logger.getLogger()
 
 ON_THRESHOLD = 50  # (degrees Celsius) Fan kicks on at this temperature.
 OFF_THRESHOLD = 40  # (degress Celsius) Fan shuts off at this temperature.
-SLEEP_INTERVAL = 10  # (seconds) How often we check the core temperature.
-GPIO_PIN = 18  # Which GPIO pin you're using to control the fan.
+SLEEP_INTERVAL = 15  # (seconds) How often we check the core temperature.
 
 INFLUXDB_TOPIC = "Metrics"
 INFLUXDB_HOST = os.uname()[1]
 
-def get_cpu():
-  return psutil.cpu_percent()
+class SystemMetrics:
+  def cpu_usage():
+    return psutil.cpu_percent()
 
-def get_mem():
-  return psutil.virtual_memory().percent
+  def memory_usage():
+    return psutil.virtual_memory().percent
 
-def get_temp():
-  """Get the core temperature.
-  Read file from /sys to get CPU temp in temp in C *1000
-  Returns:
-    int: The core temperature in thousanths of degrees Celsius.
-  """
-  try:
-    temp_str = None
-    with open('/sys/class/thermal/thermal_zone0/temp') as f:
-      temp_str = f.read()
+  def disk_usage():
+    return psutil.disk_usage('/').percent
 
-    return int(temp_str) / 1000
-  except Exception as e:
-    logger.error(f"Could not read CPU temperature: {e}")
+  def cpu_temperature():
+    """Get the core temperature.
+    Read file from /sys to get CPU temp in temp in C *1000
+    Returns:
+      int: The core temperature in thousanths of degrees Celsius.
+    """
+    try:
+      temp_str = None
+      with open('/sys/class/thermal/thermal_zone0/temp') as f:
+        temp_str = f.read()
+
+      return int(temp_str) / 1000
+    except Exception as e:
+      logger.error(f"Could not read CPU temperature: {e}")
+
+class FanControl:
+  __fan_gpio = None
+
+  def init():
+    try:
+      if 'FAN_CONTROL_PIN' in os.environ:
+        # need to control fan
+        gpio_pin = int(os.environ['FAN_CONTROL_PIN'].strip('\" '))
+        FanControl.__fan_gpio = OutputDevice(gpio_pin)
+        logger.debug(f"Fan control initialized. (GPIO={gpio_pin}, Status={FanControl.__fan_gpio.value})")
+    except Exception as e:
+      logger.error(f"Failed to initialize fan control GPIO pin: {e}")
+
+  def is_available():
+    return FanControl.__fan_gpio is not None
+
+  def is_on():
+    if FanControl.__fan_gpio is None:
+      return False
+    # NOTE: `fan.value` returns 1 for "on" and 0 for "off"
+    return FanControl.__fan_gpio.value == 1
+
+  def turn_on():
+    if FanControl.__fan_gpio is not None:
+      FanControl.__fan_gpio.on()
+
+  def turn_off():
+    if FanControl.__fan_gpio is not None:
+      FanControl.__fan_gpio.off()
 
 if __name__ == '__main__':
   # Validate the on and off thresholds
   if OFF_THRESHOLD >= ON_THRESHOLD:
     raise Exception('OFF_THRESHOLD must be less than ON_THRESHOLD')
 
-  fan = OutputDevice(GPIO_PIN)
+  FanControl.init()
   settings = InfluxDBHelper.load_influxDB_config()
   writer = InfluxDBHelper(settings)
   while True:
-    temp = get_temp()
+    time.sleep(SLEEP_INTERVAL)
+
+    temp = SystemMetrics.cpu_temperature()
     #writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_TEMP, temp)
     data = []
     data.append(("CPU_Temp", temp))
-    data.append(("CPU_Load", get_cpu()))
-    data.append(("RAM_Use", get_mem()))
+    data.append(("CPU_Load", SystemMetrics.cpu_usage()))
+    data.append(("RAM_Use", SystemMetrics.memory_usage()))
+    data.append(("Disk_Use", SystemMetrics.disk_usage()))
+    if 'DEBUG' in os.environ or FanControl.is_on():
+      logger.debug(f"{data}")
     writer.report_data_list(INFLUXDB_TOPIC, INFLUXDB_HOST, data)
+
+    if not FanControl.is_available():
+      continue
 
     # Start the fan if the temperature has reached the limit and the fan
     # isn't already running.
-    # NOTE: `fan.value` returns 1 for "on" and 0 for "off"
-    if temp > ON_THRESHOLD and fan.value == 0:
+    if temp > ON_THRESHOLD and not FanControl.is_on():
       logger.info(f"Turn on fan. (temperature={temp})")
-      fan.on()
+      FanControl.turn_on()
 
     # Stop the fan if the fan is running and the temperature has dropped
     # to 10 degrees below the limit.
-    elif fan.value == 1 and temp < OFF_THRESHOLD:
+    elif FanControl.is_on() and temp < OFF_THRESHOLD:
       logger.info(f"Turn off fan. (temperature={temp})")
-      fan.off()
-
-    if 'DEBUG' in os.environ or fan.value == 1:
-      logger.debug(f"Temp={temp}, PIN state={fan.value}")
-    time.sleep(SLEEP_INTERVAL)
-    
+      FanControl.turn_off()

@@ -56,7 +56,6 @@ class InfluxDBHelper:
       point = Point(category)
       point.tag("host", host)
       for field_key, field_value in data:
-        print(f"{field_key}={field_value}")
         point.field(field_key, field_value)
       point.time(datetime.datetime.utcnow(), WritePrecision.NS)
 
