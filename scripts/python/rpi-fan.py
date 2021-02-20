@@ -14,11 +14,12 @@ GPIO_PIN = 18  # Which GPIO pin you're using to control the fan.
 
 INFLUXDB_TOPIC = "Metrics"
 INFLUXDB_HOST = os.uname()[1]
-INFLUXDB_PROP_CPU = "CPU_Load"
-INFLUXDB_PROP_TEMP = "CPU_Temp"
 
 def get_cpu():
   return psutil.cpu_percent()
+
+def get_mem():
+  return psutil.virtual_memory().percent
 
 def get_temp():
   """Get the core temperature.
@@ -42,12 +43,15 @@ if __name__ == '__main__':
 
   fan = OutputDevice(GPIO_PIN)
   settings = InfluxDBHelper.load_influxDB_config()
-  writer = InfluxDBHelper(settings)  
+  writer = InfluxDBHelper(settings)
   while True:
-    cpu = get_cpu()
     temp = get_temp()
-    writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_CPU, cpu)
-    writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_TEMP, temp)
+    #writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_TEMP, temp)
+    data = []
+    data.append(("CPU_Temp", temp))
+    data.append(("CPU_Load", get_cpu()))
+    data.append(("RAM_Use", get_mem()))
+    writer.report_data_list(INFLUXDB_TOPIC, INFLUXDB_HOST, data)
 
     # Start the fan if the temperature has reached the limit and the fan
     # isn't already running.
@@ -65,3 +69,4 @@ if __name__ == '__main__':
     if 'DEBUG' in os.environ or fan.value == 1:
       logger.debug(f"Temp={temp}, PIN state={fan.value}")
     time.sleep(SLEEP_INTERVAL)
+    
