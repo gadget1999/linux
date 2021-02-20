@@ -14,6 +14,7 @@ export INFLUXDB_TENANT
 export INFLUXDB_BUCKET
 [ "$FAN_CONTROL_PIN" != "" ] && export FAN_CONTROL_PIN
 
-# use sudo -E to access exported variables
 [ "$1" == "debug" ] && export DEBUG
-sudo -E python3 $CMD_PATH/python/rpi-fan.py
+# no need to use sudo if user in gpio group
+# (if use sudo, use 'sudo -E' to keep exported variables)
+python3 $CMD_PATH/python/rpi-fan.py
