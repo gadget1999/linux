@@ -15,6 +15,8 @@ INFLUXDB_TOPIC = "Metrics"
 INFLUXDB_HOST = os.uname()[1]
 
 class SystemMetrics:
+  __has_temperature_sensor = True
+
   def cpu_usage():
     return psutil.cpu_percent()
 
@@ -25,6 +27,9 @@ class SystemMetrics:
     return psutil.disk_usage('/').percent
 
   def cpu_temperature():
+    if not SystemMetrics.__has_temperature_sensor:
+      return None
+
     """Get the core temperature.
     Read file from /sys to get CPU temp in temp in C *1000
     Returns:
@@ -37,7 +42,9 @@ class SystemMetrics:
 
       return int(temp_str) / 1000
     except Exception as e:
-      logger.error(f"Could not read CPU temperature: {e}")
+      logger.error(f"Could not read CPU temperature: {e}. Treating as no sensor.")
+      SystemMetrics.__has_temperature_sensor = False
+      return None
 
 class FanControl:
   __fan_gpio = None
@@ -83,7 +90,7 @@ if __name__ == '__main__':
     temp = SystemMetrics.cpu_temperature()
     #writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_TEMP, temp)
     data = []
-    data.append(("CPU_Temp", temp))
+    if temp: data.append(("CPU_Temp", temp))
     data.append(("CPU_Load", SystemMetrics.cpu_usage()))
     data.append(("RAM_Use", SystemMetrics.memory_usage()))
     data.append(("Disk_Use", SystemMetrics.disk_usage()))
@@ -91,7 +98,7 @@ if __name__ == '__main__':
       logger.debug(f"{data}")
     writer.report_data_list(INFLUXDB_TOPIC, INFLUXDB_HOST, data)
 
-    if not FanControl.is_available():
+    if not temp or not FanControl.is_available():
       continue
 
     # Start the fan if the temperature has reached the limit and the fan
