@@ -40,18 +40,22 @@ class USB_Keyboard:
   def is_connected(self):
     return (self.__device and self.__prod_id and self.__vendor)
 
-  def connect(self, vendor, prod_id):
+  def connect(self, device_id):
     # Clean up first if not yet
     self.disconnect()
+    # device id in format of 80ee:0a21
+    parts = device_id.split(':')
+    vendor = int(parts[0], 16)
+    prod_id = int(parts[1], 16)
     # Connect to device
     self.__vendor = vendor
     self.__prod_id = prod_id
     self.__device = usb.core.find(idVendor=vendor, idProduct=prod_id)
     if not self.is_connected():
-      raise Exception(f"Cannot find device: {hex(vendor)}:{hex(prod_id)}")
+      raise Exception(f"Cannot find device: {device_id}")
     # Take control from the kernel
     self.__claim_device()
-    logger.info(f"Device {hex(vendor)}:{hex(prod_id)} connected.")
+    logger.info(f"Device {device_id} connected.")
 
   def disconnect(self):
     if self.is_connected():
@@ -86,6 +90,7 @@ class USB_Keyboard:
 class IR_MQTT_Bridge:
   def __init__(self):
     try:
+      self.__load_mapping(os.environ['IR2MQTT_MAPPING'].strip('\" '))
       self.__mqtt_server = os.environ['MQTT_SERVER'].strip('\" ')
       self.__mqtt_port = int(os.environ['MQTT_PORT'].strip('\" '))
       mqtt_user = os.environ['MQTT_USER'].strip('\" ')
@@ -99,6 +104,17 @@ class IR_MQTT_Bridge:
     except Exception as e:
       logger.error(f"MQTT configuration is invalid: {e}")
       raise
+
+  def __load_mapping(self, mapping_file):
+    import json
+    with open(mapping_file) as f:
+      self.__mapping = json.load(f)
+    # verify if mapping is correct
+    for key in self.__mapping.keys():
+      topic = self.__mapping[key]['topic']
+      msg = self.__mapping[key]['msg']
+      if not topic or not msg:
+        raise Exception(f"Invalid mapping for: key={key}")
 
   def __on_mqtt_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -129,17 +145,23 @@ class IR_MQTT_Bridge:
     self.__mqtt_client.connect(self.__mqtt_server, self.__mqtt_port)
     self.__mqtt_client.loop_start()
 
-  def __post_mqtt_message(self, topic, message):
+  def __process_key(self, key):
     try:
       self.__connect()
+      # find MQTT mapping for key
+      if key not in self.__mapping.keys():
+        return
+      topic = self.__mapping[key]['topic']
+      message = self.__mapping[key]['msg']
+      logger.info(f"MQTT cmd: {topic} {message}")
       self.__mqtt_client.publish(topic, message)
     except Exception as e:
       logger.error(f"Send \'{message}\' to topic \'{topic}\' failed: {e}")
 
-  def start_monitor(self, vendor_id, prod_id, mqtt_bridge_topic):
+  def start_monitor(self, device_id):
     keyboard = USB_Keyboard()
     try:
-      keyboard.connect(vendor_id, prod_id)
+      keyboard.connect(device_id)
       # Loop data read until interrupt
       while True:
         try:
@@ -147,7 +169,7 @@ class IR_MQTT_Bridge:
           if not key:     continue
           if key == 20:   break # 'q' to stop
           logger.info(f"Key: {key}")
-          self.__post_mqtt_message(mqtt_bridge_topic, str(key))
+          self.__process_key(str(key))
         except Exception as e:
           logger.error(f"Exception: {e}")
     finally:
@@ -159,13 +181,8 @@ class IR_MQTT_Bridge:
 ########################################
 
 def start_bridge(args):
-  # device id in format of 80ee:0a21
-  parts = args.device.split(':')
-  vendor = int(parts[0], 16)
-  product = int(parts[1], 16)
-  MQTT_TOPIC = "IR2MQTTBridge"
   bridge = IR_MQTT_Bridge()
-  bridge.start_monitor(vendor, product, MQTT_TOPIC)
+  bridge.start_monitor(args.device)
 
 #################################
 # Program starts
