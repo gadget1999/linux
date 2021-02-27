@@ -76,17 +76,8 @@ class FanControl:
     if FanControl.__fan_gpio is not None:
       FanControl.__fan_gpio.off()
 
-if __name__ == '__main__':
-  # Validate the on and off thresholds
-  if OFF_THRESHOLD >= ON_THRESHOLD:
-    raise Exception('OFF_THRESHOLD must be less than ON_THRESHOLD')
-
-  FanControl.init()
-  settings = InfluxDBHelper.load_influxDB_config()
-  writer = InfluxDBHelper(settings)
-  while True:
-    time.sleep(SLEEP_INTERVAL)
-
+def monitor_metrics(influxdb_writer):
+  try:
     temp = SystemMetrics.cpu_temperature()
     #writer.report_data(INFLUXDB_TOPIC, INFLUXDB_HOST, INFLUXDB_PROP_TEMP, temp)
     data = []
@@ -96,10 +87,10 @@ if __name__ == '__main__':
     data.append(("Disk_Use", SystemMetrics.disk_usage()))
     if 'DEBUG' in os.environ or FanControl.is_on():
       logger.debug(f"{data}")
-    writer.report_data_list(INFLUXDB_TOPIC, INFLUXDB_HOST, data)
+    influxdb_writer.report_data_list(INFLUXDB_TOPIC, INFLUXDB_HOST, data)
 
     if not temp or not FanControl.is_available():
-      continue
+      return
 
     # Start the fan if the temperature has reached the limit and the fan
     # isn't already running.
@@ -112,3 +103,18 @@ if __name__ == '__main__':
     elif FanControl.is_on() and temp < OFF_THRESHOLD:
       logger.info(f"Turn off fan. (temperature={temp})")
       FanControl.turn_off()
+
+  except Exception as e:
+    logger.error(f"Exception: {e}")
+
+if __name__ == '__main__':
+  # Validate the on and off thresholds
+  if OFF_THRESHOLD >= ON_THRESHOLD:
+    raise Exception('OFF_THRESHOLD must be less than ON_THRESHOLD')
+
+  FanControl.init()
+  settings = InfluxDBHelper.load_influxDB_config()
+  writer = InfluxDBHelper(settings)
+  while True:
+    time.sleep(SLEEP_INTERVAL)
+    monitor_metrics(writer)
