@@ -31,7 +31,7 @@ class MP3File:
   def vol_up(self, gain = None):
     if not gain:
       gain = -self.max_vol
-    if gain > 0:
+    if gain > 1:
       self.__audio_stream += gain
     return gain
 
@@ -44,29 +44,34 @@ class MP3File:
     self.__audio_stream.export(path, format='mp3', bitrate=bitrate, tags=tags)
 
 class MP3_Utility:
-  def enum_mp3_files(path, func):
+  def enum_mp3_files(path, func, *args):
     if os.path.isfile(path):
-      func(path)
+      func(path, args)
     elif os.path.isdir(path):
       for root, directories, files in os.walk(path):
         for name in files:
           if name.endswith('.mp3'):
-            MP3_Utility.enum_mp3_files(os.path.join(root, name), func)
+            MP3_Utility.enum_mp3_files(os.path.join(root, name), func, args)
 
   def show_mp3_info(path):
     mp3 = MP3File(path)
-    logger.info(f"{mp3.name} (len={mp3.length}s, {mp3.channels} channels, bitrate={mp3.bitrate}K)")
-    logger.info(f"> Max={mp3.max_vol:.1f}dB, Avg={mp3.avg_vol:.1f}dB")
-    logger.info(f"> {mp3.album} - {mp3.title}")
+    logger.debug(f"{mp3.name} (len={mp3.length}s, {mp3.channels} channels, bitrate={mp3.bitrate}K)")
+    logger.debug(f"> Max={mp3.max_vol:.1f}dB, Avg={mp3.avg_vol:.1f}dB")
+    logger.debug(f"> {mp3.album} - {mp3.title}")
 
-  def add_mp3_vol(path):
+  def add_mp3_vol(path, overwrite = False):
     mp3 = MP3File(path)
     gain = mp3.vol_up()
-    if gain > 0:
-      base_file = os.path.splitext(path)[0]
-      new_file = base_file + "_vol.mp3"
+    if gain > 1:
+      if overwrite:
+        new_file = path
+      else:
+        base_file = os.path.splitext(path)[0]
+        new_file = base_file + "_vol.mp3"
       logger.info(f"Saving [{mp3.name}] to: {new_file} (gain={gain:.1f}dB)")
       mp3.save(new_file)
+    else:
+      logger.debug(f"Skipping [{mp3.name}] (gain={gain:.1f}dB)")
 
 ########################################
 # CLI interface
@@ -78,7 +83,7 @@ def list_mp3(args):
 
 def gain_mp3(args):
   for path in args.paths:
-    MP3_Utility.enum_mp3_files(path, MP3_Utility.add_mp3_vol)
+    MP3_Utility.enum_mp3_files(path, MP3_Utility.add_mp3_vol, True)
 
 #################################
 # Program starts
