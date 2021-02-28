@@ -4,6 +4,7 @@
 '''
 import os
 from pydub import AudioSegment
+import eyed3
 # logging
 from common import Logger, ExitSignal, CLIParser
 logger = Logger.getLogger()
@@ -16,6 +17,10 @@ class MP3File:
     self.channels = self.__audio_stream.channels
     self.max_vol = self.__audio_stream.max_dBFS
     self.avg_vol = self.__audio_stream.dBFS
+    audiofile = eyed3.load(path)
+    self.artist = audiofile.tag.artist
+    self.album = audiofile.tag.album
+    self.title = audiofile.tag.titletag.getTitle()
 
   def vol_up(self, gain = None):
     if not gain:
