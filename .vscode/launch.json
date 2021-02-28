@@ -10,7 +10,7 @@
       "program": "${file}",
       "console": "integratedTerminal",
       "args": [
-        "17ef:60a9"
+        "1c4f:0002"
       ],
       "env": {
         "IR2MQTT_MAPPING": "/tmp/test.json",
@@ -21,6 +21,17 @@
       },
       "debugOptions": [
         "Sudo"
+      ],
+      "type": "python"
+    },
+    {
+      "name": "Python: MP3",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "args": [
+        "list",
+        "~"
       ],
       "type": "python"
     },
