@@ -8,6 +8,11 @@ import eyed3
 # logging
 from common import Logger, ExitSignal, CLIParser
 logger = Logger.getLogger()
+# disable debug from libraries
+import logging
+logging.getLogger("pydub").setLevel(logging.WARNING)
+logging.getLogger("eyed3").setLevel(logging.WARNING)
+logging.getLogger("ffmpeg").setLevel(logging.WARNING)
 
 class MP3File:
   def __init__(self, path):
@@ -18,17 +23,25 @@ class MP3File:
     self.max_vol = self.__audio_stream.max_dBFS
     self.avg_vol = self.__audio_stream.dBFS
     audiofile = eyed3.load(path)
+    self.bitrate = audiofile.info.bit_rate[1]
     self.artist = audiofile.tag.artist
     self.album = audiofile.tag.album
-    self.title = audiofile.tag.titletag.getTitle()
+    self.title = audiofile.tag.title
 
   def vol_up(self, gain = None):
     if not gain:
       gain = -self.max_vol
-    self.__audio_stream += gain
+    if gain > 0:
+      self.__audio_stream += gain
+    return gain
 
   def save(self, path):
-    self.__audio_stream.export(path, format='mp3')
+    tags = {}
+    tags['artist'] = self.artist
+    tags['album'] = self.album
+    tags['title'] = self.title
+    bitrate = f"{self.bitrate}K"
+    self.__audio_stream.export(path, format='mp3', bitrate=bitrate, tags=tags)
 
 class MP3_Utility:
   def enum_mp3_files(path, func):
@@ -42,13 +55,18 @@ class MP3_Utility:
 
   def show_mp3_info(path):
     mp3 = MP3File(path)
-    logger.debug(f"{mp3.name} (len={mp3.length}s, {mp3.channels} channels)")
-    logger.debug(f"> Max={mp3.max_vol:.1f}dB, Avg={mp3.avg_vol:.1f}dB")
+    logger.info(f"{mp3.name} (len={mp3.length}s, {mp3.channels} channels, bitrate={mp3.bitrate}K)")
+    logger.info(f"> Max={mp3.max_vol:.1f}dB, Avg={mp3.avg_vol:.1f}dB")
+    logger.info(f"> {mp3.album} - {mp3.title}")
 
   def add_mp3_vol(path):
     mp3 = MP3File(path)
-    mp3.vol_up()
-    mp3.save(path + ".mp3")
+    gain = mp3.vol_up()
+    if gain > 0:
+      base_file = os.path.splitext(path)[0]
+      new_file = base_file + "_vol.mp3"
+      logger.info(f"Saving [{mp3.name}] to: {new_file} (gain={gain:.1f}dB)")
+      mp3.save(new_file)
 
 ########################################
 # CLI interface
