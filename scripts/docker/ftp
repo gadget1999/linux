@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+# SAMBA_SHARE format: Share:/data:rw:$SAMBA_USER
+# FTP_USER format: name|password
+check_env "FTP_LOCAL_PATH FTP_USER CONTAINER_UID"
+
+$CMD_PATH/mount-usb-drive
+
+CONTAINER="ftp"
+IMAGE="gadget1999/rpi-ftp"
+
+grant_container_access $FTP_LOCAL_PATH
+FTP_USER_CONFIG="$FTP_USER|/ftp/nobody|$CONTAINER_UID"
+
+MAX_RAM="100m"
+EXTRA_OPTS=(
+ --log-driver none
+ -p 21:21
+ -p 21000-21010:21000-21010
+ --tmpfs /run
+ -v $FTP_LOCAL_PATH:/ftp/nobody
+ -e USERS="$FTP_USER_CONFIG"
+ -m $MAX_RAM
+ )
+
+ENTRYPOINT=()
+
+if [ "$1" == "debug" ]; then
+ DEBUG_DOCKER=1
+ ENTRYPOINT=(sh)
+fi
+
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
