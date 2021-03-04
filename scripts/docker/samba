@@ -26,7 +26,7 @@ EXTRA_OPTS=(
  --mount type=tmpfs,destination=/var/lib/samba/private/msg.sock,tmpfs-mode=700 
  --tmpfs /ram
  -v $SAMBA_LOCAL_PATH:/data
- -e SMB_VER="SMB2_10"
+ -e SMB_VER="SMB3_11"
  -e PUID=$CONTAINER_UID
  -e PGID=$CONTAINER_UID
  -e USER="$SAMBA_USER:$SAMBA_PASSWORD"
