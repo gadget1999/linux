@@ -6,7 +6,7 @@ source $CMD_PATH/lib/docker.sh
 
 # SAMBA_SHARE format: Share:/data:rw:$SAMBA_USER
 # FTP_USER format: name|password
-check_env "FTP_LOCAL_PATH FTP_USER CONTAINER_UID"
+check_env "FTP_SERVER FTP_LOCAL_PATH FTP_USER CONTAINER_UID"
 
 $CMD_PATH/mount-usb-drive
 
@@ -16,6 +16,8 @@ IMAGE="gadget1999/rpi-ftp"
 grant_container_access $FTP_LOCAL_PATH
 FTP_USER_CONFIG="$FTP_USER|/ftp/nobody|$CONTAINER_UID"
 
+# the ADDRESS parameter is important because
+# PASSIVE mode need to give FTP client docker host address
 MAX_RAM="100m"
 EXTRA_OPTS=(
  --log-driver none
@@ -24,6 +26,7 @@ EXTRA_OPTS=(
  --tmpfs /run
  -v $FTP_LOCAL_PATH:/ftp/nobody
  -e USERS="$FTP_USER_CONFIG"
+ -e ADDRESS=$FTP_SERVER
  -m $MAX_RAM
  )
 
