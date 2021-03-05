@@ -361,16 +361,16 @@ class SiteInfo:
     url = url.strip(' \r\'\"\n').lower()
     alive, online, error = SiteInfo.is_online(url)
     site_info = SiteRecord(url=url, alive=alive, online=online, error=error)
-    if not alive or url.startswith('http://'):
-      # no point to continue if not alive, or it's HTTP
+    if not alive \
+       or url.startswith('http://') \
+       or not include_ssl_rating:
+      # no point to continue if not alive, or it's HTTP, or no need for SSL info
       return [site_info]
-    if not include_ssl_rating:
-      # only basic SSL info
-      ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)[0]
-      site_info.ssl_expires = ssl_expiration_info.expires
-      if ssl_expiration_info.error:
-        site_info.error = ssl_expiration_info.error
-      return [site_info]
+    # basic SSL info
+    ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)[0]
+    site_info.ssl_expires = ssl_expiration_info.expires
+    if ssl_expiration_info.error:
+      site_info.error = ssl_expiration_info.error
     # get full SSL report
     final_reports = []
     ssl_rating_info = SSLReport.get_site_rating(url)
@@ -719,7 +719,7 @@ class WebMonitor:
     retries = 0
     while has_down_sites and retries < self._max_retries:
       retries += 1
-      logger.info(f"Wait some time and retry failed sites (retry #{retries})")
+      logger.info(f"Wait some time and retry (#{retries}) failed sites.")
       time.sleep(self._retry_delay)
       has_down_sites = self._reconfirm_sites(full_report)
     if len(full_report) == 0:
