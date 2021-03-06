@@ -21,7 +21,7 @@ services:
       - seafile-net
           
   seafile:
-    image: seafileltd/seafile-mc:latest
+    image: seafileltd/seafile-mc:7.1.5
     restart: unless-stopped
     container_name: seafile
     ports:

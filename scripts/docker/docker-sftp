@@ -22,6 +22,7 @@ fi
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
+ --restart unless-stopped
  -v $USER_CONF:/etc/sftp/users.conf:ro
  -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key:ro
  -v $ROOT_FOLDER:/home/$SFTP_USER/share
