@@ -10,6 +10,8 @@ source $CMD_PATH/lib/common.sh
 TEST_FILE=$1/test_$NOW
 
 debug "Test writing to file: $TEST_FILE"
-sudo dd if=/dev/zero of=$TEST_FILE bs=100M count=1
+sudo dd if=/dev/zero of=$TEST_FILE bs=10M count=10
+debug "Test reading from file: $TEST_FILE"
+sudo dd of=/dev/null if=$TEST_FILE iflag=direct bs=10M count=10
 debug "Remove $TEST_FILE"
 sudo rm $TEST_FILE
