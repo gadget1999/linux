@@ -11,10 +11,12 @@ IMAGE="atmoz/sftp:alpine"
 
 ROOT_FOLDER="/download/sftp"
 
-USER_CONF="/tmp/atmos-sftp.conf"
+CONFIG_FOLDER="$CONTAINER_CONFIG_ROOT/$CONTAINER"
+[ ! -d $CONFIG_FOLDER ] && mkdir -p $CONFIG_FOLDER
+USER_CONF="$CONTAINER_CONFIG_ROOT/$CONTAINER/atmos-sftp.conf"
 echo "$SFTP_USER:$SFTP_PASSWORD:$CONTAINER_UID:$CONTAINER_UID:share" > $USER_CONF
 
-SSH_KEY=$CONTAINER_CONFIG_ROOT/sftp/ssh_host_ed25519_key
+SSH_KEY=$CONFIG_FOLDER/ssh_host_ed25519_key
 if [ ! -e $SSH_KEY ]; then
  debug "Generating SFTP key: $SSH_KEY"
  sudo ssh-keygen -t ed25519 -f $SSH_KEY < /dev/null
