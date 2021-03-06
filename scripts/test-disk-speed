@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[[ $# != 1 ]] && show_usage "/dev/name"
+
+TEST_FILE=$1/test_$NOW
+
+debug "Test writing to file: $TEST_FILE"
+sudo dd if=/dev/zero of=$TEST_FILE bs=100M count=1
+debug "Remove $TEST_FILE"
+sudo rm $TEST_FILE
