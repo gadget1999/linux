@@ -15,7 +15,7 @@ function dropbox_upload() {
   debug "Finding full path of $object ..."
   object=$(which $object)
   if [ "$object" == "" ]; then
-   debug "Cannot find the file."
+   debug "Cannot find the file: $1"
    return
   fi
  fi
@@ -26,6 +26,23 @@ function dropbox_upload() {
  dropbox upload $object $remote_path
 }
 
+function copy2share() {
+ local object=$1
+ if [ ! -f $object ]; then
+  object=$(which $object)
+  if [ "$object" == "" ]; then
+   debug "Cannot find the file: $1"
+   return
+  fi
+ fi
+
+ local filename=$(basename $object)
+ local remote_path="/mnt/share/$filename"
+ debug "Copying $object to $remote_path ..."
+ cp $object $remote_path
+}
+
 for file in $FILE_PATTERN; do
- dropbox_upload $file share/$TODAY
+# dropbox_upload $file share/$TODAY
+ copy2share $file
 done
