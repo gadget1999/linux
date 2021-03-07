@@ -2,6 +2,7 @@
 
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
 
 check_env "HOST_DOWNLOAD_ROOT"
 
@@ -18,6 +19,7 @@ fi
 TARGET="$HOST_DOWNLOAD_ROOT/Youtube"
 [ ! -d $TARGET ] && mkdir -p $TARGET
 [ ! -d $TARGET ] && fatal_error "Failed to create folder: $TARGET"
+grant_container_access $TARGET
 cd $TARGET
 
 [ "$DOWNLOAD_SPEED_LIMIT" != "" ] && CMD="$CMD -r $DOWNLOAD_SPEED_LIMIT"
