@@ -40,9 +40,15 @@ function mqtt_event_handler()    {
 }
 
 function mqtt_listen() {
+ local topics=" -t $MQTT_TOPIC/# "
+ if [[ $# > 0 ]]; then
+  combine_topics "$@"
+  topics="$topics $combine_topics"
+ fi
+ debug "Listen to topics: $topics"
  mosquitto_sub -v -h $MQTT_SERVER -p $MQTT_PORT \
   -u $MQTT_USER -P $MQTT_PASSWORD \
-  -t "$MQTT_TOPIC/#" | \
+  $topics | \
  while read -r line ; do
   mqtt_event_handler $line
  done
@@ -51,7 +57,7 @@ function mqtt_listen() {
 function start_mqtt_agent {
  # sometimes mqtt connection may drop, due to network conditions
  while true; do
-  mqtt_listen
+  mqtt_listen "$@"
 
   log "restarting mqtt listener..."
   sleep 10

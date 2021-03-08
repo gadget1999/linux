@@ -7,6 +7,7 @@ sudo find / \
  ! -path "/run/*" \
  ! -path "/dev/*" \
  ! -path "/media/*" \
+ ! -path "/mnt/*" \
  ! -path "/var/log/*" \
  ! -path "/tmp/*" \
  -cmin -$1 \

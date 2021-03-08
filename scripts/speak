@@ -12,5 +12,6 @@ check_packages "espeak-ng"
 DEV_SOUND="plughw:CARD=Headphones,DEV=0"
 LANGUAGE="en-us"
 
+log "Speak: '$*'"
 sudo espeak-ng -v $LANGUAGE -d $DEV_SOUND \
  "'$*'"
