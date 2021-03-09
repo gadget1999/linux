@@ -194,7 +194,7 @@ function mount_cifs_share() {
  local unc=//$CIFS_SERVER/$CIFS_NAME
 
  if [ "$(df | grep ""$mount_point"")" ]; then
-  debug "Share already mounted."
+  debug "Share [$mount_point] already mounted."
   return
  fi
 
@@ -206,7 +206,7 @@ function mount_cifs_share() {
  sudo /bin/mount -t cifs \
   -o username=$CIFS_USER,password=$CIFS_PWD,rw,iocharset=utf8,file_mode=0777,dir_mode=0777,vers=$SMB_VER \
   $unc $mount_point
- log "Completed."
+ log "[$mount_point] mounted: $unc"
 }
 
 ############# Files #############
