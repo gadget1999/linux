@@ -12,11 +12,13 @@ TASKS=$1
 for TASK in ${TASKS[*]}; do
  if [[ "$TASK" == "&"* ]]; then
   task=$(echo "$TASK" | cut -c2-)
-  log "Starting $task (background) ..."
+  task=${task//:/ }
+  log "Starting "$task" (background) ..."
   ($CMD_PATH/$task)&
   sleep 20
  else
-  log "Starting $TASK ..."
+  TASK=${TASK//:/ }
+  log "Starting "$TASK" ..."
   $CMD_PATH/$TASK
  fi
 done
