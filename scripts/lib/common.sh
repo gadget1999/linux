@@ -182,6 +182,33 @@ function set_lastrun()   {
  [ "$?" != "0" ] && log_error "Failed to set timestamp."
 }
 
+############# CIFS #############
+
+function mount_cifs_share() {
+ local profile=$1
+ local profile_path="/home/$MAIN_USER/.smbprofiles/$profile"
+ # profile should have definitions for: SMB_VER CIFS_SERVER CIFS_NAME CIFS_USER CIFS_PWD
+ source $profile_path
+ check_env "SMB_VER CIFS_SERVER CIFS_NAME CIFS_USER CIFS_PWD"
+ local mount_point=/mnt/$profile
+ local unc=//$CIFS_SERVER/$CIFS_NAME
+
+ if [ "$(df | grep ""$mount_point"")" ]; then
+  debug "Share already mounted."
+  return
+ fi
+
+ if [ ! -d $mount_point ] ; then
+  debug "Creating mount point: $mount_point"
+  sudo mkdir -p $mount_point
+ fi
+
+ sudo /bin/mount -t cifs \
+  -o username=$CIFS_USER,password=$CIFS_PWD,rw,iocharset=utf8,file_mode=0777,dir_mode=0777,vers=$SMB_VER \
+  $unc $mount_point
+ log "Completed."
+}
+
 ############# Files #############
 
 DIFF_CMD="diff --color"
