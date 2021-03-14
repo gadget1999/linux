@@ -195,7 +195,7 @@ function mount_cifs_share() {
 
  if [ "$(df | grep ""$mount_point"")" ]; then
   debug "Share [$mount_point] already mounted."
-  return
+  return 0
  fi
 
  if [ ! -d $mount_point ] ; then
@@ -206,7 +206,13 @@ function mount_cifs_share() {
  sudo /bin/mount -t cifs \
   -o username=$CIFS_USER,password=$CIFS_PWD,rw,iocharset=utf8,file_mode=0777,dir_mode=0777,vers=$SMB_VER \
   $unc $mount_point
- log "[$mount_point] mounted: $unc"
+ if [ "$(df | grep ""$mount_point"")" ]; then
+  log "[$mount_point] mounted: $unc"
+  return 0
+ else
+  log_error "Failed to mount [$unc] as [$mount_point]."
+  return 1
+ fi
 }
 
 ############# Files #############
