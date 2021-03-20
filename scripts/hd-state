@@ -19,7 +19,7 @@ check_packages "hdparm"
 function get_diskstats() {
  if [ ! -f $DISKSTATS1 ]; then
   # if no stat files yet, record and exit
-  debug "First run after reboot."
+  log "First run after reboot."
   $SUDO cat /proc/diskstats > $DISKSTATS1
   exit 0
  fi
@@ -43,7 +43,7 @@ function spindown_disk() {
 
  # Check if drive exists
  if [ ! -e /dev/$disk ]; then
-  error "/dev/$disk does not exist."
+  log_error "/dev/$disk does not exist."
   return
  fi
 
