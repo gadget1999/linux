@@ -17,8 +17,15 @@ DISKSTATS2=/tmp/diskstats_2
 check_packages "hdparm"
 
 function get_diskstats() {
- # Create a file on the ramdisk and cycle it to test for disk activity
- [ -f $DISKSTATS1 ] && $SUDO mv $DISKSTATS1 $DISKSTATS2
+ if [ ! -f $DISKSTATS1 ]; then
+  # if no stat files yet, record and exit
+  debug "First run after reboot."
+  $SUDO cat /proc/diskstats > $DISKSTATS1
+  exit 0
+ fi
+
+ # rolling stat files
+ $SUDO mv $DISKSTATS1 $DISKSTATS2
  $SUDO cat /proc/diskstats > $DISKSTATS1
 }
 
