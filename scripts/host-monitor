@@ -7,6 +7,9 @@ source $CMD_PATH/lib/firebase.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
+check_env "METRICS_FB_URL METRICS_FB_KEY"
+check_packages "curl jq"
+
 if [ $# == 0 ]; then
  check_env "SENDGRID_API_KEY MAIN_EMAIL HOST_WATCHLIST"
 else
@@ -45,8 +48,7 @@ function send_host_report() {
   "$error"
 }
 
-[ $METRICS_FB_URL ] && \
- firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
+firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
 
 for host in ${HOST_WATCHLIST[*]}; do
   check_alive $host

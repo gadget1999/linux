@@ -6,6 +6,9 @@ source $CMD_PATH/lib/firebase.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
+check_env "METRICS_FB_URL METRICS_FB_KEY"
+check_packages "curl jq"
+
 function get_cpu_temperature() {
  local temperature_file=/sys/class/thermal/thermal_zone*/temp
  [ ! -f $temperature_file ] && echo "N/A" && return
@@ -29,7 +32,6 @@ function fb_send_metrics() {
  firebase_send "heartbeat/$host" "$msg"
 }
 
-[ $METRICS_FB_URL ] && \
- firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
+firebase_setup $METRICS_FB_URL $METRICS_FB_KEY
 
 fb_send_metrics
