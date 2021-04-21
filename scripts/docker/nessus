@@ -41,9 +41,11 @@ function start_nessus() {
 case $1 in
  stop)
   stop_container $CONTAINER
+  stop_container nginx-$CONTAINER
   ;;
  delete)
   delete_container $CONTAINER
+  delete_container nginx-$CONTAINER
   ;;
  debug)
   DEBUG_POD=1
