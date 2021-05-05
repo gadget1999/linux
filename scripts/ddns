@@ -28,4 +28,4 @@ fi
 log "Updating DDNS ..."
 /usr/bin/curl -s http://sync.afraid.org/u/$DDNS_KEY/ >> $LOG
 
-cat $LOG
+#cat $LOG
