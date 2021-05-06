@@ -74,7 +74,7 @@ function spindown_disk() {
  if [ "$($SUDO hdparm -C /dev/$disk | grep state)" = " drive state is:  active/idle" ]; then
   log "/dev/$disk running (unexpected)"
  else
-  log "/dev/$disk ...."
+  debug "/dev/$disk ...."
  fi
  reset_diskstats
 }
