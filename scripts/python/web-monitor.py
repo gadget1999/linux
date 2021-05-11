@@ -363,7 +363,7 @@ class SiteInfo:
       time.sleep(1)
       r = requests.get(url, headers=headers)
       if r.status_code < 400:
-        logger.debug(f"Online (status={r.status_code}) --> Unexpected!")
+        logger.error(f"Online (status={r.status_code}) --> Unexpected!")
         return False
       else:
         logger.debug(f"HTTP error code: {r.status_code} --> Expected")
