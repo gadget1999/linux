@@ -723,7 +723,7 @@ class WebMonitor:
       if r.status_code > 400:
         logger.error(f"Post to webhook failed: {r.status_code}")
     except Exception as e:
-      logger.error(f"Post to webhook failed: {error}")
+      logger.error(f"Post to webhook failed: {e}")
 
   #########################################
   # Public methods
