@@ -357,6 +357,21 @@ class SiteInfo:
       else:
         return True, False, error
 
+  def is_blocked(url):
+    try:
+      headers = {"Accept-Language": "en-US,en;q=0.5"}
+      time.sleep(1)
+      r = requests.get(url, headers=headers)
+      if r.status_code < 400:
+        logger.debug(f"Online (status={r.status_code}) --> Unexpected!")
+        return False
+      else:
+        logger.debug(f"HTTP error code: {r.status_code} --> Expected")
+        return True
+    except Exception as e:
+      logger.debug(f"Network error: {e} --> Expected")
+      return True
+
   def get_report(url, include_ssl_rating=False):
     url = url.strip(' \r\'\"\n').lower()
     alive, online, error = SiteInfo.is_online(url)
@@ -437,16 +452,23 @@ class WebMonitor:
       urls = []
       workbook = load_workbook(filepath)
       for sheet in workbook.worksheets:
-        url_count = 0        
+        url_count = 0
+        urls_in_sheet = []     
         for row in sheet['A']:
           line = row.value
           if not line:
             break
           line = line.lower().strip(' \r\'\"\n')
           if line.startswith(("http://", "https://")):
-            urls.append(line)
+            urls_in_sheet.append(line)
             url_count += 1
-        logger.debug(f"Sheet [{sheet.title}]: found {url_count} URLs")
+        # Excel only logic: if there are URLs in 'Internal' tab, record them separately
+        if sheet.title == 'Internal':
+          logger.debug(f"Found {url_count} INTERNAL URLs")
+          self._URLS_BLOCKED = urls_in_sheet
+        else:
+          logger.debug(f"Sheet [{sheet.title}]: found {url_count} URLs")
+          urls.extend(urls_in_sheet)
       workbook.close()
       return urls
     except Exception as e:
@@ -540,6 +562,26 @@ class WebMonitor:
         full_report.append(record)
     return full_report, has_down_sites
 
+  def _get_report_blocked(self, urls):
+    report_blocked = []
+    total = len(urls)
+    i = 1
+    for url in urls:
+      if '://' not in url:
+        # assume https
+        url = f"https://{url}"
+      if not SiteInfo.is_valid_url(url):
+        logger.warning(f"Skipping invalid URL: {url}")
+        continue
+      logger.debug(f"Analyzing INTERNAL site ({i}/{total}): {url}")
+      i += 1
+      if SiteInfo.is_blocked(url):
+        continue
+      # if online, means mis-configuration
+      record = SiteRecord(url=url, alive=True, online=True, error="Internal URL not blocked.")
+      report_blocked.append(record)
+    return report_blocked
+    
   def _reconfirm_sites(self, report):
     has_down_sites = False
     for record in report:
@@ -725,6 +767,8 @@ class WebMonitor:
     if len(full_report) == 0:
       logger.error(f"Site report list is empty.")
       return
+    # check if any of blocked sites are accessible
+    full_report.extend(self._get_report_blocked(self._URLS_BLOCKED))
     # sort list to move items with error to front
     full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
     full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
