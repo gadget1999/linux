@@ -10,7 +10,7 @@ check_env "HOST_DOWNLOAD_ROOT"
 
 URL=$1
 
-CMD=/usr/local/bin/youtube-dl
+CMD="/usr/local/bin/youtube-dl"
 if [ ! -x "$(command -v $CMD)" ]; then
  debug "Install youtube-dl"
  sudo pip3 install youtube-dl
@@ -29,5 +29,5 @@ if [ "$2" == "debug" ]; then
  sudo pip3 install --upgrade youtube_dl
  $CMD -v $URL
 else
- $CMD $URL
+ $CMD --output "%(title)s.%(ext)s" $URL
 fi
