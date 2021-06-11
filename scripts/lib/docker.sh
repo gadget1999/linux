@@ -371,6 +371,30 @@ function delete_orphan_volumes()    {
     xargs --no-run-if-empty docker rmi
 }
 
+###############################
+# Building images from Github
+###############################
+
+function build_image_from_github() {
+ local github_repo=$1
+ local image_prefix=$2
+ local container_name=$3
+ local github_path="https://github.com/$github_repo.git#master:$container_name"
+ local image_name="$image_prefix$container_name:latest"
+
+ log "Removing previous local copies of [$image_name].."
+ docker rmi $image_name
+
+ log "Building docker image [$image_name] ..."
+ docker build --force-rm --no-cache $github_path -t $image_name
+
+ #log "Squashing the image..."
+ #squash_image $IMAGE_NAME
+
+ log "Pushing image to docker hub..."
+ docker push $image_name
+}
+
 ####################
 # Bootstraping
 ####################
