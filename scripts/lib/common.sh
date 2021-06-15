@@ -239,7 +239,8 @@ function mount_bitlocker() {
 function remove_mount_point() {
  local mount_point=$1
 
- [ ! -d $mount_point ] && return
+ # need to use sudo test otherwise some folders cannot be detected
+ sudo test ! -d $mount_point && return
  sleep 5
 
  debug "Unmounting [$mount_point]..."
