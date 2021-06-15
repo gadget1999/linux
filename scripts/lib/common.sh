@@ -240,6 +240,7 @@ function remove_mount_point() {
  local mount_point=$1
 
  [ ! -d $mount_point ] && return
+ sleep 5
 
  debug "Unmounting [$mount_point]..."
  sudo umount $mount_point
@@ -253,7 +254,6 @@ function unmount_bitlocker() {
  local mount_point=/tmp/bitlocker-$(basename $partition)
 
  remove_mount_point $mount_point
- sleep 5
  remove_mount_point $unlock_area
 }
 
