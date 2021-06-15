@@ -239,7 +239,7 @@ function mount_bitlocker() {
 function remove_mount_point() {
  local mount_point=$1
 
- [ ! -d $mount_point ] && then return
+ [ ! -d $mount_point ] && return
 
  debug "Unmounting [$mount_point]..."
  sudo umount $mount_point
