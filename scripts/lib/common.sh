@@ -230,7 +230,7 @@ function mount_bitlocker() {
  local password
  read -s -p "Password:" password
  debug "Unlocking [$partition]..."
- sudo dislocker $partition -u$password -- $unlock_area
+ sudo dislocker -r $partition -u$password -- $unlock_area
 
  debug "Mounting partition to [$mount_point]..."
  sudo mount -o loop $unlock_area/dislocker-file $mount_point
