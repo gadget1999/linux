@@ -11,7 +11,10 @@ case $1 in
  on)
   mount_bitlocker $PARTITION
   ;;
- *)
+ off)
   unmount_bitlocker $PARTITION
+  ;;
+ *)
+  mount_bitlocker $PARTITION
   ;;
 esac
