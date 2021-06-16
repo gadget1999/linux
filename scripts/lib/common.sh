@@ -233,7 +233,7 @@ function mount_bitlocker() {
  sudo dislocker -r $partition -u$password -- $unlock_area
 
  debug "Mounting partition to [$mount_point]..."
- sudo mount -o loop $unlock_area/dislocker-file $mount_point
+ sudo mount -o ro,loop $unlock_area/dislocker-file $mount_point
 }
 
 function remove_mount_point() {
