@@ -18,6 +18,8 @@ from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0'
+
 def get_ip_addresses(host, port):
   try:
     addresses = []
@@ -35,7 +37,10 @@ def get_ip_location(ip):
   try:
     url = f"https://ipinfo.io/{ip}/json"
     time.sleep(2)   # avoid throttling
-    r = requests.get(url)
+    headers = {
+      "User-Agent": USER_AGENT
+    }
+    r = requests.get(url, headers=headers)
     if r.status_code >= 400:
       logger.warning(f"Failed to get location of IP: {ip} (status={r.status_code})")
       return None, None, None
@@ -89,7 +94,10 @@ class SSLLabs:
     analyze_endpoint = 'https://api.ssllabs.com/api/v3/analyze'
     # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
     time.sleep(2)
-    r = requests.get(analyze_endpoint, params=params)
+    headers = {
+      "User-Agent": USER_AGENT
+    }
+    r = requests.get(analyze_endpoint, params=params, headers=headers)
     if r.status_code == 429 or r.status_code == 529:
       raise APIThrottlingException(f"SSLLabs API throttled: error={r.status_code}")
     elif r.status_code > 400:
@@ -101,7 +109,10 @@ class SSLLabs:
       info_endpoint = 'https://api.ssllabs.com/api/v3/info'
       # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
       time.sleep(2)
-      r = requests.get(info_endpoint)
+      headers = {
+        "User-Agent": USER_AGENT
+      }
+      r = requests.get(info_endpoint, headers=headers)
       if r.status_code > 400:
         logger.error(f"SSLLabs API failed: error={r.status_code}")
         return
@@ -333,9 +344,12 @@ class SiteInfo:
     error = None
     try:
       #logger.debug(f"Checking [{url}] status...")
-      headers = {"Accept-Language": "en-US,en;q=0.5"}
       time.sleep(1)
       t_start = time.perf_counter_ns()
+      headers = {
+        "Accept-Language": "en-US,en;q=0.5",
+        "User-Agent": USER_AGENT
+      }
       r = requests.get(url, headers=headers)
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
@@ -359,8 +373,11 @@ class SiteInfo:
 
   def is_blocked(url):
     try:
-      headers = {"Accept-Language": "en-US,en;q=0.5"}
       time.sleep(1)
+      headers = {
+        "Accept-Language": "en-US,en;q=0.5",
+        "User-Agent": USER_AGENT
+      }
       r = requests.get(url, headers=headers)
       if r.status_code < 400:
         logger.error(f"Online (status={r.status_code}) --> Unexpected!")
@@ -718,7 +735,10 @@ class WebMonitor:
     # send over notification
     try:
       logger.debug("Sending webhook notification...")
-      headers = {"Content-Type": "application/json"}
+      headers = {
+        "Content-Type": "application/json",
+        "User-Agent": USER_AGENT
+      }
       r = requests.post(webhook_config.endpoint, headers=headers, data=payload)
       if r.status_code > 400:
         logger.error(f"Post to webhook failed: {r.status_code}")
