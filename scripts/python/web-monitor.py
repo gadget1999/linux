@@ -581,6 +581,8 @@ class WebMonitor:
 
   def _get_report_blocked(self, urls):
     report_blocked = []
+    if not urls:
+      return report_blocked
     total = len(urls)
     i = 1
     for url in urls:
@@ -788,7 +790,8 @@ class WebMonitor:
       logger.error(f"Site report list is empty.")
       return
     # check if any of blocked sites are accessible
-    full_report.extend(self._get_report_blocked(self._URLS_BLOCKED))
+    if '_URLS_BLOCKED' in dir(self):
+      full_report.extend(self._get_report_blocked(self._URLS_BLOCKED))
     # sort list to move items with error to front
     full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
     full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
