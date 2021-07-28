@@ -581,8 +581,6 @@ class WebMonitor:
 
   def _get_report_blocked(self, urls):
     report_blocked = []
-    if not urls:
-      return report_blocked
     total = len(urls)
     i = 1
     for url in urls:
