@@ -7,7 +7,6 @@ from influxdb import InfluxDBHelper
 from common import Logger, CLIParser
 logger = Logger.getLogger()
 
-
 TEMP_FAN_ON = 50  # (degrees Celsius) Fan kicks on at this temperature.
 TEMP_FAN_OFF = 40  # (degress Celsius) Fan shuts off at this temperature.
 SLEEP_INTERVAL = 30  # (seconds) How often we check the core temperature.
@@ -57,7 +56,7 @@ class FanControl:
         logger.debug(f"Fan on temperature: {TEMP_FAN_ON}")
       if 'FAN_OFF_TEMP' in os.environ:
         TEMP_FAN_OFF = int(os.environ['FAN_OFF_TEMP'].strip('\" '))
-        logger.debug(f"Fan on temperature: {TEMP_FAN_OFF}")
+        logger.debug(f"Fan off temperature: {TEMP_FAN_OFF}")
       if 'FAN_CONTROL_PIN' in os.environ:
         # need to control fan
         gpio_pin = int(os.environ['FAN_CONTROL_PIN'].strip('\" '))
