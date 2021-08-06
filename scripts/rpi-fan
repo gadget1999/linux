@@ -13,6 +13,8 @@ export INFLUXDB_API_TOKEN
 export INFLUXDB_TENANT
 export INFLUXDB_BUCKET
 [ "$FAN_CONTROL_PIN" != "" ] && export FAN_CONTROL_PIN
+[ "$FAN_ON_TEMP" != "" ] && export FAN_ON_TEMP
+[ "$FAN_OFF_TEMP" != "" ] && export FAN_OFF_TEMP
 
 [ "$1" == "debug" ] && export DEBUG
 # no need to use sudo if user in gpio group

@@ -7,9 +7,10 @@ from influxdb import InfluxDBHelper
 from common import Logger, CLIParser
 logger = Logger.getLogger()
 
-ON_THRESHOLD = 50  # (degrees Celsius) Fan kicks on at this temperature.
-OFF_THRESHOLD = 40  # (degress Celsius) Fan shuts off at this temperature.
-SLEEP_INTERVAL = 15  # (seconds) How often we check the core temperature.
+
+TEMP_FAN_ON = 50  # (degrees Celsius) Fan kicks on at this temperature.
+TEMP_FAN_OFF = 40  # (degress Celsius) Fan shuts off at this temperature.
+SLEEP_INTERVAL = 30  # (seconds) How often we check the core temperature.
 
 INFLUXDB_TOPIC = "Metrics"
 INFLUXDB_HOST = os.uname()[1]
@@ -51,6 +52,12 @@ class FanControl:
 
   def init():
     try:
+      if 'FAN_ON_TEMP' in os.environ:
+        TEMP_FAN_ON = int(os.environ['FAN_ON_TEMP'].strip('\" '))
+        logger.debug(f"Fan on temperature: {TEMP_FAN_ON}")
+      if 'FAN_OFF_TEMP' in os.environ:
+        TEMP_FAN_OFF = int(os.environ['FAN_OFF_TEMP'].strip('\" '))
+        logger.debug(f"Fan on temperature: {TEMP_FAN_OFF}")
       if 'FAN_CONTROL_PIN' in os.environ:
         # need to control fan
         gpio_pin = int(os.environ['FAN_CONTROL_PIN'].strip('\" '))
@@ -94,13 +101,13 @@ def monitor_metrics(influxdb_writer):
 
     # Start the fan if the temperature has reached the limit and the fan
     # isn't already running.
-    if temp > ON_THRESHOLD and not FanControl.is_on():
+    if temp > TEMP_FAN_ON and not FanControl.is_on():
       logger.info(f"Turn on fan. (temperature={temp})")
       FanControl.turn_on()
 
     # Stop the fan if the fan is running and the temperature has dropped
     # to 10 degrees below the limit.
-    elif FanControl.is_on() and temp < OFF_THRESHOLD:
+    elif FanControl.is_on() and temp < TEMP_FAN_OFF:
       logger.info(f"Turn off fan. (temperature={temp})")
       FanControl.turn_off()
 
@@ -109,7 +116,7 @@ def monitor_metrics(influxdb_writer):
 
 if __name__ == '__main__':
   # Validate the on and off thresholds
-  if OFF_THRESHOLD >= ON_THRESHOLD:
+  if TEMP_FAN_OFF >= TEMP_FAN_ON:
     raise Exception('OFF_THRESHOLD must be less than ON_THRESHOLD')
 
   FanControl.init()
