@@ -17,6 +17,6 @@ DIR=$(dirname $INFILE)
 OUTFILE="$DIR/[$START-$END]$FILENAME"
 
 [ "$END" != "" ] && ARG_END="-to $END"
-ARGS="-ss $START -i $INFILE $ARG_END -c copy $OUTFILE"
+ARGS="-ss $START -i $INFILE $ARG_END -c copy -map_metadata 0 $OUTFILE"
 debug "Starting processing: (args=$ARGS)"
 ffmpeg $ARGS
