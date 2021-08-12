@@ -775,6 +775,7 @@ class WebMonitor:
       bucket=self._influxdb_settings.bucket
       )
     influxdb_writer = InfluxDBHelper(influxdb_settings)
+    logger.debug("Storing metrics into InfluxDB...")
     for record in report:
       parsed_uri = urlparse(record.url)
       data = []
