@@ -12,27 +12,8 @@ check_env "CONTAINER CONTAINER_CONFIG_ROOT"
 INFLUXDB_ROOT=$CONTAINER_CONFIG_ROOT/$CONTAINER
 INFLUXDB_PORT=15636
 
-function prepare_container_folders() {
- local container_root=$1
- local -n subfolders=$2 # use an array to avoid space/quote issues  
-
- if [ ! -d $container_root ]; then
-  debug "Creating folder: $container_root"
-  sudo mkdir -p $container_root
-  grant_container_access $container_root
- fi
-
- for subfolder in "${subfolders[@]}"; do
-  local folder=$container_root/$subfolder
-  if [ ! -d $folder ]; then
-   debug "Creating folder: $folder"
-   sudo mkdir -p $folder
-   grant_container_access $folder
-  fi
- done 
-}
-
-prepare_container_folders $INFLUXDB_ROOT (data config)
+SUBFOLDERS=(data config)
+prepare_container_folders $INFLUXDB_ROOT SUBFOLDERS
 
 #########################
 # Helper functions
@@ -53,7 +34,7 @@ function setup_influxdb() {
 
  ENTRYPOINT=()
 
- container_cli $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+ container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
 }
 
 function run_influxdb() {
