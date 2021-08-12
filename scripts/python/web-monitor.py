@@ -323,7 +323,7 @@ class SiteRecord:
   url: str
   alive: bool = False
   online: bool = False
-  response_time: int = 120000 # by default 120s (assuming error)
+  response_time: int = 0
   ip: str = ''
   error: str = ''
   ssl_expires: str = ''
@@ -770,14 +770,17 @@ class WebMonitor:
     from influxdb import InfluxDBHelper
     influxdb_settings = InfluxDBConfig(
       endpoint=self._influxdb_settings.endpoint, 
-      api_key=self._influxdb_settings.token,
+      token=self._influxdb_settings.token,
       tenant=self._influxdb_settings.tenant,
       bucket=self._influxdb_settings.bucket
       )
     influxdb_writer = InfluxDBHelper(influxdb_settings)
     for record in report:
       parsed_uri = urlparse(record.url)
-      influxdb_writer.report_data("Metrics", parsed_uri.hostname, "Response_Time", record.response_time)
+      data = []
+      if not record.error: data.append(("Response_Time", record.response_time))
+      data.append(("Offline", 1 if record.online else 0))
+      influxdb_writer.report_data_list("Metrics", parsed_uri.hostname, data)
 
   #########################################
   # Public methods

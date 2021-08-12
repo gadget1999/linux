@@ -22,8 +22,8 @@ class InfluxDBHelper:
   def load_influxDB_config():
     try:
       settings = InfluxDBConfig()
-      settings.api_endpoint = os.environ['INFLUXDB_API_ENDPOINT'].strip('\" ')
-      settings.api_key = os.environ['INFLUXDB_API_TOKEN'].strip('\" ')
+      settings.endpoint = os.environ['INFLUXDB_API_ENDPOINT'].strip('\" ')
+      settings.token = os.environ['INFLUXDB_API_TOKEN'].strip('\" ')
       settings.tenant = os.environ['INFLUXDB_TENANT'].strip('\" ')
       settings.bucket = os.environ['INFLUXDB_BUCKET'].strip('\" ')
       return settings
@@ -35,7 +35,7 @@ class InfluxDBHelper:
     try:
       logger.debug(f"Initialize InfluxDB...")
       self._settings = influxDB_config
-      self._client = InfluxDBClient(url=influxDB_config.api_endpoint, token=influxDB_config.api_key)
+      self._client = InfluxDBClient(url=influxDB_config.endpoint, token=influxDB_config.token)
       self._write_client = self._client.write_api(write_options=SYNCHRONOUS)
     except Exception as e:
       logger.error(f"Failed to initialize InfluxDB: {e}")
