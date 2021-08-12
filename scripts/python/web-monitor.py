@@ -779,7 +779,8 @@ class WebMonitor:
     for record in report:
       parsed_uri = urlparse(record.url)
       data = []
-      if not record.error: data.append(("Response_Time", record.response_time))
+      if not record.error and record.response_time > 800 :
+        data.append(("Response_Time", record.response_time))
       data.append(("Offline", 0 if record.online else 1))
       influxdb_writer.report_data_list("Metrics", parsed_uri.hostname, data)
 
