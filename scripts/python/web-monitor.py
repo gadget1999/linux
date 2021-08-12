@@ -780,7 +780,7 @@ class WebMonitor:
       parsed_uri = urlparse(record.url)
       data = []
       if not record.error: data.append(("Response_Time", record.response_time))
-      data.append(("Offline", 1 if record.online else 0))
+      data.append(("Offline", 0 if record.online else 1))
       influxdb_writer.report_data_list("Metrics", parsed_uri.hostname, data)
 
   #########################################
@@ -839,12 +839,13 @@ class WebMonitor:
     full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
     full_report.sort(key=lambda i: i.online)
     num_errors = sum(1 for x in full_report if x.error)
+    # always record metrics stats
+    if self._influxdb_settings:
+      self._store_influxdb_report(full_report)
     # send email if ssl rating included, or has failed sites, or has errors
     if self._include_SSL_report or has_down_sites or num_errors > 0:
       if self._email_settings:
         self._send_email_report(full_report)
-      if self._influxdb_settings:
-        self._store_influxdb_report(full_report)
       if self._webhook_settings:
         self._send_webhook_notice(full_report)
       # also archive the report locally, in case email gets lost
