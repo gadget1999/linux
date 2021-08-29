@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os, time
-from gpiozero import OutputDevice
 import psutil
 from influxdb import InfluxDBHelper
 from common import Logger, CLIParser
@@ -50,6 +49,8 @@ class FanControl:
   __fan_off_temperature = 40
 
   def init(gpio, temp_on, temp_off):
+    from gpiozero import OutputDevice
+    
     # Validate the on and off thresholds
     if temp_off >= temp_on:
       raise Exception('OFF_THRESHOLD {temp_off} must be less than ON_THRESHOLD {temp_on}')

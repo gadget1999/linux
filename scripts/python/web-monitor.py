@@ -323,6 +323,7 @@ class SiteRecord:
   url: str
   alive: bool = False
   online: bool = False
+  response_time: int = 0
   ip: str = ''
   error: str = ''
   ssl_expires: str = ''
@@ -339,9 +340,10 @@ class SiteInfo:
     else:
       return False
 
-  # return alive (if reachable), online (if functional) and error if any
-  def is_online(url):
-    error = None
+  def get_status(url):
+    status = SiteRecord(url=url)
+    # return alive (if reachable), online (if functional) and error if any
+    # by default alive and online status will be False unless explicitly set to True
     try:
       #logger.debug(f"Checking [{url}] status...")
       time.sleep(1)
@@ -353,23 +355,24 @@ class SiteInfo:
       r = requests.get(url, headers=headers)
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
+      status.response_time = t_elapsed_ms
       if r.status_code < 400:
         logger.debug(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
         if (t_elapsed_ms > 10000):
           logger.error(f"{url} response time too long: {t_elapsed_ms}ms")
-        return True, True, error
+        status.alive = True
+        status.online = True
       else:
-        error = f"HTTP error code: {r.status_code}"
-        logger.error(f"{url} failed: {error}")
-        return True, False, error
+        status.error = f"HTTP error code: {r.status_code}"
+        logger.error(f"{url} failed: {status.error}")
+        status.alive = True
     except Exception as e:
-      error = f"Network error: {e}"
-      logger.error(f"{url} failed: {error}")
+      status.error = f"Network error: {e}"
+      logger.error(f"{url} failed: {status.error}")
       fatal_errors = ['ConnectionError', 'Timeout', 'SSLError']
-      if type(e).__name__ in fatal_errors:
-        return False, False, error
-      else:
-        return True, False, error
+      if type(e).__name__ not in fatal_errors:
+        status.alive = True
+    return status
 
   def is_blocked(url):
     try:
@@ -391,9 +394,8 @@ class SiteInfo:
 
   def get_report(url, include_ssl_rating=False):
     url = url.strip(' \r\'\"\n').lower()
-    alive, online, error = SiteInfo.is_online(url)
-    site_info = SiteRecord(url=url, alive=alive, online=online, error=error)
-    if not alive \
+    site_info = SiteInfo.get_status(url)
+    if not site_info.alive \
        or url.startswith('http://') \
        or not include_ssl_rating:
       # no point to continue if not alive, or it's HTTP, or no need for SSL info
@@ -455,6 +457,13 @@ class EmailConfig:
 class WebHookConfig:
   endpoint: str = None
   content_formatter: str = None
+
+@dataclass
+class InfluxDBConfig:
+  endpoint: str = None
+  token: str = None
+  tenant: str = None
+  bucket: str = None
 
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
@@ -545,6 +554,18 @@ class WebMonitor:
       logger.error(f"WebHook configuration is invalid: {e}")
       raise
 
+  def _load_influxdb_config(self, influxdbconfig):
+    try:
+      settings = InfluxDBConfig()
+      settings.endpoint = influxdbconfig["InfluxDBAPIEndPoint"].strip('\" ')
+      settings.token = influxdbconfig["InfluxDBAPIToken"].strip('\" ')
+      settings.tenant = influxdbconfig["InfluxDBTenant"].strip('\" ')
+      settings.bucket = influxdbconfig["InfluxDBBucket"].strip('\" ')
+      return settings
+    except Exception as e:
+      logger.error(f"InfluxDB configuration is invalid: {e}")
+      raise
+
   def _load_sslscanner_config(self, sslscannerconfig):
     try:
       settings = SSLScannerConfig()
@@ -603,11 +624,11 @@ class WebMonitor:
     has_down_sites = False
     for record in report:
       if not record.online:
-        alive, online, error = SiteInfo.is_online(record.url)
-        record.alive = alive
-        record.online = online
-        record.error = error
-        if not online:
+        status = SiteInfo.get_status(record.url)
+        record.alive = status.alive
+        record.online = status.online
+        record.error = status.error
+        if not status.online:
           has_down_sites = True
         else:
           logger.info(f"Site is now online: {record.url}")
@@ -745,6 +766,24 @@ class WebMonitor:
     except Exception as e:
       logger.error(f"Post to webhook failed: {e}")
 
+  def _store_influxdb_report(self, report):
+    from influxdb import InfluxDBHelper
+    influxdb_settings = InfluxDBConfig(
+      endpoint=self._influxdb_settings.endpoint, 
+      token=self._influxdb_settings.token,
+      tenant=self._influxdb_settings.tenant,
+      bucket=self._influxdb_settings.bucket
+      )
+    influxdb_writer = InfluxDBHelper(influxdb_settings)
+    logger.debug("Storing metrics into InfluxDB...")
+    for record in report:
+      parsed_uri = urlparse(record.url)
+      data = []
+      if not record.error:
+        data.append(("Response_Time", record.response_time))
+      data.append(("Offline", 0 if record.online else 1))
+      influxdb_writer.report_data_list("Metrics", parsed_uri.hostname, data)
+
   #########################################
   # Public methods
   #########################################
@@ -763,12 +802,18 @@ class WebMonitor:
       if url_list_file == os.path.basename(url_list_file):
         url_list_file = os.path.join(self._config_dir, url_list_file)
       self._URLs = self._load_urls(url_list_file)
-      self._webhook_settings = None
-      self._email_settings = None
-      if "WebHook" in config:
-        self._webhook_settings = self._load_webhook_config(config["WebHook"])
       if "Email" in config:
         self._email_settings = self._load_email_config(config["Email"])
+      else:
+        self._email_settings = None
+      if "InfluxDB" in config:
+        self._influxdb_settings = self._load_influxdb_config(config["InfluxDB"])
+      else:
+        self._influxdb_settings = None
+      if "WebHook" in config:
+        self._webhook_settings = self._load_webhook_config(config["WebHook"])
+      else:
+        self._webhook_settings = None
       if self._include_SSL_report:
         SSLReport.set_config(self._load_sslscanner_config(config["SSL"]))
     except Exception as e:
@@ -795,6 +840,9 @@ class WebMonitor:
     full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
     full_report.sort(key=lambda i: i.online)
     num_errors = sum(1 for x in full_report if x.error)
+    # always record metrics stats
+    if self._influxdb_settings:
+      self._store_influxdb_report(full_report)
     # send email if ssl rating included, or has failed sites, or has errors
     if self._include_SSL_report or has_down_sites or num_errors > 0:
       if self._email_settings:

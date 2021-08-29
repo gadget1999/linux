@@ -103,6 +103,17 @@ class AzureCLI:
     self.TenantId = tenant_id
     self.__login(tenant_id, app_id, app_key)
 
+  def __request_with_retry(self, func, url, data, headers, timeout):
+    for i in range(3): # retry up to 3 times
+      try:
+        response = func(url=url, data=data, headers=headers, timeout=timeout)
+        if (response.status_code < 400): return response
+        logger.error(f"API returned: {response.status_code} (retries={i})")
+      except Exception as e:
+        logger.error(f"Failed to connect to API endpoint: {e} (retries={i})")
+      time.sleep(30)
+    return None
+
   def __login(self, tenant_id, app_id, app_key):
     API_URL = f"{AZURE_LOGIN_ENDPOINT}/{tenant_id}/oauth2/token"
     params = {
@@ -135,7 +146,7 @@ class AzureCLI:
   def API_call(self, url, data=None, headers=None):
     if (self.__access_token is not None):
       headers = { "Authorization": f"Bearer {self.__access_token}" }
-    response = requests.get(url, data=data, headers=headers, timeout=60)
+    response = self.__request_with_retry(requests.get, url, data, headers, 60)
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), f"API returned error: {response.status_code}"
     content_type = response.headers['Content-Type']
@@ -145,7 +156,7 @@ class AzureCLI:
   def API_call_post(self, url, data=None, headers=None):
     if (self.__access_token is not None):
       headers = { "Authorization": f"Bearer {self.__access_token}" }
-    response = requests.post(url, data=data, headers=headers, timeout=60)
+    response = self.__request_with_retry(requests.post, url, data, headers, 60)
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), f"API returned error: {response.status_code}"
 
@@ -153,7 +164,7 @@ class AzureCLI:
     if (self.__access_token is not None):
       headers = { "Authorization": f"Bearer {self.__access_token}",
                "Content-Type": "application/json" }
-    response = requests.put(url, data=data, headers=headers, timeout=60)
+    response = self.__request_with_retry(requests.put, url, data, headers, 60)
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), f"API returned error: {response.status_code}"
 

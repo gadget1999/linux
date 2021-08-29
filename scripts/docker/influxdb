@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER="influxdb"
+IMAGE="influxdb:alpine"
+
+check_env "CONTAINER CONTAINER_CONFIG_ROOT"
+
+INFLUXDB_ROOT=$CONTAINER_CONFIG_ROOT/$CONTAINER
+INFLUXDB_PORT=15636
+
+SUBFOLDERS=(data config)
+prepare_container_folders $INFLUXDB_ROOT SUBFOLDERS
+
+#########################
+# Helper functions
+#########################
+
+function setup_influxdb() {
+ check_env "DOCKER_INFLUXDB_USER DOCKER_INFLUXDB_PWD DOCKER_INFLUXDB_ORG"
+ EXTRA_OPTS=(
+  -p $INFLUXDB_PORT:8086
+  -v $INFLUXDB_ROOT/data:/var/lib/influxdb2
+  -v $INFLUXDB_ROOT/config:/etc/influxdb2
+  -e DOCKER_INFLUXDB_INIT_MODE=setup
+  -e DOCKER_INFLUXDB_INIT_USERNAME=$DOCKER_INFLUXDB_USER
+  -e DOCKER_INFLUXDB_INIT_PASSWORD=$DOCKER_INFLUXDB_PWD
+  -e DOCKER_INFLUXDB_INIT_ORG=$DOCKER_INFLUXDB_ORG
+  -e DOCKER_INFLUXDB_INIT_BUCKET=init-bucket
+  )
+
+ ENTRYPOINT=()
+
+ container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
+}
+
+function run_influxdb() {
+ EXTRA_OPTS=(
+  -p $INFLUXDB_PORT:8086
+  -v $INFLUXDB_ROOT/data:/var/lib/influxdb2
+  -v $INFLUXDB_ROOT/config:/etc/influxdb2
+  )
+
+ ENTRYPOINT=()
+
+ new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+}
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ setup)
+  setup_influxdb
+  ;;
+ debug)
+  DEBUG_DOCKER=1
+  run_influxdb
+  ;;
+ *)
+  run_influxdb
+  ;;
+esac

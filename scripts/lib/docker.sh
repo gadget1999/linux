@@ -41,6 +41,26 @@ function grant_container_access() {
  done 
 }
 
+function prepare_container_folders() {
+ local container_root=$1
+ local -n subfolders=$2 # use an array to avoid space/quote issues  
+
+ if [ ! -d $container_root ]; then
+  debug "Creating folder: $container_root"
+  sudo mkdir -p $container_root
+  grant_container_access $container_root
+ fi
+
+ for subfolder in "${subfolders[@]}"; do
+  local folder=$container_root/$subfolder
+  if [ ! -d $folder ]; then
+   debug "Creating folder: $folder"
+   sudo mkdir -p $folder
+   grant_container_access $folder
+  fi
+ done 
+}
+
 # need to match pattern of end-of-line 'pattern$'
 function container_exists() {
   sudo docker ps -a | grep " $1$" &> /dev/null
