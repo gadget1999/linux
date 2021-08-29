@@ -808,7 +808,10 @@ class WebMonitor:
         os.makedirs(archive_folder)
       report_file = f"{archive_folder}/Site-Report-{now.strftime('%Y-%m-%d_%H_%M_%S')}.xlsx"
       self._generate_xlsx_report(full_report, report_file)
-      logger.error(f"Scan completed: {num_errors} of {len(full_report)} URLs have errors.")
+      if num_errors > 0:
+        logger.error(f"Scan completed: {num_errors} of {len(full_report)} URLs have errors.")
+      else:
+        logger.log(f"Scan completed: no errors for {len(full_report)} URLs.")
 
 class WebMonitorTestCase(unittest.TestCase):
   def test_webmonitor_report(self):
