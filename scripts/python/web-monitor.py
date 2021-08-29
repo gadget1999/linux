@@ -12,6 +12,16 @@ import requests
 from urllib.parse import urlparse
 # for unittest
 import unittest
+# for reporting
+from jinja2 import Template # HTML report
+from openpyxl import load_workbook # read Excel URL lists
+import io, xlsxwriter # Excel report
+from influxdb import InfluxDBHelper # InfluxDB history
+# for email
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
+  FileType, Disposition, ContentId)
+import base64 # for attachment
 # for logging and CLI arguments parsing
 import configparser
 from common import Logger, CLIParser
@@ -473,8 +483,6 @@ class WebMonitor:
 
   def _load_urls_from_xlsx(self, filepath):
     try:
-      from openpyxl import load_workbook
-
       urls = []
       workbook = load_workbook(filepath)
       for sheet in workbook.worksheets:
@@ -523,44 +531,50 @@ class WebMonitor:
     else:
       return self._load_urls_from_txt(filepath)
 
-  def _load_email_config(self, emailconfig):
+  def _load_email_config(self, config, section):
     try:
+      if section not in config: return None
+      sectionConfig = config[section]
       settings = EmailConfig()
       settings.api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
-      settings.sender = emailconfig["Sender"].strip('\" ')
-      raw_recipients = emailconfig["Recipients"].strip('\" ')
+      settings.sender = sectionConfig["Sender"].strip('\" ')
+      raw_recipients = sectionConfig["Recipients"].strip('\" ')
       if raw_recipients:
         white_spaces = ' \n'
         settings.recipients = raw_recipients.translate({ord(i): None for i in white_spaces})
-      settings.subject_formatter = emailconfig["Subject"].strip('\" ')
-      template_file = emailconfig["BodyTemplate"].strip('\" ')
+      settings.subject_formatter = sectionConfig["Subject"].strip('\" ')
+      template_file = sectionConfig["BodyTemplate"].strip('\" ')
       if template_file == os.path.basename(template_file):
         template_file = os.path.join(self._config_dir, template_file)
       with open(template_file, 'r') as f:
         settings.body_template = f.read()
-      settings.include_attachment = emailconfig.getboolean('Attachment', fallback=True)
+      settings.include_attachment = sectionConfig.getboolean('Attachment', fallback=True)
       return settings
     except Exception as e:
       logger.error(f"Email configuration is invalid: {e}")
       raise
 
-  def _load_webhook_config(self, webhookconfig):
+  def _load_webhook_config(self, config, section):
     try:
+      if section not in config: return None
+      sectionConfig = config[section]
       settings = WebHookConfig()
-      settings.endpoint = webhookconfig["EndPoint"].strip('\" ')
-      settings.content_formatter = webhookconfig["Content"].strip('\" ')
+      settings.endpoint = sectionConfig["EndPoint"].strip('\" ')
+      settings.content_formatter = sectionConfig["Content"].strip('\" ')
       return settings
     except Exception as e:
       logger.error(f"WebHook configuration is invalid: {e}")
       raise
 
-  def _load_influxdb_config(self, influxdbconfig):
+  def _load_influxdb_config(self, config, section):
     try:
+      if section not in config: return None
+      sectionConfig = config[section]
       settings = InfluxDBConfig()
-      settings.endpoint = influxdbconfig["InfluxDBAPIEndPoint"].strip('\" ')
-      settings.token = influxdbconfig["InfluxDBAPIToken"].strip('\" ')
-      settings.tenant = influxdbconfig["InfluxDBTenant"].strip('\" ')
-      settings.bucket = influxdbconfig["InfluxDBBucket"].strip('\" ')
+      settings.endpoint = sectionConfig["InfluxDBAPIEndPoint"].strip('\" ')
+      settings.token = sectionConfig["InfluxDBAPIToken"].strip('\" ')
+      settings.tenant = sectionConfig["InfluxDBTenant"].strip('\" ')
+      settings.bucket = sectionConfig["InfluxDBBucket"].strip('\" ')
       return settings
     except Exception as e:
       logger.error(f"InfluxDB configuration is invalid: {e}")
@@ -636,8 +650,6 @@ class WebMonitor:
 
   # render output based on list of SiteRecord objects
   def _render_template(self, template, report, outputfile=None):
-    from jinja2 import Template
-
     engine = Template(template)
     html = engine.render(sites=report)
     if outputfile:
@@ -646,9 +658,6 @@ class WebMonitor:
     return html
 
   def _generate_xlsx_report(self, report, outputfile=None):
-    import io
-    import xlsxwriter
-
     # Create an in-memory Excel file and add a worksheet
     with io.BytesIO() as output:
       with xlsxwriter.Workbook(output, {'in_memory': True}) as workbook:
@@ -702,11 +711,6 @@ class WebMonitor:
     return content
 
   def _send_email_report(self, report):
-    from sendgrid import SendGridAPIClient
-    from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
-      FileType, Disposition, ContentId)
-    import base64
-
     try:
       email_config = self._email_settings
       # construct email
@@ -767,7 +771,6 @@ class WebMonitor:
       logger.error(f"Post to webhook failed: {e}")
 
   def _store_influxdb_report(self, report):
-    from influxdb import InfluxDBHelper
     influxdb_settings = InfluxDBConfig(
       endpoint=self._influxdb_settings.endpoint, 
       token=self._influxdb_settings.token,
@@ -802,18 +805,9 @@ class WebMonitor:
       if url_list_file == os.path.basename(url_list_file):
         url_list_file = os.path.join(self._config_dir, url_list_file)
       self._URLs = self._load_urls(url_list_file)
-      if "Email" in config:
-        self._email_settings = self._load_email_config(config["Email"])
-      else:
-        self._email_settings = None
-      if "InfluxDB" in config:
-        self._influxdb_settings = self._load_influxdb_config(config["InfluxDB"])
-      else:
-        self._influxdb_settings = None
-      if "WebHook" in config:
-        self._webhook_settings = self._load_webhook_config(config["WebHook"])
-      else:
-        self._webhook_settings = None
+      self._email_settings = self._load_email_config(config, "Email")
+      self._influxdb_settings = self._load_influxdb_config(config, "InfluxDB")
+      self._webhook_settings = self._load_webhook_config(config, "WebHook")
       if self._include_SSL_report:
         SSLReport.set_config(self._load_sslscanner_config(config["SSL"]))
     except Exception as e:
