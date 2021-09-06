@@ -7,10 +7,15 @@ check_root
 
 function zerofile() {
  local file=$1
- [ ! -e "$file" ] && return
+ [ ! -e "$file" ] && return # file does not exist
+ [ ! -s "$file" ] && return # file empty
 
- echo "Truncate $file"
+ debug "Truncate $file"
  sudo truncate -s 0 $file
+ if [ $? -ne 0 ]; then
+  log_error "Truncating $file failed. Retry..."
+  truncate -s 0 $file
+ fi
 }
 
 for i in /tmp/*.log /tmp/*.txt;
