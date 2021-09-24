@@ -204,7 +204,7 @@ function mount_cifs_share() {
  fi
 
  sudo /bin/mount -t cifs \
-  -o username=$CIFS_USER,password=$CIFS_PWD,rw,iocharset=utf8,file_mode=0777,dir_mode=0777,vers=$SMB_VER \
+  -o vers=$SMB_VER,username=$CIFS_USER,password=$CIFS_PWD,rw,iocharset=utf8,file_mode=0777,dir_mode=0777 \
   $unc $mount_point
  if [ "$(df | grep ""$mount_point"")" ]; then
   log "[$mount_point] mounted: $unc"
@@ -418,13 +418,15 @@ function move_locked_file() {
  sudo systemctl start $service
 }
 
-function update_config_from_dropbox() {
+function update_file_from_dropbox() {
+ check_packages "dropbox"
+ 
  local remote_file=$1
  local local_file=$2
 
  # download from dropbox
  local tmp_file=/tmp/$NOW.tmp
- debug "Downloading $remote_file ..."
+ debug "Downloading $remote_file from DropBox..."
  dropbox download $remote_file $tmp_file
  if [ ! -s $tmp_file ]; then
   log_error "Failed to download file: $remote_file."
@@ -433,6 +435,28 @@ function update_config_from_dropbox() {
 
  copy_file $tmp_file $local_file "overwrite"
  rm $tmp_file
+}
+
+function update_file_from_box() {
+ check_packages "box"
+
+ local remote_file_id=$1
+ local remote_file_name=$2
+ local local_file=$3
+
+ # download from box
+ local tmp_folder=/tmp/$NOW.tmp
+ debug "Downloading $remote_file from Box ..."
+ mkdir -p $tmp_folder
+ box files:download $remote_file_id --destination $tmp_folder
+ local tmp_file=$tmp_folder/$remote_file_name
+ if [ ! -s $tmp_file ]; then
+  log_error "Failed to download file: $remote_file."
+  return
+ fi
+
+ copy_file $tmp_file $local_file "overwrite"
+ rm -R $tmp_folder
 }
 
 ####################
