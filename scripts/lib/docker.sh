@@ -406,7 +406,8 @@ function build_image_from_github() {
  docker rmi $image_name
 
  log "Building docker image [$image_name] ..."
- docker build --force-rm --no-cache $github_path -t $image_name
+ # use buildx to build cross platform images
+ docker buildx build --force-rm --no-cache $github_path -t $image_name
 
  #log "Squashing the image..."
  #squash_image $IMAGE_NAME
