@@ -8,8 +8,8 @@ check_env "SENDGRID_API_KEY SSL_REPORT_CONFIG MONITOR_HOSTS"
 
 lock
 
-if [ "$MONITOR_HOSTS_REMOTE" != "" ]; then
- update_config_from_dropbox $MONITOR_HOSTS_REMOTE $MONITOR_HOSTS
+if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
+  update_file_from_box $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
 fi
 
 export SENDGRID_API_KEY
