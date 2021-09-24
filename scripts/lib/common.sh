@@ -446,7 +446,7 @@ function update_file_from_box() {
 
  # download from box
  local tmp_folder=/tmp/$NOW.tmp
- debug "Downloading $remote_file from Box ..."
+ debug "Downloading $remote_file_name from Box ..."
  mkdir -p $tmp_folder
  box files:download $remote_file_id --destination $tmp_folder
  local tmp_file=$tmp_folder/$remote_file_name
