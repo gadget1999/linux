@@ -427,7 +427,7 @@ function buildx_image_from_github() {
  log "Removing previous local copies of [$image_name].."
  docker rmi $image_name
 
- log "Building docker image [$image_name] ..."
+ log "Building docker image [$image_name] (buildx) ..."
  mkdir -p $local_folder && cd $local_folder 
  wget -q $github_path
  docker buildx build --force-rm --no-cache . -t $image_name
