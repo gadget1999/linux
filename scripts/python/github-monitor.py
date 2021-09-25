@@ -270,23 +270,10 @@ def monitor_github(args):
 #################################
 # Program starts
 #################################
-def handler(signal_received, frame):
-  logger.critical("Ctrl-C signal is captured, exiting...")
-  sys.exit(2)
-
 if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
-  # for capturing Ctrl-C
-  from signal import signal, SIGINT
-
-  signal(SIGINT, handler)
   CLI_config = { 'func':monitor_github, 'arguments': [
     {'name':'--keyword', 'help':'Keyword being monitored'}, 
     {'name':'--work_folder', 'help':'Working area to store data'}, 
     {'name':'--exclude_owner', 'help':'Owner to exclude from search'}
     ]}
-  try:
-   parser = CLIParser.get_parser(CLI_config)
-   CLIParser.run(parser)
-  except Exception as e:
-   logger.error(f"Exception happened: {e}")
-   sys.exit(1)
+  CLIParser.run(CLI_config)

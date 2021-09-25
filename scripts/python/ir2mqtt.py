@@ -187,15 +187,8 @@ def start_bridge(args):
 #################################
 # Program starts
 #################################
-
 if (__name__ == '__main__'):
-  ExitSignal.register()
-
   CLI_config = { 'func':start_bridge, 'arguments': [
     {'name':'device', 'help':'USB device id (e.g., 80ee:0a21)'}
     ]}
-  try:
-    parser = CLIParser.get_parser(CLI_config)
-    CLIParser.run(parser)
-  except Exception as e:
-    logger.error(f"Exception happened: {e}")
+  CLIParser.run(CLI_config)
