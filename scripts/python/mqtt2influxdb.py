@@ -14,6 +14,8 @@ import configparser
 from common import Logger, CLIParser
 logger = Logger.getLogger()
 
+INFLUXDB_CATEGORY = "Metrics"
+
 @dataclass
 class MQTTSettings:
   server: str = None
@@ -84,8 +86,15 @@ class MQTT_Helper:
 
 class MQTT_InfluxDB_Bridge:
   ############ Class Level ##################
+  __worker = None
+  def __register_bridge(bridge):
+    if MQTT_InfluxDB_Bridge.__worker:
+      raise Exception("Only one bridge instance is allowed.")
+    MQTT_InfluxDB_Bridge.__worker = bridge
+
   def __on_mqtt_message(client, userdata, message):
     logger.debug(f"[get] Topic:{message.topic}, Data:{message.payload}")
+    MQTT_InfluxDB_Bridge.__worker.__process_mqtt_message(message.topic, str(message.payload.decode('utf-8')))
 
   ############ Instance Level ##################
   def __init_mqtt(self, config, section):
@@ -124,9 +133,25 @@ class MQTT_InfluxDB_Bridge:
       self.__monitored_topics = config["Global"]["MonitoredTopics"]
       self.__init_mqtt(config, "MQTT")
       self.__init_influxdb(config, "InfluxDB")
+      MQTT_InfluxDB_Bridge.__register_bridge(self)
     except Exception as e:
       logger.error(f"Config file {configfile} is invalid: {e}")
       raise
+
+  def __process_mqtt_message(self, topic, message):
+    try:
+      # perform message format checking:
+      # 1. only support two level topic: host/metric
+      # 2. payload must be number
+      parts = topic.split("/")
+      if len(parts) != 2:
+        raise Exception(f"Invalid topic path (host/metric expected).")
+      host = parts[0]
+      field = parts[1]
+      value = int(message)
+      self.__influxdb_helper.report_data(INFLUXDB_CATEGORY, host, field, value)
+    except Exception as e:
+      logger.error(f"Failed to process MQTT message (topic={topic}, msg={message}): {e}")
 
   def run(self):
     try:
