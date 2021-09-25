@@ -50,7 +50,7 @@ class ExitSignal:
   def __exit_handler(signum, frame):
     exit_flag = True
     logger = Logger.getLogger()
-    logger.critical(f"Exit signal [{signal_received}] is captured, exiting...")
+    logger.critical(f"Exit signal [{signum}] is captured, exiting...")
     sys.exit(2)
 
   def register():
@@ -95,7 +95,7 @@ class CLIParser:
     parser.set_defaults(func=config['func'])
     return parser
 
-  def get_parser(config):
+  def __get_parser(config):
     app_name = CLIParser.get_app_name()
     parser = argparse.ArgumentParser(app_name)
     if 'commands' in config:
@@ -103,10 +103,18 @@ class CLIParser:
     elif 'arguments' in config:
       return CLIParser.__get_arg_parser(parser, config)
 
-  def run(parser):
-    if len(sys.argv) == 1:
-      # no arguments provided
-      parser.print_help()
-      sys.exit(0)
-    args = parser.parse_args()
-    args.func(args)
+  def run(CLI_config):
+    # for capturing Ctrl-C
+    ExitSignal.register()
+    try:
+      parser = CLIParser.__get_parser(CLI_config)
+      if len(sys.argv) == 1:
+        # no arguments provided
+        parser.print_help()
+        sys.exit(0)
+      args = parser.parse_args()
+      args.func(args)
+    except Exception as e:
+      logger = Logger.getLogger()
+      logger.error(f"Exception happened: {e}")
+      sys.exit(1)

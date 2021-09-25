@@ -6,27 +6,34 @@ import os, sys, time
 from paho.mqtt import client as mqtt_client
 # for publishing InfluxDB data
 from influxdb import InfluxDBHelper
-# logging
-from common import Logger, ExitSignal
+# for struct-like class
+import copy
+from dataclasses import dataclass
+# config, CLI and logging
+import configparser
+from common import Logger, CLIParser
 logger = Logger.getLogger()
 
-SLEEP_INTERVAL = 30  # (seconds) How often we check the core temperature.
-
-INFLUXDB_TOPIC = "Monitor"
-INFLUXDB_HOST = "MQTT2InfluxBridge"
+@dataclass
+class MQTTSettings:
+  server: str = None
+  port: int = 1883
+  user: str = None
+  password: str = None
+  client_id: str = None
 
 class MQTT_Helper:
-  def __init__(self, server, port, user, password, ID):
+  def __init__(self, settings):
     try:
-      self.__mqtt_server = server
-      self.__mqtt_port = port
-      self.__mqtt_client = mqtt_client.Client(ID)
+      self.__mqtt_server = settings.server
+      self.__mqtt_port = settings.port
+      self.__mqtt_client = mqtt_client.Client(settings.client_id)
       self.__mqtt_client.on_connect = MQTT_Helper.__on_mqtt_connect
       self.__mqtt_client.on_disconnect = MQTT_Helper.__on_mqtt_disconnect
       self.__mqtt_client.on_publish = MQTT_Helper.__on_mqtt_publish
       self.__mqtt_client.on_subscribe = MQTT_Helper.__on_mqtt_subscribe
-      if user or password:
-        self.__mqtt_client.username_pw_set(user, password)
+      if settings.user or settings.password:
+        self.__mqtt_client.username_pw_set(settings.user, settings.password)
     except Exception as e:
       logger.error(f"MQTT configuration is invalid: {e}")
       raise
@@ -75,21 +82,56 @@ class MQTT_Helper:
     self.__mqtt_client.on_message = callback
     self.__mqtt_client.loop_forever()
 
+@dataclass
+class InfluxDBSettings:
+  endpoint: str = None
+  token: str = None
+  tenant: str = None
+  bucket: str = None
+
 class MQTT_InfluxDB_Bridge:
   ############ Class Level ##################
   def __on_mqtt_message(client, userdata, message):
     logger.debug(f"[get] Topic:{message.topic}, Data:{message.payload}")
 
   ############ Instance Level ##################
-  def __init__(self):
+  def __init_mqtt(self, config, section):
     try:
-      mqtt_server = os.environ['MQTT_SERVER'].strip('\" ')
-      mqtt_port = int(os.environ['MQTT_PORT'].strip('\" '))
-      mqtt_user = os.environ['MQTT_USER'].strip('\" ')
-      mqtt_password = os.environ['MQTT_PASSWORD'].strip('\" ')
-      self.__mqtt_helper = MQTT_Helper(mqtt_server, mqtt_port, mqtt_user, mqtt_password, INFLUXDB_HOST)
+      sectionConfig = config[section]
+      settings = MQTTSettings()
+      settings.server = sectionConfig["MQTTServer"].strip('\" ')
+      settings.port = config.getint(section, "MQTTPort", fallback=1883)
+      settings.user = sectionConfig["MQTTUser"].strip('\" ')
+      settings.password = sectionConfig["MQTTPassword"].strip('\" ')
+      settings.client_id = sectionConfig["MQTTClientId"].strip('\" ')
+      self.__mqtt_helper = MQTT_Helper(settings)
     except Exception as e:
-      logger.error(f"Failed to initialize MQTT-InfluxDB Bridge: {e}")
+      logger.error(f"MQTT initialization failed: {e}")
+      raise
+
+  def __init_influxdb(self, config, section):
+    try:
+      sectionConfig = config[section]
+      settings = InfluxDBSettings()
+      settings.endpoint = sectionConfig["InfluxDBAPIEndPoint"].strip('\" ')
+      settings.token = sectionConfig["InfluxDBAPIToken"].strip('\" ')
+      settings.tenant = sectionConfig["InfluxDBTenant"].strip('\" ')
+      settings.bucket = sectionConfig["InfluxDBBucket"].strip('\" ')
+      return settings
+    except Exception as e:
+      logger.error(f"InfluxDB initialization failed: {e}")
+      raise
+
+  def __init__(self, configfile):
+    try:
+      if not os.path.isfile(configfile):
+        raise Exception(f"Config file [{configfile}] does not exist.")
+      config = configparser.ConfigParser()
+      config.read(configfile)
+      self.__init_mqtt(config, "MQTT")
+      self.__init_influxdb(config, "InfluxDB")
+    except Exception as e:
+      logger.error(f"Config file {configfile} is invalid: {e}")
       raise
 
   def run(self):
@@ -98,15 +140,18 @@ class MQTT_InfluxDB_Bridge:
     except Exception as e:
       logger.error(f"MQTT2InfluxDB main function failed: {e}")
 
+########################################
+# CLI interface
+########################################
+def start_bridge(args):  
+  bridge = MQTT_InfluxDB_Bridge(args.config)
+  bridge.run()
+
 #################################
 # Program starts
 #################################
-
-if (__name__ == '__main__'):
-  ExitSignal.register()
-
-  try:
-    bridge = MQTT_InfluxDB_Bridge()
-    bridge.run()
-  except Exception as e:
-    logger.error(f"Exception: {e}")
+if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
+  CLI_config = { 'func':start_bridge, 'arguments': [
+    {'name':'config', 'help':'Config file for MQTT-to-InfluxDB bridge.'} 
+    ]}
+  CLIParser.run(CLI_config)

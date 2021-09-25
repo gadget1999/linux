@@ -879,21 +879,8 @@ def check_sites(args):
 #################################
 # Program starts
 #################################
-def handler(signal_received, frame):
-  logger.critical("Ctrl-C signal is captured, exiting...")
-  sys.exit(2)
-
 if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
-  # for capturing Ctrl-C
-  from signal import signal, SIGINT
-
-  signal(SIGINT, handler)
   CLI_config = { 'func':check_sites, 'arguments': [
     {'name':'config', 'help':'Config file for monitor'} 
     ]}
-  try:
-    parser = CLIParser.get_parser(CLI_config)
-    CLIParser.run(parser)
-  except Exception as e:
-    logger.error(f"Exception happened: {e}")
-    sys.exit(1)
+  CLIParser.run(CLI_config)
