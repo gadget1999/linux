@@ -5,7 +5,7 @@ import os, sys, time
 # for receiving MQTT messages
 from paho.mqtt import client as mqtt_client
 # for publishing InfluxDB data
-from influxdb import InfluxDBHelper
+from influxdb import InfluxDBConfig, InfluxDBHelper
 # for struct-like class
 import copy
 from dataclasses import dataclass
@@ -82,13 +82,6 @@ class MQTT_Helper:
     self.__mqtt_client.on_message = callback
     self.__mqtt_client.loop_forever()
 
-@dataclass
-class InfluxDBSettings:
-  endpoint: str = None
-  token: str = None
-  tenant: str = None
-  bucket: str = None
-
 class MQTT_InfluxDB_Bridge:
   ############ Class Level ##################
   def __on_mqtt_message(client, userdata, message):
@@ -112,12 +105,12 @@ class MQTT_InfluxDB_Bridge:
   def __init_influxdb(self, config, section):
     try:
       sectionConfig = config[section]
-      settings = InfluxDBSettings()
+      settings = InfluxDBConfig()
       settings.endpoint = sectionConfig["InfluxDBAPIEndPoint"].strip('\" ')
       settings.token = sectionConfig["InfluxDBAPIToken"].strip('\" ')
       settings.tenant = sectionConfig["InfluxDBTenant"].strip('\" ')
       settings.bucket = sectionConfig["InfluxDBBucket"].strip('\" ')
-      return settings
+      self.__influxdb_helper = InfluxDBHelper(settings)
     except Exception as e:
       logger.error(f"InfluxDB initialization failed: {e}")
       raise
@@ -128,6 +121,7 @@ class MQTT_InfluxDB_Bridge:
         raise Exception(f"Config file [{configfile}] does not exist.")
       config = configparser.ConfigParser()
       config.read(configfile)
+      self.__monitored_topics = config["Global"]["MonitoredTopics"]
       self.__init_mqtt(config, "MQTT")
       self.__init_influxdb(config, "InfluxDB")
     except Exception as e:
@@ -136,7 +130,7 @@ class MQTT_InfluxDB_Bridge:
 
   def run(self):
     try:
-      self.__mqtt_helper.subscribe("basement/#", MQTT_InfluxDB_Bridge.__on_mqtt_message)
+      self.__mqtt_helper.subscribe(self.__monitored_topics, MQTT_InfluxDB_Bridge.__on_mqtt_message)
     except Exception as e:
       logger.error(f"MQTT2InfluxDB main function failed: {e}")
 
