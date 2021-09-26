@@ -149,6 +149,7 @@ class MQTT_InfluxDB_Bridge:
       host = parts[0]
       field = parts[1]
       value = int(message)
+      logger.info(f"Send {host}:{field}={value}")
       self.__influxdb_helper.report_data(INFLUXDB_CATEGORY, host, field, value)
     except Exception as e:
       logger.error(f"Failed to process MQTT message (topic={topic}, msg={message}): {e}")
