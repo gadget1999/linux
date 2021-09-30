@@ -413,6 +413,9 @@ function build_image_from_github() {
 
  log "Pushing image to docker hub..."
  docker push $image_name
+ 
+ log "Removing local image..."
+ docker rmi $image_name 
 }
 
 # use buildx to build cross-platform images (currently it doesn't support GitHub subfolders)
@@ -437,6 +440,9 @@ function buildx_image_from_github() {
 
  log "Pushing image to docker hub..."
  docker push $image_name
+
+ log "Removing local image..."
+ docker rmi $image_name 
 }
 
 ####################
