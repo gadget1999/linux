@@ -785,7 +785,11 @@ class WebMonitor:
       if not record.error:
         data.append(("Response_Time", record.response_time))
       data.append(("Offline", 0 if record.online else 1))
-      influxdb_writer.report_data_list("Metrics", parsed_uri.hostname, data)
+      try:
+        influxdb_writer.report_data_list("Metrics", parsed_uri.hostname, data)
+      except Exception as e:
+        logger.error(f"Failed to store InfluxDB record: {parsed_uri.hostname}: {e}")
+
 
   #########################################
   # Public methods
