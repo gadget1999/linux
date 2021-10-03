@@ -697,7 +697,8 @@ class WebMonitor:
             worksheet.write(row, 3, record.url)
           worksheet.write(row, 4, record.ip)
           worksheet.write(row, 5, record.error, bad if record.error else None)
-          if record.ssl_rating:
+          # skip getting location as it's no longer needed
+          if record.ssl_rating and False:
             city, region, country = get_url_location(record.url)
             worksheet.write(row, 6, city)
             worksheet.write(row, 7, region)
