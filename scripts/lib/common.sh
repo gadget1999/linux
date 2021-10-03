@@ -459,6 +459,25 @@ function update_file_from_box() {
  rm -R $tmp_folder
 }
 
+function update_file_from_box_link() {
+ local remote_file_id=$1
+ local remote_file_url="https://app.box.com/shared/static/$remote_file_id"
+ local remote_file_name=$2
+ local local_file=$3
+
+ # download from box
+ local tmp_file=/tmp/$NOW.tmp
+ debug "Downloading $remote_file_name from Box link ..."
+ wget -q $remote_file_url -O $tmp_file
+ if [ ! -s $tmp_file ]; then
+  log_error "Failed to download file: $remote_file."
+  return
+ fi
+
+ copy_file $tmp_file $local_file "overwrite"
+ rm -R $tmp_file
+}
+
 ####################
 # Bootstraping
 ####################

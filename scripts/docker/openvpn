@@ -18,5 +18,38 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=()
 
-[ "$1" == "debug" ] && DEBUG_DOCKER=1
-new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+function start_openvpn() {
+ new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+}
+
+function add_user() {
+ local user=$1
+ local profile=/tmp/$user
+
+ log "Generating client profile: $user"
+ docker run -v $CONTAINER:/etc/openvpn --rm -it $IMAGE \
+   easyrsa build-client-full $user
+
+ log "Exporting client profile to: $profile"
+ docker run -v $CONTAINER:/etc/openvpn --rm $IMAGE \
+   ovpn_getclient $user > $profile
+
+ share $profile
+}
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ adduser)
+  add_user $2
+  ;;
+ debug)
+  DEBUG_DOCKER=1
+  start_openvpn
+  ;;
+ *)
+  start_openvpn
+  ;;
+esac

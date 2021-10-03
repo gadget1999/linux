@@ -29,7 +29,7 @@ class MQTT_Helper:
     try:
       self.__mqtt_server = settings.server
       self.__mqtt_port = settings.port
-      self.__mqtt_client = mqtt_client.Client(settings.client_id)
+      self.__mqtt_client = mqtt_client.Client(settings.client_id, clean_session=False)
       self.__mqtt_client.on_connect = MQTT_Helper.__on_mqtt_connect
       self.__mqtt_client.on_disconnect = MQTT_Helper.__on_mqtt_disconnect
       self.__mqtt_client.on_publish = MQTT_Helper.__on_mqtt_publish
@@ -44,7 +44,7 @@ class MQTT_Helper:
     if rc == 0:
       client.connected_flag = True
       client.bad_connection_flag = False
-      logger.info("MQTT client connected.")
+      logger.info("MQTT client connected.")      
     else:
       client.connected_flag = False
       client.bad_connection_flag = True
