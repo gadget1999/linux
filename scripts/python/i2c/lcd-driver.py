@@ -106,6 +106,7 @@ def display():
 
 def main():
   # Initialise display
+  # Note: need to be in the i2c group: usermod -a -G i2c xxx
   lcd_init()
 
   while True:
