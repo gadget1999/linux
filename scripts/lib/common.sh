@@ -142,17 +142,37 @@ function cleanup() {
   fi
 }
 
-function lock() {
-  trap cleanup EXIT
+function kill_process_tree() {
+ check_packages "pgrep"
 
-  if [ -e $LOCKFILE ]; then
-    debug "$PROGRAM is already running."
-    LOCKFILE=""
-    exit 1
+ local pid=$1
+ log "Kill process tree: PID=$pid"
+ kill $(pgrep -P $pid)
+ kill $pid
+}
+
+function lock() {
+ trap cleanup EXIT
+ [ "$1" != "" ] && local expiration=$(($(date +%s) + $1))
+
+ if [ -e $LOCKFILE ]; then
+  local firstline=$(head -n 1 $LOCKFILE)
+  local pid=$(echo $firstline | cut -f1 -d-)
+  local expires=$(echo $firstline | cut -f2 -d-)
+  if [ "$expires" == "" ] || [ $(date +%s) -lt $expires ]; then
+   debug "$PROGRAM is already running (lock expires: $expires)"
+   LOCKFILE="" # avoid clean-up function deleting lock file
+   exit 1
   else
-    debug "Process [$PROGRAM] started."
-    touch $LOCKFILE
+   log_error "$PROGRAM lock expired ($expires). Clean up and exit."
+   kill_process_tree $pid
+   exit 2
   fi
+ else
+  debug "Process [$PROGRAM] started. (PID:$$, lock expires: $expiration)"
+  touch $LOCKFILE
+  echo "$$-$expiration" > $LOCKFILE
+ fi
 }
 
 function should_continue() {

@@ -6,7 +6,7 @@ source $CMD_PATH/lib/common.sh
 check_packages "python3"
 check_env "SENDGRID_API_KEY MONITOR_CONFIG"
 
-lock
+lock 7200 # assume hang if not completed within two hours
 
 if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
   update_file_from_box_link $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
