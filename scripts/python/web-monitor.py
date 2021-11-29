@@ -201,8 +201,12 @@ class TestSSL_sh:
       run_result = subprocess.run(args.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if run_result.stderr:
       logger.error(f"Error: {run_result.stderr}")
-  
+
   def get_site_rating(url):
+    # if local scanner is configured, assuming skipping
+    if not TestSSL_sh._local_scanner:
+      return [SSLRecord(url=url, grade='')]
+
     import random
     ratings = []
     try:
@@ -583,7 +587,7 @@ class WebMonitor:
   def _load_sslscanner_config(self, sslscannerconfig):
     try:
       settings = SSLScannerConfig()
-      settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=True)
+      settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=False)
       if not settings.use_ssllabs:
         settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')
         settings.openssl_path = sslscannerconfig["OpenSSLPath"].strip('\" ')
