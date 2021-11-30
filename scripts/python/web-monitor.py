@@ -203,10 +203,6 @@ class TestSSL_sh:
       logger.error(f"Error: {run_result.stderr}")
 
   def get_site_rating(url):
-    # if local scanner is configured, assuming skipping
-    if not TestSSL_sh._local_scanner:
-      return [SSLRecord(url=url, grade='')]
-
     import random
     ratings = []
     try:
@@ -240,7 +236,8 @@ class TestSSL_sh:
 
 @dataclass
 class SSLScannerConfig:
-  use_ssllabs: bool = True
+  generate_rating: bool = True
+  use_ssllabs: bool = False
   local_scanner: str = None
   openssl_path: str = None
   show_progress: bool = False
@@ -250,6 +247,9 @@ class SSLReport:
     SSLReport._settings = settings
     if not settings.use_ssllabs:
       TestSSL_sh.set_config(settings.local_scanner, settings.openssl_path, settings.show_progress)
+
+  def should_get_rating():
+    return SSLReport._settings.generate_rating
 
   def get_site_rating(url):
     if (SSLReport._settings.use_ssllabs):
@@ -419,6 +419,8 @@ class SiteInfo:
     site_info.ssl_expires = ssl_expiration_info.expires
     if ssl_expiration_info.error:
       site_info.error = ssl_expiration_info.error
+    if not SSLReport.should_get_rating():
+      return [site_info]
     # get full SSL report
     final_reports = []
     ssl_rating_info = SSLReport.get_site_rating(url)
@@ -587,6 +589,7 @@ class WebMonitor:
   def _load_sslscanner_config(self, sslscannerconfig):
     try:
       settings = SSLScannerConfig()
+      settings.generate_rating = sslscannerconfig.getboolean("GenerateSSLRating", fallback=True)
       settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=False)
       if not settings.use_ssllabs:
         settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')

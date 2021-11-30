@@ -116,5 +116,5 @@ class CLIParser:
       args.func(args)
     except Exception as e:
       logger = Logger.getLogger()
-      logger.error(f"Exception happened: {e}")
+      logger.exception(f"Exception happened: {e}")
       sys.exit(1)
