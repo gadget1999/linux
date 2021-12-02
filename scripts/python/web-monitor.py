@@ -845,6 +845,7 @@ class WebMonitor:
     full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
     full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
     full_report.sort(key=lambda i: i.online)
+    full_report.sort(key=lambda i: i.ssl_expires)
     num_errors = sum(1 for x in full_report if x.error)
     # always record metrics stats
     if self._influxdb_settings:
