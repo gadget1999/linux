@@ -4,9 +4,14 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 function update_os_debian() {
+ debug "Updating APT catalog..."
  sudo apt-get update
+ debug "Update system"
  sudo apt-get -y dist-upgrade
+ debug "Remove packages no longer needed" 
  sudo apt-get -y autoremove
+ debug "Remove packages from cache"
+ sudo apt-get -y autoclean
 }
 
 function update_os_centos() {
