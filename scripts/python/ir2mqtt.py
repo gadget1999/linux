@@ -6,6 +6,9 @@
 
 import json
 import os, sys, time
+# for reading USB keyboard events
+import usb.core
+import usb.util
 # for sending MQTT messages
 from paho.mqtt import client as mqtt_client
 # logging
@@ -26,7 +29,7 @@ class USB_Keyboard:
   def __claim_device(self):
     if not self.is_connected:
       raise Exception(f"Device [{hex(vendor)}:{hex(prod_id)}] not connected.")
-     # Set endpoint
+    # Set endpoint
     self.__endpoint = self.__device[0][(0, 0)][0]
     # If the device is being used by the kernel
     if (self.__device.is_kernel_driver_active(self.__interface)) is True:
@@ -52,8 +55,6 @@ class USB_Keyboard:
       self.__debug_mode = True
       return
     # Connect to device
-    import usb.core
-    import usb.util
     self.__vendor = vendor
     self.__prod_id = prod_id
     self.__device = usb.core.find(idVendor=vendor, idProduct=prod_id)
