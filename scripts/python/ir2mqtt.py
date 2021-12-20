@@ -4,16 +4,15 @@
   and forward events to mqtt to control wifi enabled devices
 '''
 
+import json
 import os, sys, time
-# for reading USB interface
-import usb.core
-import usb.util
 # for sending MQTT messages
 from paho.mqtt import client as mqtt_client
 # logging
 from common import Logger, ExitSignal, CLIParser
 logger = Logger.getLogger()
 
+# Class to help read raw events from keyboard hardware (useful for headless server)
 class USB_Keyboard:
   def __init__(self):
     self.__vendor = None    # Device vendor ID
@@ -22,6 +21,7 @@ class USB_Keyboard:
     self.__endpoint = None  # A usb.core device attribute placeholder
     self.__interface = 0  # Device constant
     self.__detached_kernel = False
+    self.__debug_mode = False
 
   def __claim_device(self):
     if not self.is_connected:
@@ -47,7 +47,13 @@ class USB_Keyboard:
     parts = device_id.split(':')
     vendor = int(parts[0], 16)
     prod_id = int(parts[1], 16)
+    if vendor == 0 and prod_id == 0:
+      logger.error(">> Debug mode without using USB hardware.")
+      self.__debug_mode = True
+      return
     # Connect to device
+    import usb.core
+    import usb.util
     self.__vendor = vendor
     self.__prod_id = prod_id
     self.__device = usb.core.find(idVendor=vendor, idProduct=prod_id)
@@ -69,6 +75,9 @@ class USB_Keyboard:
     self.__init__()
 
   def read_key(self, timeout=300000):
+    if self.__debug_mode:
+      import msvcrt
+      return msvcrt.getch()[0]
     # Check for connected device
     if not self.is_connected:
       raise Exception(f"Device not connected.")
@@ -87,10 +96,67 @@ class USB_Keyboard:
     except usb.core.USBTimeoutError:
       return None
 
+# Helper class that reads key combinations to map commands
+class Keyboard_Code_Mapper:
+  def __init__(self, mapping_file, device_id):
+    try:
+      self.__load_mapping(mapping_file)
+      self.__keyboard = USB_Keyboard()
+      self.__keyboard.connect(device_id)
+    except Exception as e:
+      logger.error(f"Failed to initialize keyboard code mapper: {e}")
+      raise
+
+  def __load_mapping(self, mapping_file):
+    import json
+    with open(mapping_file) as f:
+      self.__mapping = json.load(f)
+    # verify if mapping is correct
+    for code in self.__mapping.keys():
+      if not self.__mapping[code]:
+        raise Exception(f"Invalid mapping for: code={code}")
+
+  def get_command(self):
+    try:
+      # read key combinations to find matched command
+      code = ""
+      last_key_time = 0
+      while True:
+        key = self.__keyboard.read_key()
+        if not key:     continue
+        if key == 20:
+          return None   # 'q' to stop
+        logger.info(f"Key: {key}")    
+        # see if still in sequence
+        key_time = time.time()
+        if key_time - last_key_time > 2:
+          code = str(key) # reset sequence
+        else:
+          code += str(key)
+        last_key_time = key_time
+        # see if there is match
+        if code in self.__mapping.keys():
+          logger.info(f"Found command match for: {code}")
+          return self.__mapping[code]
+        # see if still in sequence
+        in_sequence = False
+        for x in self.__mapping.keys():
+          if x.startswith(code):
+            in_sequence = True
+            break
+        if not in_sequence:
+          logger.error(f"Code is not valid: {code}")
+          code = ""   # reset sequence
+    except Exception as e:
+      logger.error(f"Read key sequence failed: {e}")
+
+  def disconnect(self):
+    self.__keyboard.disconnect()
+
 class IR_MQTT_Bridge:
   def __init__(self):
     try:
-      self.__load_mapping(os.environ['IR2MQTT_MAPPING'].strip('\" '))
+      self.__cmd_mapping = os.environ['IR2MQTT_MAPPING'].strip('\" ')
       self.__mqtt_server = os.environ['MQTT_SERVER'].strip('\" ')
       self.__mqtt_port = int(os.environ['MQTT_PORT'].strip('\" '))
       mqtt_user = os.environ['MQTT_USER'].strip('\" ')
@@ -104,17 +170,6 @@ class IR_MQTT_Bridge:
     except Exception as e:
       logger.error(f"MQTT configuration is invalid: {e}")
       raise
-
-  def __load_mapping(self, mapping_file):
-    import json
-    with open(mapping_file) as f:
-      self.__mapping = json.load(f)
-    # verify if mapping is correct
-    for key in self.__mapping.keys():
-      topic = self.__mapping[key]['topic']
-      msg = self.__mapping[key]['msg']
-      if not topic or not msg:
-        raise Exception(f"Invalid mapping for: key={key}")
 
   def __on_mqtt_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -145,35 +200,29 @@ class IR_MQTT_Bridge:
     self.__mqtt_client.connect(self.__mqtt_server, self.__mqtt_port)
     self.__mqtt_client.loop_start()
 
-  def __process_key(self, key):
+  def __process_cmd(self, cmd):
     try:
       self.__connect()
-      # find MQTT mapping for key
-      if key not in self.__mapping.keys():
-        return
-      topic = self.__mapping[key]['topic']
-      message = self.__mapping[key]['msg']
+      topic = cmd['topic']
+      message = cmd['msg']
       logger.info(f"MQTT cmd: {topic} {message}")
       self.__mqtt_client.publish(topic, message)
     except Exception as e:
-      logger.error(f"Send \'{message}\' to topic \'{topic}\' failed: {e}")
+      logger.error(f"Error processing command '{cmd}': {e}")
 
   def start_monitor(self, device_id):
-    keyboard = USB_Keyboard()
+    mapper = Keyboard_Code_Mapper(self.__cmd_mapping, device_id)
     try:
-      keyboard.connect(device_id)
-      # Loop data read until interrupt
       while True:
         try:
-          key = keyboard.read_key()
-          if not key:     continue
-          if key == 20:   break # 'q' to stop
-          logger.info(f"Key: {key}")
-          self.__process_key(str(key))
+          cmd = mapper.get_command()
+          if not cmd:     return
+          logger.debug(f"Command: {cmd}")
+          self.__process_cmd(cmd)
         except Exception as e:
           logger.error(f"Exception: {e}")
     finally:
-      keyboard.disconnect()
+      mapper.disconnect()
       self.__disconnect()
 
 ########################################

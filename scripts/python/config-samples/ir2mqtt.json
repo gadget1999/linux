@@ -1,0 +1,8 @@
+{
+ "49": {"topic": "cmnd/tasmota_308010/POWER1", "msg": "on"},
+ "505152": {"topic": "cmnd/tasmota_308010/POWER2", "msg": "on"},
+ "32": {"topic": "cmnd/tasmota_308010/POWER3", "msg": "on"},
+ "33": {"topic": "cmnd/tasmota_308010/POWER1", "msg": "off"},
+ "34": {"topic": "cmnd/tasmota_308010/POWER2", "msg": "off"},
+ "35": {"topic": "cmnd/tasmota_308010/POWER3", "msg": "off"}
+}
