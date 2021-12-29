@@ -215,7 +215,8 @@ function mount_cifs_share() {
 
  if [ "$(df | grep ""$mount_point"")" ]; then
   debug "Share [$mount_point] already mounted."
-  return 0
+  mount_cifs_share=0
+  return
  fi
 
  if [ ! -d $mount_point ] ; then
@@ -228,10 +229,12 @@ function mount_cifs_share() {
   $unc $mount_point
  if [ "$(df | grep ""$mount_point"")" ]; then
   log "[$mount_point] mounted: $unc"
-  return 0
+  mount_cifs_share=2
+  return  
  else
   log_error "Failed to mount [$unc] as [$mount_point]."
-  return 1
+  mount_cifs_share=1
+  return
  fi
 }
 

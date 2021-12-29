@@ -8,3 +8,13 @@ source $CMD_PATH/lib/common.sh
 [ "$1" == "" ] && show_usage profile
 
 mount_cifs_share $1
+
+# restart containers that depends on the share
+if [ "$CONTAINERS_USE_SHARE" != "" ] && [ "$mount_cifs_share" == "2" ]; then
+ log "Restarting containers: $CONTAINERS_USE_SHARE"
+
+ for container in ${CONTAINERS_USE_SHARE[*]}; do
+  # assuming docker container cmd name is the same
+  $CMD_PATH/$container
+ done
+fi
