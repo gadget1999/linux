@@ -30,7 +30,7 @@ EXTRA_OPTS=(
  -e GPS_COORDINATES=$GPS_COORDINATES
  -e QUOTE_FILE=/quotes/quotes.csv
  -v $WORK_DIR/quotes:/quotes:ro
- -v $LOG:$LOG
+ -v $LOG:/tmp/nook-weather.log
  -p $WEATHER_PORT:8080
  -m $MAX_RAM
  )
