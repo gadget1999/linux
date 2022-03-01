@@ -45,6 +45,7 @@ case "$1" in
 
  "debug-dev")
   DEBUG_DOCKER=1
+  unset 'EXTRA_OPTS[0]'
   EXTRA_OPTS+=(-e DEBUG=TRUE)
   ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
     ;;
