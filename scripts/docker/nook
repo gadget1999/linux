@@ -30,7 +30,7 @@ EXTRA_OPTS=(
  -e GPS_COORDINATES=$GPS_COORDINATES
  -e QUOTE_FILE=/quotes/quotes.csv
  -v $WORK_DIR/quotes:/quotes:ro
- -v $LOG:$LOG
+ -v $LOG:/tmp/nook-weather.log
  -p $WEATHER_PORT:8080
  -m $MAX_RAM
  )
@@ -45,6 +45,7 @@ case "$1" in
 
  "debug-dev")
   DEBUG_DOCKER=1
+  unset 'EXTRA_OPTS[0]'
   EXTRA_OPTS+=(-e DEBUG=TRUE)
   ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
     ;;
