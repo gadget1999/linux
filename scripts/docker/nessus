@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
 CONTAINER="nessus"
-IMAGE="stevemcgrath/nessus_scanner"
+IMAGE="tenableofficial/nessus"
 
 check_env "NESSUS_LICENSE NESSUS_ADMIN NESSUS_PASSWORD"
 
@@ -22,11 +22,10 @@ function start_nessus() {
 
  EXTRA_OPTS=(
   --tmpfs /run
-  -e LICENSE=$NESSUS_LICENSE
-  -e SCANNER_NAME=NESSUS3723
-  -e ADMIN_USER=$NESSUS_ADMIN
-  -e ADMIN_PASS=$NESSUS_PASSWORD
-  -p $internal_port:8834
+  -e ACTIVATION_CODE=$NESSUS_LICENSE
+  -e USERNAME=$NESSUS_ADMIN
+  -e PASSWORD=$NESSUS_PASSWORD
+  -p $internal_port:8834  
   )
 
  ENTRYPOINT=()
