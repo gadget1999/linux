@@ -356,6 +356,7 @@ class SiteInfo:
 
   def get_status(url):
     status = SiteRecord(url=url)
+    is_fatal_error = True
     # return alive (if reachable), online (if functional) and error if any
     # by default alive and online status will be False unless explicitly set to True
     try:
@@ -380,12 +381,20 @@ class SiteInfo:
         status.error = f"HTTP error code: {r.status_code}"
         logger.error(f"{url} failed: {status.error}")
         status.alive = True
-    except Exception as e:
-      status.error = f"Network error: {e}"
-      logger.error(f"{url} failed: {status.error}")
-      fatal_errors = ['ConnectionError', 'Timeout', 'SSLError']
-      if type(e).__name__ not in fatal_errors:
-        status.alive = True
+      return status
+    # from now on, only error handling for exceptions
+    except socket.gaierror as e1:
+      status.error = f"DNS {type(e1).__name__}: {e1} ({e1.strerror})"
+    except OSError as e3:
+      status.error = f"OS {type(e3).__name__}: {e3} ({e3.strerror})"
+    except Exception as e2:
+      status.error = f"Network {type(e2).__name__}: {e2}"
+      if type(e2).__name__ not in ['ConnectionError', 'Timeout', 'SSLError']:
+        is_fatal_error = False
+    # general exception handling
+    logger.error(f"{url} failed: {status.error}")
+    if not is_fatal_error:
+      status.alive = True
     return status
 
   def is_blocked(url):
