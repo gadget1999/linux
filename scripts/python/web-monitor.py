@@ -384,7 +384,7 @@ class SiteInfo:
       return status
     # from now on, only error handling for exceptions
     except OSError as ose:
-      status.error = f"{type(ose).__name__}: error={e.errno}"
+      status.error = f"{type(ose).__name__}: error={ose.errno}"
     except Exception as e:
       error_type = type(e).__name__
       status.error = f"{error_type}: {e}"
