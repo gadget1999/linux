@@ -383,13 +383,12 @@ class SiteInfo:
         status.alive = True
       return status
     # from now on, only error handling for exceptions
+    except OSError as ose:
+      status.error = f"{type(ose).__name__}: error={e.errno}"
     except Exception as e:
-      error_name = type(e).__name__
-      if e is OSError:
-        status.error = f"{error_name}: error={e.errno}"
-      else:
-        status.error = f"{error_name}: {e}"
-      if error_name not in ['ConnectionError', 'Timeout', 'SSLError']:
+      error_type = type(e).__name__
+      status.error = f"{error_type}: {e}"
+      if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
         is_fatal_error = False
     # general exception handling
     logger.error(f"{url} failed: {status.error}")
