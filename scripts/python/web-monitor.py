@@ -383,13 +383,13 @@ class SiteInfo:
         status.alive = True
       return status
     # from now on, only error handling for exceptions
-    except socket.gaierror as e1:
-      status.error = f"DNS {type(e1).__name__}: {e1} ({e1.strerror})"
-    except OSError as e3:
-      status.error = f"OS {type(e3).__name__}: {e3} ({e3.strerror})"
-    except Exception as e2:
-      status.error = f"Network {type(e2).__name__}: {e2}"
-      if type(e2).__name__ not in ['ConnectionError', 'Timeout', 'SSLError']:
+    except Exception as e:
+      error_name = type(e).__name__
+      if e is OSError:
+        status.error = f"{error_name}: error={e.errno}"
+      else:
+        status.error = f"{error_name}: {e}"
+      if error_name not in ['ConnectionError', 'Timeout', 'SSLError']:
         is_fatal_error = False
     # general exception handling
     logger.error(f"{url} failed: {status.error}")
