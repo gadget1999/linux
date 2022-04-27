@@ -356,7 +356,6 @@ class SiteInfo:
 
   def get_status(url):
     status = SiteRecord(url=url)
-    is_fatal_error = True
     # return alive (if reachable), online (if functional) and error if any
     # by default alive and online status will be False unless explicitly set to True
     try:
@@ -384,14 +383,13 @@ class SiteInfo:
       return status
     except Exception as e:
       error_type = type(e).__name__
-      status.error = f"{error_type}: {e}"
-      if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
-        is_fatal_error = False
+      error_msg = f"{e}"
       # simplify message a bit
-      if 'Name or service not known' in status.error:
-        status.error = f"{error_type}: Temporary DNS issue."
+      if 'Name or service not known' in error_msg:
+        error_msg = "Temporary DNS issue."
+      status.error = f"{error_type}: {error_msg}"
       logger.error(f"{url} failed: {status.error}")
-      if not is_fatal_error:
+      if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
         status.alive = True
       return status
 
