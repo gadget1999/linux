@@ -382,19 +382,18 @@ class SiteInfo:
         logger.error(f"{url} failed: {status.error}")
         status.alive = True
       return status
-    # from now on, only error handling for exceptions
-    except OSError as ose:
-      status.error = f"{type(ose).__name__}: error={e.errno}"
     except Exception as e:
       error_type = type(e).__name__
       status.error = f"{error_type}: {e}"
       if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
         is_fatal_error = False
-    # general exception handling
-    logger.error(f"{url} failed: {status.error}")
-    if not is_fatal_error:
-      status.alive = True
-    return status
+      # simplify message a bit
+      if 'Name or service not known' in status.error:
+        status.error = f"{error_type}: Temporary DNS issue."
+      logger.error(f"{url} failed: {status.error}")
+      if not is_fatal_error:
+        status.alive = True
+      return status
 
   def is_blocked(url):
     try:
