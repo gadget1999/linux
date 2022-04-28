@@ -344,7 +344,20 @@ class SiteRecord:
   ssl_rating: str = ''
   ssl_report: str = ''
 
-class SiteInfo:
+class SiteInfo:  
+  def __dns_issue_confirmed(url):
+    # use get certificate info as an alternative to verify DNS issue
+    ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)
+    if ssl_expiration_info.count() == 0:
+      return True
+    for entry in ssl_expiration_info:
+      if entry.expires:
+        # at least one IP is reachable
+        logger.info(f"{url}: IP={entry.ip}, SSL expires in {entry.expires} days.")
+        return False
+    # if all IPs failed, likely
+    return True
+
   def is_valid_url(url):
     url = url.lower()
     if url.startswith('https://'):
@@ -386,7 +399,11 @@ class SiteInfo:
       error_msg = f"{e}"
       # simplify message a bit
       if 'Name or service not known' in error_msg:
-        error_msg = "Temporary DNS issue."
+        error_msg = "temporary DNS issue."
+        # if a temp DNS issue from requests, then ignore it
+        if not SiteInfo.__dns_issue_confirmed(url):
+          status.alive = True
+          return status
       status.error = f"{error_type}: {error_msg}"
       logger.error(f"{url} failed: {status.error}")
       if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
