@@ -348,7 +348,7 @@ class SiteInfo:
   def __dns_issue_confirmed(url):
     # use get certificate info as an alternative to verify DNS issue
     ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)
-    if ssl_expiration_info.count() == 0:
+    if not ssl_expiration_info:
       return True
     for entry in ssl_expiration_info:
       if entry.expires:
