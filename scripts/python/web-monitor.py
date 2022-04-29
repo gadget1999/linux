@@ -344,20 +344,7 @@ class SiteRecord:
   ssl_rating: str = ''
   ssl_report: str = ''
 
-class SiteInfo:  
-  def __dns_issue_confirmed(url):
-    # use get certificate info as an alternative to verify DNS issue
-    ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)
-    if not ssl_expiration_info:
-      return True
-    for entry in ssl_expiration_info:
-      if entry.expires:
-        # at least one IP is reachable
-        logger.info(f"{url}: IP={entry.ip}, SSL expires in {entry.expires} days.")
-        return False
-    # if all IPs failed, likely
-    return True
-
+class SiteInfo:
   def is_valid_url(url):
     url = url.lower()
     if url.startswith('https://'):
@@ -367,7 +354,7 @@ class SiteInfo:
     else:
       return False
 
-  def get_status(url):
+  def get_status(url, allow_retry=True):
     status = SiteRecord(url=url)
     # return alive (if reachable), online (if functional) and error if any
     # by default alive and online status will be False unless explicitly set to True
@@ -397,13 +384,10 @@ class SiteInfo:
     except Exception as e:
       error_type = type(e).__name__
       error_msg = f"{e}"
-      # simplify message a bit
-      if 'Name or service not known' in error_msg:
-        error_msg = "temporary DNS issue."
-        # if a temp DNS issue from requests, then ignore it
-        if not SiteInfo.__dns_issue_confirmed(url):
-          status.alive = True
-          return status
+      if allow_retry:
+        if 'Name or service not known' in error_msg:
+          time.sleep(10)
+          return SiteInfo.get_status(url, False)
       status.error = f"{error_type}: {error_msg}"
       logger.error(f"{url} failed: {status.error}")
       if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
@@ -867,7 +851,7 @@ class WebMonitor:
     full_report.sort(key=lambda i: i.error if i.error else '', reverse=True)
     full_report.sort(key=lambda i: i.ssl_rating if i.ssl_rating else 'Unknown', reverse=True)
     full_report.sort(key=lambda i: i.online)
-    full_report.sort(key=lambda i: i.ssl_expires)
+    full_report.sort(key=lambda i: i.ssl_expires if i.ssl_expires else 0)
     num_errors = sum(1 for x in full_report if x.error)
     # always record metrics stats
     if self._influxdb_settings:
