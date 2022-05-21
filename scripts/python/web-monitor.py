@@ -493,6 +493,14 @@ class WebMonitor:
   # Internal helper functions
   #########################################
 
+  def is_future_time(self, time):
+    try:
+      test_time = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M')
+      return True if (test_time > datetime.datetime.now()) else False
+    except Exception as e:
+      logger.info(f"{e}")
+      return False
+
   def _load_urls_from_xlsx(self, filepath):
     try:
       urls = []
@@ -500,12 +508,16 @@ class WebMonitor:
       for sheet in workbook.worksheets:
         url_count = 0
         urls_in_sheet = []     
-        for row in sheet['A']:
-          line = row.value
+        for row in sheet.rows:
+          line = row[0].value
           if not line:
             break
           line = line.lower().strip(' \r\'\"\n')
           if line.startswith(("http://", "https://")):
+            # also check if there is a maintenance
+            ignore_until = row[1].value
+            if ignore_until and self.is_future_time(ignore_until):
+              continue            
             urls_in_sheet.append(line)
             url_count += 1
         # Excel only logic: if there are URLs in 'Internal' tab, record them separately
