@@ -399,23 +399,38 @@ function build_image_from_github() {
  local github_repo=$1
  local image_prefix=$2
  local container_name=$3
+ local target_platform=$4
+ local image_name="$image_prefix$container_name"
  local github_path="https://github.com/$github_repo.git#master:$container_name"
- local image_name="$image_prefix$container_name:latest"
+
+ local default_tag=""
+ if [[ "$target_platform" == "*"* ]]; then
+  target_platform=$(echo "$target_platform" | cut -c2-)
+  default_tag="latest"
+ fi
 
  log "Removing previous local copies of [$image_name].."
- docker rmi $image_name
+ docker rmi "$image_name:$target_platform"
+ [ "$default_tag" != "" ] && \
+   docker rmi "$image_name:$default_tag"
 
  log "Building docker image [$image_name] ..."
- docker build --force-rm --no-cache $github_path -t $image_name
+ docker build --force-rm --no-cache \
+   --build-arg TARGET_PLATFORM=$target_platform \
+   $github_path -t $image_name:$target_platform
+ [ "$default_tag" != "" ] && \
+   docker tag $image_name:$target_platform $image_name:$default_tag
 
  #log "Squashing the image..."
  #squash_image $IMAGE_NAME
 
  log "Pushing image to docker hub..."
- docker push $image_name
- 
+ docker push --all-tags $image_name
+
  log "Removing local image..."
- docker rmi $image_name 
+ docker rmi "$image_name:$target_platform"
+ [ "$default_tag" != "" ] && \
+   docker rmi "$image_name:$default_tag"
 }
 
 # use buildx to build cross-platform images (currently it doesn't support GitHub subfolders)
