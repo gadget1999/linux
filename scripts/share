@@ -37,7 +37,7 @@ function copy2share() {
  fi
 
  local filename=$(basename $object)
- local remote_path="/mnt/azure-share/Share/$filename"
+ local remote_path="/mnt/azure/Share/$filename"
  debug "Copying $object to $remote_path ..."
  cp $object $remote_path
 }
