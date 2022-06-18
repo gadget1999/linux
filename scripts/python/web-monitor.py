@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 import unittest
 # for reporting
 from jinja2 import Template # HTML report
-from openpyxl import load_workbook # read Excel URL lists
+from openpyxl import Workbook, load_workbook # read Excel URL lists
 import io, xlsxwriter # Excel report
 from influxdb import InfluxDBHelper # InfluxDB history
 # for email
@@ -496,7 +496,10 @@ class WebMonitor:
 
   def is_future_time(self, time):
     try:
-      test_time = parser.parse(time)
+      if type(time) is datetime.datetime:
+        test_time = time
+      else:
+        test_time = parser.parse(time)
       return True if (test_time > datetime.datetime.now()) else False
     except Exception as e:
       logger.info(f"{e}")
@@ -515,9 +518,10 @@ class WebMonitor:
             break
           line = line.lower().strip(' \r\'\"\n')
           if line.startswith(("http://", "https://")):
-            # also check if there is a maintenance
+            # also check if there is a maintenance            
             ignore_until = row[1].value
             if ignore_until and self.is_future_time(ignore_until):
+              logger.info(f"{line} is under maintenance until {ignore_until}")
               continue            
             urls_in_sheet.append(line)
             url_count += 1
