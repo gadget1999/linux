@@ -3,6 +3,7 @@
 import os, sys
 import json
 import time, datetime
+import dateutil.parser as parser
 # for struct-like class
 import copy
 from dataclasses import dataclass
@@ -495,7 +496,7 @@ class WebMonitor:
 
   def is_future_time(self, time):
     try:
-      test_time = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M')
+      test_time = parser.parse(time)
       return True if (test_time > datetime.datetime.now()) else False
     except Exception as e:
       logger.info(f"{e}")
