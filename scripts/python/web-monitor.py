@@ -502,7 +502,7 @@ class WebMonitor:
         test_time = parser.parse(time)
       return True if (test_time > datetime.datetime.now()) else False
     except Exception as e:
-      logger.info(f"{e}")
+      logger.error(f"Failed to parse maintenance time [{time}]: {e}")
       return False
 
   def _load_urls_from_xlsx(self, filepath):
@@ -521,7 +521,7 @@ class WebMonitor:
             # also check if there is a maintenance            
             ignore_until = row[1].value
             if ignore_until and self.is_future_time(ignore_until):
-              logger.info(f"{line} is under maintenance until {ignore_until}")
+              logger.debug(f"{line} is under maintenance until {ignore_until}")
               continue            
             urls_in_sheet.append(line)
             url_count += 1
