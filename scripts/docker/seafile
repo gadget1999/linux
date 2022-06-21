@@ -144,6 +144,9 @@ function patch_seafile_nginx_conf() {
 #########################
 
 case $1 in
+ new)
+  new_pod "$COMPOSE_FILE_ROOT/$POD/docker-compose.yaml"
+  ;;
  stop)
   stop_pod STATEFUL_CONTAINERS STATELESS_CONTAINERS
   ;;
