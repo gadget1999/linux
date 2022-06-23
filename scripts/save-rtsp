@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[[ $# -lt 2 ]] && show_usage "URL CameraName [segment]"
+
+RTSP_URL=$1
+RTSP_CAMERA_NAME=$2
+RTSP_SEGMENT=300 # 5 min
+[ "$3" != "" ] && RTSP_SEGMENT=$3
+
+check_env "RTSP_ROOT"
+check_packages "ffmpeg"
+
+TARGET="$RTSP_ROOT/$RTSP_CAMERA_NAME"
+[ ! -d $TARGET ] && mkdir -p $TARGET
+[ ! -d $TARGET ] && fatal_error "Failed to create folder: $TARGET"
+
+ffmpeg -hide_banner -y -loglevel error -rtsp_transport tcp \
+  -use_wallclock_as_timestamps 1 \
+  -i $1 -vcodec copy -acodec copy \
+  -f segment -reset_timestamps 1 -segment_time $RTSP_SEGMENT \
+  -segment_format mp4 -segment_atclocktime 1 \
+  -strftime 1 $TARGET/%Y-%m-%d_%H-%M-%S.mp4
+  
