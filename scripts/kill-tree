@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+[ "$1" == "" ] && show_usage "pid"
+
+$CMD_PATH/kill_process_tree $1
