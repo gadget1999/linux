@@ -136,7 +136,7 @@ LOCKFILE=/tmp/$PROGRAM.lock
 
 function cleanup() {
   if [ "$LOCKFILE" != "" ]; then
-    debug "Process [$PROGRAM] exiting ..."
+    debug "Releasing lock: $LOCKFILE ..."
     rm -r $LOCKFILE
     exit 2
   fi
@@ -170,6 +170,33 @@ function lock() {
   fi
  else
   debug "Process [$PROGRAM] started. (PID:$$, lock expires: $expiration)"
+  touch $LOCKFILE
+  echo "$$-$expiration" > $LOCKFILE
+ fi
+}
+
+function named_lock() {
+ local lock_name=$1
+ [ "$lock_name" == "" ] && fatal_error "Lock name is empty."
+ LOCKFILE=/tmp/$PROGRAM-$lock_name.lock
+ trap cleanup EXIT
+ [ "$2" != "" ] && local expiration=$(($(date +%s) + $1))
+
+ if [ -e $LOCKFILE ]; then
+  local firstline=$(head -n 1 $LOCKFILE)
+  local pid=$(echo $firstline | cut -f1 -d-)
+  local expires=$(echo $firstline | cut -f2 -d-)
+  if [ "$expires" == "" ] || [ $(date +%s) -lt $expires ]; then
+   debug "$PROGRAM-$lock_name is already running (lock expires: $expires)"
+   LOCKFILE="" # avoid clean-up function deleting lock file
+   exit 1
+  else
+   log_error "$PROGRAM-$lock_name lock expired ($expires). Clean up and exit."
+   kill_process_tree $pid
+   exit 2
+  fi
+ else
+  debug "Process [$PROGRAM-$lock_name] started. (PID:$$, lock expires: $expiration)"
   touch $LOCKFILE
   echo "$$-$expiration" > $LOCKFILE
  fi

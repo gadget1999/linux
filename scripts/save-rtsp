@@ -5,24 +5,68 @@ source $CMD_PATH/lib/common.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
-[[ $# -lt 2 ]] && show_usage "URL CameraName [segment]"
+# Usage:
+#  If no arguments, predefined camera list will be used
+#  If camera info is provided, it will be used
+# Camera format: rtsp_url|camera_name (no spaces allowed)
 
-RTSP_URL=$1
-RTSP_CAMERA_NAME=$2
+if [[ $# -ge 2 ]]; then
+ RTSP_URL="$1"
+ CAMERA_NAME="$2"
+elif [[ $# != 0 ]]; then
+ show_usage "[ RTSP_URL Camera_Name [segment] ]"
+fi
+
 RTSP_SEGMENT=300 # 5 min
 [ "$3" != "" ] && RTSP_SEGMENT=$3
 
 check_env "RTSP_ROOT"
 check_packages "ffmpeg"
 
-TARGET="$RTSP_ROOT/$RTSP_CAMERA_NAME"
-[ ! -d $TARGET ] && mkdir -p $TARGET
-[ ! -d $TARGET ] && fatal_error "Failed to create folder: $TARGET"
+function save_rtsp_stream() {
+ local rtsp_url=$1
+ local camera_name=$2
+ local target_folder="$RTSP_ROOT/$camera_name"
 
-ffmpeg -hide_banner -y -loglevel error -rtsp_transport tcp \
-  -use_wallclock_as_timestamps 1 \
-  -i $1 -vcodec copy -acodec copy \
-  -f segment -reset_timestamps 1 -segment_time $RTSP_SEGMENT \
-  -segment_format mp4 -segment_atclocktime 1 \
-  -strftime 1 $TARGET/%Y-%m-%d_%H-%M-%S.mp4
-  
+ named_lock $camera_name
+
+ log "Saving $rtsp_url to $target_folder..."
+ [ ! -d $target_folder ] && mkdir -p $target_folder
+ [ ! -d $target_folder ] && log_error "Failed to create folder: $target_folder" && return
+
+ # sometimes camera may drop connection
+ while (true); do
+  # check if it's online
+  #nowOnline=`ping -c 1 $ip &> /dev/null && echo true || echo false`
+
+  ffmpeg -hide_banner -y -loglevel error -rtsp_transport tcp \
+   -use_wallclock_as_timestamps 1 \
+   -i $rtsp_url -vcodec copy -acodec copy \
+   -f segment -reset_timestamps 1 -segment_time $RTSP_SEGMENT \
+   -segment_format mp4 -segment_atclocktime 1 \
+   -strftime 1 $target_folder/%Y-%m-%d_%H-%M-%S.mp4
+
+  # break here until we can find a way to detect permanent errors
+  return
+
+  sleep 10
+ done
+}
+
+function save_rtsp_stream_async() {
+ local camera=$1
+ local rtsp_url=$(echo "$camera" | cut -d '|' -f 1)
+ local camera_name=$(echo "$camera" | cut -d '|' -f 2)
+
+ echo "$0 $rtsp_url $camera_name"
+ ($0 $rtsp_url $camera_name)&
+}
+
+if [ "$RTSP_URL" != "" ]; then
+ save_rtsp_stream $RTSP_URL $CAMERA_NAME
+else
+ for CAMERA in ${RTSP_CAMERAS[*]}; do
+  echo "$CAMERA"
+  save_rtsp_stream_async $CAMERA
+ done
+fi
