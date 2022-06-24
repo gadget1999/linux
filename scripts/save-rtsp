@@ -65,7 +65,6 @@ if [ "$RTSP_URL" != "" ]; then
  save_rtsp_stream $RTSP_URL $CAMERA_NAME
 else
  for CAMERA in ${RTSP_CAMERAS[*]}; do
-  echo "$CAMERA"
   save_rtsp_stream_async $CAMERA
  done
 fi
