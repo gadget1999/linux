@@ -58,7 +58,6 @@ function save_rtsp_stream_async() {
  local rtsp_url=$(echo "$camera" | cut -d '|' -f 1)
  local camera_name=$(echo "$camera" | cut -d '|' -f 2)
 
- echo "$0 $rtsp_url $camera_name"
  ($0 $rtsp_url $camera_name)&
 }
 
