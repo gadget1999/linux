@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+# get device UUID from following cmd:
+# lsblk -o UUID,NAME,FSTYPE,SIZE,MOUNTPOINT,LABEL,MODEL
+#DEV_UUID=
+#MOUNT_POINT=
+
+[ "$DEV_UUID" == "" ] || [ "$MOUNT_POINT" == "" ] && exit 0
+
+if [ "$(df | grep ""$MOUNT_POINT"")" ]; then
+ debug "Device already mounted."
+ exit 0
+fi
+
+# sometimes need option to mount, for example, for NTFS
+# mount -t ntfs-3g -o noatime,big_writes (speed 20MB/s -> 90MB/s)
+[ "$MOUNT_CMD" == "" ] && MOUNT_CMD=mount
+
+log "Mount device $DEV_UUID to [$MOUNT_POINT]"
+sudo $MOUNT_CMD -U $DEV_UUID $MOUNT_POINT
