@@ -52,13 +52,12 @@ function backup_partition() {
  check_packages "$backup_bin"
 
  # test if this is the current system partition
- local root_partition=$(mount|grep ' / '|cut -d' ' -f 1)
- if [ "$root_partition" == "/dev/$partition" ]; then
+ local mountpoint=$(lsblk -o MOUNTPOINT,KNAME,FSTYPE | \
+                    grep "$partition " | cut -d ' ' -f 1)
+ if [ "$mountpoint" == "/" ]; then
   log_error "/dev/$partition is root partition, skipped."
   return
- fi
-
- if [ "$(sudo df | grep ""/dev/$partition"")" ]; then
+ elif [ "$mountpoint" != "/boot" ] && [ "$mountpoint" != "" ]; then
   debug "Unmount /dev/$partition..."
   sudo umount /dev/$partition
  fi
