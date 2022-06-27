@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+PARTCLONE=partclone.ext4
+check_env "PARTCLONE_ROOT"
+check_packages "sfdisk $PARTCLONE tee"
+
+function backup_partition_table() {
+ local disk=$1
+ local backup_folder=$2
+ local backup_file="$2/$TODAY-$1-sfdisk.txt"
+
+ log "Backup /dev/$disk partition table to: $backup_file"
+ sudo sfdisk -d /dev/$disk | sudo tee $backup_file > /dev/null
+
+ [ ! -s $backup_file ] && fatal_error "Backup partition table failed."
+}
+
+function backup_partition() {
+ local partition=$1
+ local backup_folder=$2
+ local backup_file="$2/$TODAY-$1-parition.img"
+
+ if [ "$(sudo df | grep ""/dev/$partition"")" ]; then
+  debug "Unmount /dev/$partition..."
+  sudo umount /dev/$partition
+ fi
+
+ log "Backup partition /dev/$partition to: $backup_file"
+ sudo $PARTCLONE -c -s /dev/$partition -o $backup_file
+
+ [ ! -s $backup_file ] && fatal_error "Backup partition table failed."
+}
+
+case $1 in
+ backup)
+  backup_disk $2
+  ;;
+ restore)
+  restore_disk $2
+  ;;
+ *)
+  show_usage "backup|restore disk_name"
+  ;;
+esac
