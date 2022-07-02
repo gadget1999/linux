@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_env "BACKUP_KEY MAIN_USER"
+
+HOST=$(hostname)
+FILENAME="$HOST-home-$TODAY.7z"
+ARCHIVE=/tmp/$FILENAME
+
+sudo 7za a -$BACKUP_KEY $ARCHIVE \
+  /home/$MAIN_USER \
+  /home/share \
+  $CMD_PATH \
+  $CONTAINER_CONFIG_ROOT  \
+  /root \
+  -xr\!*config/deps \
+  -xr\!.cache
+
+$CMD_PATH/dropbox upload $ARCHIVE Backup/$HOST/$FILENAME
+
+7za l $ARCHIVE
+sudo rm $ARCHIVE
