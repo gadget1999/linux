@@ -58,7 +58,7 @@ function backup_partition() {
   log_error "/dev/$partition is root partition, skipped."
   return
  elif [ "$mountpoint" != "" ]; then
-  debug "Unmount /dev/$partition..."
+  debug "Unmount /dev/$partition ($mountpoint)..."
   sudo umount /dev/$partition
  fi
 
