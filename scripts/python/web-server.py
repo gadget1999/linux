@@ -47,8 +47,7 @@ if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
     {'name':'--key_file', 'help':'SSL key file'}
     ]}
   try:
-   parser = CLIParser.get_parser(CLI_config)
-   CLIParser.run(parser)
+   CLIParser.run(CLI_config)
   except Exception as e:
    logger.error(f"Exception happened: {e}")
    sys.exit(1)
