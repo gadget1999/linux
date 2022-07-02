@@ -5,12 +5,12 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
 # SAMBA_SHARE format: Share:/data:rw:$SAMBA_USER
-check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD CONTAINER_UID CONTAINER_PLATFORM"
+check_env "SAMBA_LOCAL_PATH SAMBA_SHARE SAMBA_USER SAMBA_PASSWORD CONTAINER_UID"
 
 $CMD_PATH/mount-usb-drive
 
 CONTAINER="samba"
-IMAGE="gadget1999/rpi-samba:$CONTAINER_PLATFORM"
+IMAGE="gadget1999/rpi-samba"
 
 grant_container_access $SAMBA_LOCAL_PATH
 
