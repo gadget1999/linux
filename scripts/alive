@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_env "SUBNET"
+
+if [ "$#" -ne 1 ]
+then
+    HOST="$SUBNET.131"
+else
+    HOST=$1
+fi
+
+NOW=$(date +%H:%M:%S)
+
+count=$(ping -c 1 $HOST | grep 'received' | awk -F',' '{ print $2 }' | awk '{ print $1 }')
+
+if [ -z "$count" ] || [ $count -eq "0" ]
+then
+  # 100% failed 
+  echo "$NOW $HOST is down"
+else
+  echo "$NOW $HOST is up"
+fi
