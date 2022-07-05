@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_packages "curl jq"
+
+function get_cpu_arch() {
+ local cpu_arch=$(uname -m)
+ case $cpu_arch in
+  x86_64|amd64)
+   CPU_ARCHITECTURE=amd64
+   ;;
+  aarch64)
+   CPU_ARCHITECTURE=arm64
+   ;;
+  *)
+   fatal_error "CPU architecture is not supported: $cpu_arch"
+ esac
+}
+
+function download_latest_github_release() {
+ local user=$1
+ local repo=$2
+ local pattern=$3
+ local output=$4
+
+ # get latest release info
+ debug "Looking up latest release info for $user/$repo..."
+ local GITHUB_API="https://api.github.com/repos/$user/$repo/releases/latest"
+ local tag_name=$(curl -sL $GITHUB_API | jq -r '.tag_name')
+ local filename=$(curl -sL $GITHUB_API | \
+   jq -r '.assets[].name | select(.|test('"\"$pattern\""'))' )
+ [[ "$filename" == "" ]] && log_error "Failed to get download URL." && return
+
+ local dowload_url="https://github.com/$user/$repo/releases/download/$tag_name/$filename"
+ debug "Downloading $dowload_url to $output..."
+ wget -q -O $output $dowload_url
+ [ ! -s $output ] && log_error "Failed to download file." && return
+}
+
+get_cpu_arch
+GITHUB_USER="containerd"
+GITHUB_REPO="nerdctl"
+# need to double escape as it's passed in as string to jq later
+FILE_PATTERN="$GITHUB_REPO-[0-9]+.+-linux-$CPU_ARCHITECTURE.+"
+DOWNLOAD_FILENAME=/tmp/nerdctl-$NOW.tar.gz
+download_latest_github_release containerd nerdctl $FILE_PATTERN $DOWNLOAD_FILENAME
