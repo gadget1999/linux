@@ -412,7 +412,14 @@ function move_to_tmpfs() {
   local filepath=$1
   local bakfile="$filepath.sav"
   local filename=${1##*/}  # get leaf name
-  local tmpfile=/tmp/$filename
+  local tmpfolder=/tmp/moved-tmpfs
+  local tmpfile=$tmpfolder/$filename
+
+  if [[ ! -d "$tmpfolder" ]]; then
+    debug "Creating temp folder..."
+    sudo mkdir -p $tmpfolder
+    sudo chmod 777 $tmpfolder
+  fi  
 
   debug "Checking $filepath link status"
   if sudo test -L $filepath ; then

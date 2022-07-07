@@ -57,14 +57,19 @@ function backup_partition() {
  if [ "$mountpoint" == "/" ]; then
   log_error "/dev/$partition is root partition, skipped."
   return
- elif [ "$mountpoint" != "/boot" ] && [ "$mountpoint" != "" ]; then
-  debug "Unmount /dev/$partition..."
+ elif [ "$mountpoint" != "" ]; then
+  debug "Unmount /dev/$partition ($mountpoint)..."
   sudo umount /dev/$partition
  fi
 
  local backup_file="$backup_folder/$TODAY-$partition.$partition_type.img"
  log "Backup partition /dev/$partition (type:$partition_type) to: $backup_file"
  sudo $backup_cmd -s /dev/$partition -O $backup_file
+
+ if [ "$mountpoint" == "/boot" ]; then
+  debug "Re-mount /dev/$partition to /boot"
+  sudo mount /dev/$partition /boot
+ fi
 
  [ ! -s $backup_file ] && log_error "Backup partition data failed."
 }

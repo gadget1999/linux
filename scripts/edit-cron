@@ -15,6 +15,8 @@ function edit_sys_cron() {
  local cronfile="/etc/cron.d/tasks"
 
  nano -c $cronfile
+ cat $cronfile > /root/syscron
+ cat $cronfile
 }
 
 if [ "$(whoami)" == "root" ]; then

@@ -7,6 +7,8 @@ source $CMD_PATH/lib/disk.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
+$CMD_PATH/mount-usb-drive
+
 # Backup Raspberry Pi SD Card via dual-boot
 BACKUP_FOLDER="/media/USBHDD/Share/Backup/System/RPi/rpi4-image-$TODAY"
 sudo mkdir -p $BACKUP_FOLDER
