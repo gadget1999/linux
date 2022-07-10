@@ -97,4 +97,83 @@ function backup_disk() {
  done
 }
 
-check_disk_env
+function remove_mount_point() {
+ local mount_point=$1
+
+ # need to use sudo test otherwise some folders cannot be detected
+ sudo test ! -d $mount_point && return
+ sleep 5
+
+ debug "Unmounting [$mount_point]..."
+ sudo umount $mount_point
+ debug "Deleting [$mount_point]..."
+ sudo rmdir $mount_point
+}
+
+############# BitLocker #############
+
+function mount_bitlocker() {
+ check_packages "dislocker"
+ local partition=$1
+ local mount_point=$2
+ local unlock_area=/tmp/bitlocker
+
+ debug "Creating mount points..."
+ mkdir -p $unlock_area
+ mkdir -p $mount_point
+
+ local password
+ read -s -p "Password:" password
+ debug "Unlocking [$partition]..."
+ sudo dislocker -r $partition -u$password -- $unlock_area
+
+ debug "Mounting partition to [$mount_point]..."
+ sudo mount -o ro,loop $unlock_area/dislocker-file $mount_point
+}
+
+function unmount_bitlocker() {
+ local mount_point=$1
+ local unlock_area=/tmp/bitlocker
+
+ remove_mount_point $mount_point
+ remove_mount_point $unlock_area
+}
+
+############# VHD #############
+# more info: https://gist.github.com/allenyllee/0a4c02952bf695470860b27369bbb60d
+# install: qemu-utils nbd-client
+
+function mount_bitlocker_vhd() {
+ check_packages "qemu-nbd partprobe"
+ local vhd_file=$1
+ local vhd_dev=/dev/nbd0
+ local vhd_partition="$vhd_dev""p$2"
+ local mount_point=$3
+
+ debug "Reload nbd kernel module"
+ [ $(lsmod | grep "$MODULE" &> /dev/null) ] && sudo rmmod nbd
+ sudo modprobe nbd max_part=16
+
+ debug "Mount VHD to virtual block device"
+ sudo qemu-nbd -c "$vhd_dev" "$vhd_file"
+
+ debug "Reload partition table"
+ sudo partprobe "$vhd_dev"
+
+ mount_bitlocker "$vhd_partition" "$mount_point"
+}
+
+function unmount_bitlocker_vhd() {
+ local mount_point=$1
+ local vhd_dev=/dev/nbd0
+ local unlock_area=/tmp/bitlocker
+
+ remove_mount_point $mount_point
+ remove_mount_point $unlock_area
+
+ debug "Unloading nbd kernel modules"
+ if [ $(lsmod | grep "$MODULE" &> /dev/null) ]; then
+  sudo qemu-nbd -d "$vhd_dev"
+  sudo rmmod nbd
+ fi
+}

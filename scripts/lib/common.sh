@@ -265,49 +265,6 @@ function mount_cifs_share() {
  fi
 }
 
-############# BitLocker #############
-
-function mount_bitlocker() {
- check_packages "dislocker"
- local partition=$1
- local unlock_area=/tmp/bitlocker
- local mount_point=/tmp/bitlocker-$(basename $partition)
-
- debug "Creating mount points..."
- mkdir -p $unlock_area
- mkdir -p $mount_point
-
- local password
- read -s -p "Password:" password
- debug "Unlocking [$partition]..."
- sudo dislocker -r $partition -u$password -- $unlock_area
-
- debug "Mounting partition to [$mount_point]..."
- sudo mount -o ro,loop $unlock_area/dislocker-file $mount_point
-}
-
-function remove_mount_point() {
- local mount_point=$1
-
- # need to use sudo test otherwise some folders cannot be detected
- sudo test ! -d $mount_point && return
- sleep 5
-
- debug "Unmounting [$mount_point]..."
- sudo umount $mount_point
- debug "Deleting [$mount_point]..."
- sudo rmdir $mount_point
-}
-
-function unmount_bitlocker() {
- local partition=$1
- local unlock_area=/tmp/bitlocker
- local mount_point=/tmp/bitlocker-$(basename $partition)
-
- remove_mount_point $mount_point
- remove_mount_point $unlock_area
-}
-
 ############# Files #############
 
 DIFF_CMD="diff --color"
