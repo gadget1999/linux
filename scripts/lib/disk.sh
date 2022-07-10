@@ -171,8 +171,8 @@ function unmount_bitlocker_vhd() {
  remove_mount_point $mount_point
  remove_mount_point $unlock_area
 
- debug "Unloading nbd kernel modules"
  if [ $(lsmod | grep "$MODULE" &> /dev/null) ]; then
+  debug "Unloading nbd kernel modules"
   sudo qemu-nbd -d "$vhd_dev"
   sudo rmmod nbd
  fi
