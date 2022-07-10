@@ -35,7 +35,6 @@ EXTRA_OPTS=(
  -v $SSH_KEY:/etc/ssh/ssh_host_ed25519_key:ro
  -v $ROOT_FOLDER:/home/$SFTP_USER/share
  -p $SFTP_PORT:22
- -p $SFTP_PORT:8388/udp
  -m $MAX_RAM
  )
 
