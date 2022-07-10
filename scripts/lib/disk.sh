@@ -144,7 +144,7 @@ function unmount_bitlocker() {
 # install: qemu-utils nbd-client
 
 function mount_bitlocker_vhd() {
- check_packages "qemu-nbd partprobe"
+ check_packages "qemu-nbd"
  local vhd_file=$1
  local vhd_dev=/dev/nbd0
  local vhd_partition="$vhd_dev""p$2"
