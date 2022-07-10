@@ -4,12 +4,18 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "SFTP_USER SFTP_PASSWORD SFTP_PORT CONTAINER_UID"
+check_env "SFTP_HOST_ROOT SFTP_USER SFTP_PASSWORD SFTP_PORT CONTAINER_UID"
 
 CONTAINER="sftp"
 IMAGE="atmoz/sftp:alpine"
 
-ROOT_FOLDER="/download/sftp"
+ROOT_FOLDER="$SFTP_HOST_ROOT"
+if [ "$#" == "1" ]; then
+ # start a new temp instance
+ CONTAINER="sftp-temp"
+ ROOT_FOLDER=$1
+ SFTP_PORT=$EXTERNAL_TEMP_PORT
+fi
 
 CONFIG_FOLDER="$CONTAINER_CONFIG_ROOT/$CONTAINER"
 [ ! -d $CONFIG_FOLDER ] && mkdir -p $CONFIG_FOLDER
