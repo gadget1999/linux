@@ -150,8 +150,10 @@ function mount_bitlocker_vhd() {
  local vhd_partition="$vhd_dev""p$2"
  local mount_point=$3
 
- debug "Reload nbd kernel module"
- [ $(lsmod | grep "$MODULE" &> /dev/null) ] && sudo rmmod nbd
+ if [ "$(lsmod | grep nbd)" ]; then
+  debug "Reload nbd kernel module"
+  sudo rmmod nbd
+ fi
  sudo modprobe nbd max_part=16
 
  debug "Mount VHD to virtual block device"
@@ -171,7 +173,7 @@ function unmount_bitlocker_vhd() {
  remove_mount_point $mount_point
  remove_mount_point $unlock_area
 
- if [ $(lsmod | grep "$MODULE" &> /dev/null) ]; then
+ if [ "$(lsmod | grep nbd)" ]; then
   debug "Unloading nbd kernel modules"
   sudo qemu-nbd -d "$vhd_dev"
   sudo rmmod nbd

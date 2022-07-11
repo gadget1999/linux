@@ -17,6 +17,7 @@ case $1 in
   [ "$#" != "3" ] && usage && exit 1
   VHD_FILE="$2"
   PARTITION_NUM=$3
+  unmount_bitlocker_vhd $MOUNT_POINT
   mount_bitlocker_vhd $VHD_FILE $PARTITION_NUM $MOUNT_POINT
   ;;
  off)
