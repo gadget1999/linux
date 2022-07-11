@@ -102,7 +102,7 @@ function remove_mount_point() {
 
  # need to use sudo test otherwise some folders cannot be detected
  sudo test ! -d $mount_point && return
- sleep 5
+ sleep 2
 
  debug "Unmounting [$mount_point]..."
  sudo umount $mount_point
