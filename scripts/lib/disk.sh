@@ -143,18 +143,18 @@ function unmount_bitlocker() {
 # more info: https://gist.github.com/allenyllee/0a4c02952bf695470860b27369bbb60d
 # install: qemu-utils nbd-client
 
+NBD_DEV=nbd0
 function mount_bitlocker_vhd() {
  check_packages "qemu-nbd"
  local vhd_file=$1
- local vhd_dev=/dev/nbd0
+ local vhd_dev=/dev/$NBD_DEV
  local vhd_partition="$vhd_dev""p$2"
  local mount_point=$3
 
- if [ "$(lsmod | grep nbd)" ]; then
-  debug "Reload nbd kernel module"
-  sudo rmmod nbd
+ if [ "$(lsmod | grep nbd)" == "" ]; then
+  debug "Load nbd kernel module"
+  sudo modprobe nbd
  fi
- sudo modprobe nbd max_part=16
 
  debug "Mount VHD to virtual block device"
  sudo qemu-nbd -c "$vhd_dev" "$vhd_file"
@@ -167,15 +167,14 @@ function mount_bitlocker_vhd() {
 
 function unmount_bitlocker_vhd() {
  local mount_point=$1
- local vhd_dev=/dev/nbd0
+ local vhd_dev=/dev/$NBD_DEV
  local unlock_area=/tmp/bitlocker
 
  remove_mount_point $mount_point
  remove_mount_point $unlock_area
 
- if [ "$(lsmod | grep nbd)" ]; then
-  debug "Unloading nbd kernel modules"
+ if [ "$(lsblk -o kname | grep $NBD_DEV)" != "" ]; then
+  debug "Removing virtual block device: $vhd_dev"
   sudo qemu-nbd -d "$vhd_dev"
-  sudo rmmod nbd
  fi
 }
