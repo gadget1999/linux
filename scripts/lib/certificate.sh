@@ -35,6 +35,29 @@ function issue_certificate()  {
  fi
 }
 
+function issue_certificate_docker()  {
+ check_env "$CERT_STORAGE"
+ check_packages "docker"
+ local CERT_CMD="docker run --rm -it
+           -v $CERT_STORAGE:/acme.sh
+           -p 443:$CERT_LOCAL_PORT
+           neilpang/acme.sh"
+ local cmd="$CERT_CMD --issue --ocsp -d $DDNS_DOMAIN $CERT_TRANSPORT
+           --server letsencrypt"
+
+ [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --keylength ec-384"
+ 
+ debug "CMD: $cmd"
+ local output="$($cmd)"
+ debug "Result: $output"
+ 
+ if [[ $output != *"Your cert key"* ]]; then
+  return 0
+ else
+  return 1
+ fi
+}
+
 function issue_certificate_azdns()  {
  local cmd="$CERT_CMD --issue --dns dns_azure -d $AZDNS_DOMAIN -d *.$AZDNS_DOMAIN "
 
