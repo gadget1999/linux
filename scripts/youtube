@@ -10,10 +10,11 @@ check_env "HOST_DOWNLOAD_ROOT"
 
 URL=$1
 
-CMD="/usr/local/bin/youtube-dl"
+TOOL="yt-dlp"
+CMD="/usr/local/bin/$TOOL"
 if [ ! -x "$(command -v $CMD)" ]; then
- debug "Install youtube-dl"
- sudo pip3 install youtube-dl
+ debug "Install $TOOL"
+ sudo pip3 install $TOOL
 fi
 
 TARGET="$HOST_DOWNLOAD_ROOT/Youtube"
@@ -25,8 +26,8 @@ cd $TARGET
 [ "$DOWNLOAD_SPEED_LIMIT" != "" ] && CMD="$CMD -r $DOWNLOAD_SPEED_LIMIT"
 
 if [ "$2" == "debug" ]; then
- debug "Update youtube-dl"
- sudo pip3 install --upgrade youtube_dl
+ debug "Update $TOOL"
+ sudo pip3 install --upgrade $TOOL
  $CMD -v $URL
 else
  $CMD --output "%(title)s.%(ext)s" $URL
