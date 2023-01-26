@@ -377,6 +377,10 @@ class SiteInfo:
           logger.error(f"{url} response time too long: {t_elapsed_ms}ms")
         status.alive = True
         status.online = True
+      elif "maintenance" in r.text:
+        status.alive = True
+        status.online = True
+        logger.info(f"{url} is under maintenance: {r.text}")
       else:
         status.error = f"HTTP error code: {r.status_code}"
         logger.error(f"{url} failed: {status.error}")
