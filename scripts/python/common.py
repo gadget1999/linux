@@ -24,6 +24,8 @@ class Logger:
     consoleHandler.setLevel(logging.DEBUG)
     Logger.__logger.addHandler(consoleHandler)
     if log_to_file:
+      if "APP_NAME" in os.environ:
+        app_name = os.environ["APP_NAME"]
       if not app_name:
         app_name = CLIParser.get_app_name()
       app_logfile = f"/tmp/{app_name}.log"

@@ -13,6 +13,7 @@ if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
 fi
 
 export SENDGRID_API_KEY
+export APP_NAME="security-monitor"
 
 [ "$1" == "debug" ] && export DEBUG
 
