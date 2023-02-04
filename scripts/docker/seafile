@@ -68,8 +68,8 @@ function new_pod() {
  
  sleep 10
 
- upgrade_container_os $POD
- upgrade_seafile_nginx $POD
+ #upgrade_container_os $POD
+ #upgrade_seafile_nginx $POD
 }
 
 function start_pod() {
@@ -107,6 +107,13 @@ function upgrade_container_os() {
  debug "Restarting container..."
  stop_container $container_name
  start_container $container_name
+}
+
+function upgrade_mariadb() {
+ debug "Upgrading MariaDB..."
+
+ docker exec seafile-mysql mariadb-upgrade \
+  -uroot -p$SEAFILE_DB_KEY
 }
 
 function upgrade_seafile_nginx() {
@@ -158,6 +165,9 @@ case $1 in
   upgrade_seafile_nginx $POD
   patch_seafile_nginx_conf
   ;;
+ db-upgrade)
+  upgrade_mariadb
+  ;;  
  debug)
   DEBUG_POD=1
   start_pod $POD STATEFUL_CONTAINERS STATELESS_CONTAINERS
