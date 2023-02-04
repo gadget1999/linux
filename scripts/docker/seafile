@@ -112,6 +112,7 @@ function upgrade_container_os() {
 function upgrade_mariadb() {
  debug "Upgrading MariaDB..."
 
+ # reference: https://mariadb.com/kb/en/upgrading/
  docker exec seafile-mysql mariadb-upgrade \
   -uroot -p$SEAFILE_DB_KEY
 }
@@ -149,6 +150,12 @@ function patch_seafile_nginx_conf() {
 #########################
 # Main entrance
 #########################
+
+# upgrade process
+# - seafile delete
+# - seafile
+# - seafile db-upgrade
+# - seafile upgrade
 
 case $1 in
  new)
