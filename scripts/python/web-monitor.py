@@ -23,6 +23,10 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
   FileType, Disposition, ContentId)
 import base64 # for attachment
+# for Azure DNS glitch (use custom DNS to confirm)
+import dns.resolver
+dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+dns.resolver.default_resolver.nameservers = ["9.9.9.9"]
 # for logging and CLI arguments parsing
 import configparser
 from common import Logger, CLIParser
@@ -30,6 +34,32 @@ logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36'
+POSSIBLE_DNS_GLITCH = "Name or service not known"
+
+# Some times requests or socket get 'Name or service not known' incorrectly, can use a different DNS server to confirm
+def is_host_reachable(url):
+  try:
+    parsed_uri = urlparse(url)
+    host = parsed_uri.hostname if parsed_uri.hostname else url
+    port = parsed_uri.port if parsed_uri.port else 443
+    answers = dns.resolver.resolve(host, 'A')
+    if not answers:
+      logger.error(f"Custom DNS lookup failed for {url}")
+      return False    
+    # verify each IP from results
+    for answer in answers:
+      ip = answer.address
+      try:
+        with socket.create_connection((ip, port), timeout=10) as conn:
+          logger.info(f"{url} IP address is reachable: {ip}")
+      except:
+        logger.info(f"{url} IP address is NOT reachable: {ip}")
+        return False
+    # now all IP addresses are verified, consider as OK for now
+    return True
+  except Exception as e:
+    logger.error(f"Custom DNS lookup failed for {url}: {e}")
+    return False
 
 def get_ip_addresses(host, port):
   try:
@@ -304,6 +334,9 @@ class SSLReport:
       result = SSLRecord(url=url, ip=ip)
       expires, error = SSLReport.__get_ssl_expiration_date(host, ip, port)
       if error:
+        # ignore once if temp DNS glitch "Name or service not known" but host reachable
+        if (POSSIBLE_DNS_GLITCH in error) and is_host_reachable(url):
+          continue
         result.error = error
       elif expires:
         expires_in_days = (expires - datetime.datetime.now()).days
@@ -389,10 +422,11 @@ class SiteInfo:
     except Exception as e:
       error_type = type(e).__name__
       error_msg = f"{e}"
-      if allow_retry:
-        if 'Name or service not known' in error_msg:
-          time.sleep(10)
-          return SiteInfo.get_status(url, False)
+      if (POSSIBLE_DNS_GLITCH in error_msg) and is_host_reachable(url):
+        # ignore once since requests DNS is at fault, but hard to let it use alternative DNS
+        status.alive = True
+        status.online = True
+        return status
       status.error = f"{error_type}: {error_msg}"
       logger.error(f"{url} failed: {status.error}")
       if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
