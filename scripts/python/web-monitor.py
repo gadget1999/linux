@@ -400,7 +400,8 @@ class SiteInfo:
         "Accept-Language": "en-US,en;q=0.5",
         "User-Agent": USER_AGENT
       }
-      r = requests.get(url, headers=headers)
+      r = requests.get(url, headers=headers, timeout=30)
+      r.close()
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
       status.response_time = t_elapsed_ms
