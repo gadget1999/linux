@@ -424,6 +424,7 @@ class SiteInfo:
       error_msg = f"{e}"
       if (POSSIBLE_DNS_GLITCH in error_msg) and is_host_reachable(url):
         # ignore once since requests DNS is at fault, but hard to let it use alternative DNS
+        logger.error(f"{url} had temporary DNS error: {error_type} - {error_msg}")
         status.alive = True
         status.online = True
         return status
