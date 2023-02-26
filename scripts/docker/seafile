@@ -68,8 +68,8 @@ function new_pod() {
  
  sleep 10
 
- upgrade_container_os $POD
- upgrade_seafile_nginx $POD
+ #upgrade_container_os $POD
+ #upgrade_seafile_nginx $POD
 }
 
 function start_pod() {
@@ -109,6 +109,14 @@ function upgrade_container_os() {
  start_container $container_name
 }
 
+function upgrade_mariadb() {
+ debug "Upgrading MariaDB..."
+
+ # reference: https://mariadb.com/kb/en/upgrading/
+ docker exec seafile-mysql mariadb-upgrade \
+  -uroot -p$SEAFILE_DB_KEY
+}
+
 function upgrade_seafile_nginx() {
  local container_name=$1
  local DOCKER_CMD="docker exec seafile"
@@ -143,6 +151,12 @@ function patch_seafile_nginx_conf() {
 # Main entrance
 #########################
 
+# upgrade process
+# - seafile delete
+# - seafile
+# - seafile db-upgrade
+# - seafile upgrade
+
 case $1 in
  new)
   new_pod "$COMPOSE_FILE_ROOT/$POD/docker-compose.yaml"
@@ -158,6 +172,9 @@ case $1 in
   upgrade_seafile_nginx $POD
   patch_seafile_nginx_conf
   ;;
+ db-upgrade)
+  upgrade_mariadb
+  ;;  
  debug)
   DEBUG_POD=1
   start_pod $POD STATEFUL_CONTAINERS STATELESS_CONTAINERS

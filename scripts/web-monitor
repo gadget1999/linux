@@ -13,6 +13,7 @@ if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
 fi
 
 export SENDGRID_API_KEY
+export APP_NAME=$PROGRAM
 
 [ "$1" == "debug" ] && export DEBUG
 python3 $CMD_PATH/python/web-monitor.py $MONITOR_CONFIG
