@@ -10,6 +10,7 @@ from dataclasses import dataclass
 # for web APIs
 import socket, ipaddress
 import requests
+import httpx
 from urllib.parse import urlparse
 # for unittest
 import unittest
@@ -400,7 +401,7 @@ class SiteInfo:
         "Accept-Language": "en-US,en;q=0.5",
         "User-Agent": USER_AGENT
       }
-      r = requests.get(url, headers=headers, timeout=120)
+      r = httpx.get(url, headers=headers, timeout=120)
       r.close()
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
