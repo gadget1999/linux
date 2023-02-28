@@ -10,7 +10,6 @@ from dataclasses import dataclass
 # for web APIs
 import socket, ipaddress
 import requests
-import httpx
 from urllib.parse import urlparse
 # for unittest
 import unittest
@@ -401,7 +400,7 @@ class SiteInfo:
         "Accept-Language": "en-US,en;q=0.5",
         "User-Agent": USER_AGENT
       }
-      r = httpx.get(url, headers=headers, timeout=120)
+      r = requests.get(url, headers=headers, timeout=120)
       r.close()
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
@@ -424,12 +423,20 @@ class SiteInfo:
     except Exception as e:
       error_type = type(e).__name__
       error_msg = f"{e}"
-      logger.error(f"{url} failed: {error_type} - {error_msg}")
-      if (POSSIBLE_DNS_GLITCH in error_msg) and is_host_reachable(url):
-        # ignore once since requests DNS is at fault, but hard to let it use alternative DNS
-        status.alive = True
-        status.online = True
-        return status
+      if (POSSIBLE_DNS_GLITCH in error_msg):
+        if allow_retry:
+          # retry once for DNS error
+          time.sleep(15)
+          return SiteInfo.get_status(url, False)
+        logger.error(f"{url} DNS error: {POSSIBLE_DNS_GLITCH}")
+        # retry still failed, try to ping IP directly (this may not be accurate for sites using reverse proxy)
+        if is_host_reachable(url):
+          # ignore once since requests DNS is at fault, but hard to let it use alternative DNS
+          status.alive = True
+          status.online = True
+          return status
+      else:
+        logger.error(f"{url} failed: {error_type} - {error_msg}")
       status.error = f"{error_type}: {error_msg}"
       if error_type not in ['ConnectionError', 'Timeout', 'SSLError']:
         status.alive = True
@@ -442,7 +449,7 @@ class SiteInfo:
         "Accept-Language": "en-US,en;q=0.5",
         "User-Agent": USER_AGENT
       }
-      r = httpx.get(url, headers=headers)
+      r = requests.get(url, headers=headers)
       r.close()
       if r.status_code < 400:
         logger.error(f"Online (status={r.status_code}) --> Unexpected!")
