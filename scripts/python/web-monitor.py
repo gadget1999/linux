@@ -442,7 +442,8 @@ class SiteInfo:
         "Accept-Language": "en-US,en;q=0.5",
         "User-Agent": USER_AGENT
       }
-      r = requests.get(url, headers=headers)
+      r = httpx.get(url, headers=headers)
+      r.close()
       if r.status_code < 400:
         logger.error(f"Online (status={r.status_code}) --> Unexpected!")
         return False
