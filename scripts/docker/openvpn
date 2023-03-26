@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
 CONTAINER="openvpn"
-IMAGE="kylemanna/openvpn"
+IMAGE="gadget1999/rpi-openvpn"
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
