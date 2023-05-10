@@ -13,6 +13,7 @@ touch $OUTPUT
 EXTRA_OPTS=(
  --read-only
  --cap-drop all
+ -v /usr/bin/openssl:/home/testssl/bin/openssl.Linux.x86_64
  -v $OUTPUT:$OUTPUT
  )
 
