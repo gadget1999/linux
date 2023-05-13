@@ -43,6 +43,6 @@ function copy2share() {
 }
 
 for file in $FILE_PATTERN; do
-# dropbox_upload $file share/$TODAY
- copy2share $file
+ dropbox_upload "$file" share/$TODAY
+# copy2share "$file"
 done
