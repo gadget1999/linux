@@ -25,5 +25,5 @@ if [ "$1" != "force" ]; then
  fi
 fi
 
-python3 $CMD_PATH/python/web-monitor.py $SSL_REPORT_CONFIG
+"$PYTHON_VENV"python3 $CMD_PATH/python/web-monitor.py $SSL_REPORT_CONFIG
 [ "$?" == "0" ] && set_lastrun
