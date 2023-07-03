@@ -1,0 +1,9 @@
+colorlog
+python-dateutil
+requests
+jinja2
+openpyxl
+xlsxwriter
+influxdb-client
+sendgrid
+dnspython
