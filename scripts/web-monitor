@@ -9,7 +9,7 @@ check_env "SENDGRID_API_KEY MONITOR_CONFIG"
 lock 7200 # assume hang if not completed within two hours
 
 if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
-  update_file_from_box_link $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
+  download_file $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
 fi
 
 export SENDGRID_API_KEY
