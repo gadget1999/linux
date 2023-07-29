@@ -345,6 +345,11 @@ class SSLReport:
           result.error = "Certificate will expire soon!"
           logger.error(result.error)
       results.append(result)
+    if not results:
+      # if comes here, means all DNS glitches
+      result = SSLRecord(url=url, ip=ip)
+      result.error = "Temp DNS error"
+      results.append(result)
     return results
 
 class SSLLabsTestCase(unittest.TestCase):
