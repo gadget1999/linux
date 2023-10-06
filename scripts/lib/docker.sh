@@ -122,7 +122,7 @@ function restart_container() {
 
  [ $(is_container_running $container_name) != "true" ] && return
 
- local usage=$(docker stats --no-stream --format "{{.Name}} {{.MemPerc}}" | grep "$container_name" | awk '{print substr($2,0,length($2)-1)}')
+ local usage=$($DOCKER_CMD stats --no-stream --format "{{.Name}} {{.MemPerc}}" | grep "$container_name" | awk '{print substr($2,0,length($2)-1)}')
 
  # bash does not support comparing float numbers, need to convert to integer first
  usage=${usage%.*}
@@ -414,27 +414,27 @@ function build_image_from_github() {
  fi
 
  log "Removing previous local copies of [$image_name].."
- docker rmi "$image_name:$target_platform"
+ $DOCKER_CMD rmi "$image_name:$target_platform"
  [ "$default_tag" != "" ] && \
-   docker rmi "$image_name:$default_tag"
+   $DOCKER_CMD rmi "$image_name:$default_tag"
 
  log "Building docker image [$image_name] ..."
- docker build --force-rm --no-cache \
+ $DOCKER_CMD build --force-rm --no-cache \
    --build-arg TARGET_PLATFORM=$target_platform \
    $github_path -t $image_name:$target_platform
  [ "$default_tag" != "" ] && \
-   docker tag $image_name:$target_platform $image_name:$default_tag
+   $DOCKER_CMD tag $image_name:$target_platform $image_name:$default_tag
 
  #log "Squashing the image..."
  #squash_image $IMAGE_NAME
 
  log "Pushing image to docker hub..."
- docker push --all-tags $image_name
+ $DOCKER_CMD push --all-tags $image_name
 
  log "Removing local image..."
- docker rmi "$image_name:$target_platform"
+ $DOCKER_CMD rmi "$image_name:$target_platform"
  [ "$default_tag" != "" ] && \
-   docker rmi "$image_name:$default_tag"
+   $DOCKER_CMD rmi "$image_name:$default_tag"
 }
 
 # use buildx to build cross-platform images (currently it doesn't support GitHub subfolders)
@@ -447,21 +447,21 @@ function buildx_image_from_github() {
  local image_name="$image_prefix$container_name:latest"
 
  log "Removing previous local copies of [$image_name].."
- docker rmi $image_name
+ $DOCKER_CMD rmi $image_name
 
  log "Building docker image [$image_name] (buildx) ..."
  mkdir -p $local_folder && cd $local_folder 
  wget -q $github_path
- docker buildx build --force-rm --no-cache . -t $image_name
+ $DOCKER_CMD buildx build --force-rm --no-cache . -t $image_name
 
  #log "Squashing the image..."
  #squash_image $IMAGE_NAME
 
  log "Pushing image to docker hub..."
- docker push $image_name
+ $DOCKER_CMD push $image_name
 
  log "Removing local image..."
- docker rmi $image_name 
+ $DOCKER_CMD rmi $image_name 
 }
 
 ####################
