@@ -27,14 +27,28 @@ function add_user() {
  local profile=/tmp/$user
 
  log "Generating client profile: $user"
- docker run -v $CONTAINER:/etc/openvpn --rm -it $IMAGE \
+ $DOCKER_CMD run -v $CONTAINER:/etc/openvpn --rm -it $IMAGE \
    easyrsa build-client-full $user
 
  log "Exporting client profile to: $profile"
- docker run -v $CONTAINER:/etc/openvpn --rm $IMAGE \
+ $DOCKER_CMD run -v $CONTAINER:/etc/openvpn --rm $IMAGE \
    ovpn_getclient $user > $profile
 
  share $profile
+}
+
+function setup_openvpn() {
+ log "Creating OpenVPN volume: $CONTAINER"
+ $DOCKER_CMD volume create --name $CONTAINER
+
+ check_env "DDNS_DOMAIN"
+ log "Generating config environment for [$DDNS_DOMAIN] ..."
+ $DOCKER_CMD run -v $CONTAINER:/etc/openvpn --rm -it $IMAGE \
+   ovpn_genconfig -u $DDNS_DOMAIN
+
+ log "Generating PKI ..."
+ $DOCKER_CMD run -v $CONTAINER:/etc/openvpn --rm -it $IMAGE \
+   ovpn_initpki
 }
 
 #########################
@@ -42,6 +56,9 @@ function add_user() {
 #########################
 
 case $1 in
+ setup)
+  setup_openvpn
+  ;;
  adduser)
   add_user $2
   ;;
