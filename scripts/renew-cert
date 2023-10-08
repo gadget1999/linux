@@ -6,19 +6,17 @@ source $CMD_PATH/lib/email.sh
 source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
+[ "$1" == "force" ] && FORCE="--force"
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
  log "Enable firewall JIT access"
  $CMD_PATH/$ENABLE_JIT_ACCESS
 fi
 
-[ "$1" == "force" ] && FORCE_RENEW="--force"
-
-debug "Begin to renew certificate: $DDNS_DOMAIN"
-if renew_certificate $FORCE_RENEW; then
+log "Begin to renew certificate: $DDNS_DOMAIN"
+if ! renew_certificate_docker $FORCE; then
+ log_error "Certificate was not renewed."
  exit
-else
- log "Renew certificate succeeded: $DDNS_DOMAIN"
 fi
 
 if [ "$MAIN_EMAIL" != "" ]; then
@@ -26,15 +24,13 @@ if [ "$MAIN_EMAIL" != "" ]; then
  check_email_env
  send_email \
   $MAIN_EMAIL \
-  "$DDNS_DOMAIN certificate renewed" \
+  "$DDNS_DOMAIN certificate was renewed successfully" \
   "Enjoy!"
 fi
 
-if [ "$CERT_STORAGE" != "" ]; then
- log "Copying new certificates to $CERT_STORAGE"
- copy_file $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem overwrite
- copy_file $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem overwrite
- sudo chown container $CERT_STORAGE/*
- sudo chgrp container $CERT_STORAGE/*
- ls -l $CERT_STORAGE
-fi
+log "Copying new certificates to $CERT_STORAGE"
+copy_file $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem overwrite
+copy_file $CERT_KEY $CERT_STORAGE/privkey.pem overwrite
+sudo chown container $CERT_STORAGE/*
+sudo chgrp container $CERT_STORAGE/*
+ls -l $CERT_STORAGE
