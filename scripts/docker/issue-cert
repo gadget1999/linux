@@ -3,9 +3,11 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/email.sh
+source $CMD_PATH/lib/docker.sh
 source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
+check_env "CERT_STORAGE"
 [ "$1" == "force" ] && FORCE="--force"
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
@@ -29,7 +31,7 @@ if [ "$MAIN_EMAIL" != "" ]; then
 fi
 
 log "Copying new certificates to $CERT_STORAGE"
-$SUDO mkdir -p $CERT_STORAGE
-$SUDO cp $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
-$SUDO cp $CERT_KEY $CERT_STORAGE/privkey.pem
+copy_file "$CERT_ROOT/$CERT_FULLCHAIN" "$CERT_STORAGE/fullchain.pem" overwrite
+copy_file "$CERT_ROOT/$CERT_KEY" "$CERT_STORAGE/privkey.pem" overwrite
+grant_container_access "$CERT_STORAGE/*"
 ls -l $CERT_STORAGE

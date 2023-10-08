@@ -9,23 +9,22 @@ source $CMD_PATH/lib/docker.sh
 ##############################################################
 
 function check_cert_env() {
- check_env "CERT_STORAGE CERT_LOCAL_PORT DDNS_DOMAIN"
+ check_env "CERT_ROOT CERT_LOCAL_PORT DDNS_DOMAIN"
 
- CERT_FOLDER=$CERT_STORAGE/$DDNS_DOMAIN
+ CERT_FOLDER="$DDNS_DOMAIN"
  [ "$CERT_TYPE" == "ecc" ] && CERT_FOLDER="$CERT_FOLDER"_ecc
  CERT_FULLCHAIN="$CERT_FOLDER/fullchain.cer"
+ CERT_FULLCHAIN_PATH="$CERT_ROOT/$CERT_FULLCHAIN"
  CERT_KEY="$CERT_FOLDER/$DDNS_DOMAIN.key"
 }
 
 ACME_IMAGE_NAME="neilpang/acme.sh"
 ACME_DOCKER_OPTS=(
- -v $CERT_STORAGE:/acme.sh
- -p 443:$CERT_LOCAL_PORT
+ -v $CERT_ROOT:/acme.sh
+ --net=host
  )
 
 function issue_certificate_docker()  {
- check_env "CERT_STORAGE"
-
  local force=$1
  local cmd_args=(
   --issue
@@ -33,15 +32,13 @@ function issue_certificate_docker()  {
   $force
   -d $DDNS_DOMAIN
   --standalone
-  --alpn
-  --tlsport $CERT_LOCAL_PORT
   --server letsencrypt
   --keylength ec-384
   --debug
   )
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
- if is_file_modified_recently "$CERT_FULLCHAIN" 120 ; then
+ if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 120 ; then
   return 0
  else
   return 1
@@ -49,8 +46,6 @@ function issue_certificate_docker()  {
 }
 
 function renew_certificate_docker()  {
- check_env "CERT_STORAGE"
-
  local force=$1
  local cmd_args=(
   --renew
@@ -63,7 +58,7 @@ function renew_certificate_docker()  {
   )
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
- if is_file_modified_recently "$CERT_FULLCHAIN" 120 ; then
+ if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 120 ; then
   return 0
  else
   return 1

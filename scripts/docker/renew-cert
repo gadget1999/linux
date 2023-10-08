@@ -6,6 +6,7 @@ source $CMD_PATH/lib/email.sh
 source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
+check_env "CERT_STORAGE"
 [ "$1" == "force" ] && FORCE="--force"
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
@@ -29,8 +30,7 @@ if [ "$MAIN_EMAIL" != "" ]; then
 fi
 
 log "Copying new certificates to $CERT_STORAGE"
-copy_file $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem overwrite
-copy_file $CERT_KEY $CERT_STORAGE/privkey.pem overwrite
-sudo chown container $CERT_STORAGE/*
-sudo chgrp container $CERT_STORAGE/*
+copy_file "$CERT_ROOT/$CERT_FULLCHAIN" "$CERT_STORAGE/fullchain.pem" overwrite
+copy_file "$CERT_ROOT/$CERT_KEY" "$CERT_STORAGE/privkey.pem" overwrite
+grant_container_access "$CERT_STORAGE/*"
 ls -l $CERT_STORAGE
