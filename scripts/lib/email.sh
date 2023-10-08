@@ -4,11 +4,10 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
 function check_email_env {
- check_env "SENDGRID_API_KEY"
+ check_env "SENDGRID_FROM SENDGRID_API_KEY"
  check_packages "curl"
 }
 
-FROM_EMAIL="$(hostname)@linux.com"
 FROM_NAME="Server-$(hostname)"
 
 function send_email() {
@@ -19,7 +18,7 @@ function send_email() {
  local maildata="{ \
   \"personalizations\": \
     [{\"to\":[{\"email\":\"$mailto\"}]}], \
-    \"from\":{\"email\":\"$FROM_EMAIL\",\"name\":\"$FROM_NAME\"}, \
+    \"from\":{\"email\":\"$SENDGRID_FROM\",\"name\":\"$FROM_NAME\"}, \
     \"subject\":\"$subject\", \
     \"content\":[{\"type\":\"text/html\",\"value\":\"$body\"}]}"
 

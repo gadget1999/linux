@@ -294,8 +294,8 @@ function copy_file() {
  fi
 
  # ask for confirmation if files are different
- local md5source=( $(md5sum "$source") )
- local md5target=( $(md5sum "$target") )
+ local md5source=( $(sudo md5sum "$source") )
+ local md5target=( $(sudo md5sum "$target") )
  [ $md5source == $md5target ] && return 0
  
  # file changed, asking for confirmation
