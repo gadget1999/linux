@@ -38,6 +38,11 @@ function setup_influxdb() {
  container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
 }
 
+function delete_influxdb() {
+ delete_container "nginx-$CONTAINER"
+ delete_container "$CONTAINER"
+}
+
 function run_influxdb() {
  EXTRA_OPTS=(
   -p $INFLUXDB_PORT:8086
@@ -60,6 +65,9 @@ function run_influxdb() {
 case $1 in
  setup)
   setup_influxdb
+  ;;
+ delete)
+  delete_influxdb
   ;;
  debug)
   DEBUG_DOCKER=1
