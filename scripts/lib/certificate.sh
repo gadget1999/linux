@@ -15,13 +15,12 @@ function check_cert_env() {
  [ "$CERT_TYPE" == "ecc" ] && CERT_FOLDER="$CERT_FOLDER"_ecc
  CERT_FULLCHAIN="$CERT_FOLDER/fullchain.cer"
  CERT_KEY="$CERT_FOLDER/$DDNS_DOMAIN.key"
- [ "$CERT_METHOD" == "tls" ] && CERT_TRANSPORT="--alpn --tlsport $CERT_LOCAL_PORT"
 }
 
 ACME_IMAGE_NAME="neilpang/acme.sh"
 ACME_DOCKER_OPTS=(
  -v $CERT_STORAGE:/acme.sh
- --net=host
+ -p 443:$CERT_LOCAL_PORT
  )
 
 function issue_certificate_docker()  {
@@ -34,6 +33,8 @@ function issue_certificate_docker()  {
   $force
   -d $DDNS_DOMAIN
   --standalone
+  --alpn
+  --tlsport $CERT_LOCAL_PORT
   --server letsencrypt
   --keylength ec-384
   --debug
