@@ -6,6 +6,7 @@ source $CMD_PATH/lib/email.sh
 source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
+[ "$1" == "force" ] && FORCE="--force"
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then
  log "Enable firewall JIT access"
@@ -13,10 +14,9 @@ if [ "$ENABLE_JIT_ACCESS" != "" ]; then
 fi
 
 log "Begin to issue certificate: $DDNS_DOMAIN"
-if issue_certificate; then
+if ! issue_certificate_docker $FORCE; then
+ log_error "Certificate was not issued."
  exit
-else
- log "Succeeded."
 fi
 
 if [ "$MAIN_EMAIL" != "" ]; then
@@ -28,10 +28,8 @@ if [ "$MAIN_EMAIL" != "" ]; then
   "Enjoy!"
 fi
 
-if [ "$CERT_STORAGE" != "" ]; then
- log "Copying new certificates to $CERT_STORAGE"
- $SUDO mkdir -p $CERT_STORAGE
- $SUDO cp $CERT_ROOT/$CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
- $SUDO cp $CERT_ROOT/$CERT_KEY $CERT_STORAGE/privkey.pem
- ls -l $CERT_STORAGE
-fi
+log "Copying new certificates to $CERT_STORAGE"
+$SUDO mkdir -p $CERT_STORAGE
+$SUDO cp $CERT_FULLCHAIN $CERT_STORAGE/fullchain.pem
+$SUDO cp $CERT_KEY $CERT_STORAGE/privkey.pem
+ls -l $CERT_STORAGE

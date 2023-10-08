@@ -55,6 +55,13 @@ function check_env() {
  done
 }
 
+function print_env() {
+ local VARS=$1
+ for VAR in ${VARS[*]}; do
+  debug "$VAR=${!VAR}"
+ done
+}
+
 function check_packages() {
  local PACKAGES=$1
  for PACKAGE in ${PACKAGES[*]}; do
@@ -498,6 +505,23 @@ function update_file_from_box_link() {
  local local_file=$3
 
  download_file "$remote_file_url" "$remote_file_name" "$local_file"
+}
+
+function is_file_modified_recently() {
+ local file_path=$1
+ local seconds=$2
+
+ [ ! -e "$file_path" ] && log_error "File $file_path doesn't exist." && return
+ [ ! -f "$file_path" ] && log_error "File $file_path is not a regular file." && return
+
+ local modified=$(date -r "$file_path" +%s)
+ local diff_time=$((EPOCH - modified))
+
+ if [ "$diff_time" -le $seconds ]; then
+  return 0
+ else
+  return 1
+ fi
 }
 
 ####################
