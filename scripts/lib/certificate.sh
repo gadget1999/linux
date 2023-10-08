@@ -47,23 +47,6 @@ function issue_certificate_docker()  {
  fi
 }
 
-function renew_certificate()  {
- local force=$1
- local cmd="$CERT_CMD --renew $force -d $DDNS_DOMAIN $CERT_TRANSPORT"
- 
- [ "$CERT_TYPE" == "ecc" ] && cmd="$cmd --ecc"
-  
- debug "CMD: $cmd"
- local output="$($cmd)"
- debug "Result: $output"
- 
- if [[ $output != *"Your cert key"* ]]; then
-  return 0
- else
-  return 1
- fi
-}
-
 function renew_certificate_docker()  {
  check_env "CERT_STORAGE"
 
