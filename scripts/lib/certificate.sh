@@ -21,7 +21,7 @@ function check_cert_env() {
 ACME_IMAGE_NAME="neilpang/acme.sh"
 ACME_DOCKER_OPTS=(
  -v $CERT_STORAGE:/acme.sh
- -p 443:$CERT_LOCAL_PORT
+ --net=host
  )
 
 function issue_certificate_docker()  {
@@ -34,9 +34,9 @@ function issue_certificate_docker()  {
   $force
   -d $DDNS_DOMAIN
   --standalone
-  --httpport $CERT_LOCAL_PORT
   --server letsencrypt
   --keylength ec-384
+  --debug
   )
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
