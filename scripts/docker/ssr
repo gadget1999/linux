@@ -12,6 +12,8 @@ check_env "SSR_PASSWORD DDNS_DOMAIN CERT_STORAGE CONTAINER_UID"
 CONTAINER="ssr"
 IMAGE="acrisliu/shadowsocks-libev"
 
+# for Android, use this v2ray plug-in: https://github.com/teddysun/v2ray-plugin-android/releases
+
 PORT=443
 if [ "$SSR_PORT" != "" ]; then
  log "Use port: $SSR_PORT"
