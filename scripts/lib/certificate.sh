@@ -11,8 +11,7 @@ source $CMD_PATH/lib/docker.sh
 function check_cert_env() {
  check_env "CERT_ROOT DDNS_DOMAIN"
 
- CERT_FOLDER="$DDNS_DOMAIN"
- [ "$CERT_TYPE" == "ecc" ] && CERT_FOLDER="$CERT_FOLDER"_ecc
+ CERT_FOLDER="$DDNS_DOMAIN"_ecc
  CERT_FULLCHAIN="$CERT_FOLDER/fullchain.cer"
  CERT_FULLCHAIN_PATH="$CERT_ROOT/$CERT_FULLCHAIN"
  CERT_KEY="$CERT_FOLDER/$DDNS_DOMAIN.key"
