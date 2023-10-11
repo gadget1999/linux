@@ -151,6 +151,22 @@ function enter_container() {
  #debug ">>> Now back to host"
 }
 
+function create_docker_network() {
+ local network_driver=$1
+ local network_name=$2
+
+ # see if can find the network
+ $DOCKER_CMD network ls --format "table {{.Name}}" | \
+  grep "$network_name$" &> /dev/null
+ if [ $? == 0 ]; then
+  debug "Network $network_name already exists."
+  return
+ fi
+
+ log "Creating docker network: $network_name (type:$network_driver)"
+ $DOCKER_CMD network create --driver $network_driver $network_name
+}
+
 #####################################
 ## Creating containers
 #####################################

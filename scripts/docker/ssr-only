@@ -12,10 +12,14 @@ IMAGE="shadowsocks/shadowsocks-libev"
 
 PORT=8443
 
+# use isolated network
+create_docker_network bridge sandbox
+
 MAX_RAM="100m"
 EXTRA_OPTS=(
  -e PASSWORD=$SSR_PASSWORD
  --tmpfs /run
+ --network sandbox
  -p $PORT:8388
  -p $PORT:8388/udp
  -u nobody

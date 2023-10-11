@@ -7,8 +7,12 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="tinyproxy"
 IMAGE="vimagick/tinyproxy"
 
+# use isolated network
+create_docker_network bridge sandbox
+
 MAX_RAM="50m"
 EXTRA_OPTS=(
+ --network sandbox
  -p 56291:8888
  -v $CONTAINER:/etc/$CONTAINER
  -u nobody
