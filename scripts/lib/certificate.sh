@@ -9,7 +9,7 @@ source $CMD_PATH/lib/docker.sh
 ##############################################################
 
 function check_cert_env() {
- check_env "CERT_ROOT CERT_LOCAL_PORT DDNS_DOMAIN"
+ check_env "CERT_ROOT DDNS_DOMAIN"
 
  CERT_FOLDER="$DDNS_DOMAIN"
  [ "$CERT_TYPE" == "ecc" ] && CERT_FOLDER="$CERT_FOLDER"_ecc
@@ -31,11 +31,10 @@ function issue_certificate_docker()  {
   --ocsp
   $force
   -d $DDNS_DOMAIN
-  --standalone
   --server letsencrypt
   --keylength ec-384
-  --debug
-  )
+  --alpn
+  ) 
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
  if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 120 ; then
@@ -51,10 +50,9 @@ function renew_certificate_docker()  {
   --renew
   $force
   -d $DDNS_DOMAIN
-  --standalone
-  --httpport $CERT_LOCAL_PORT
   --server letsencrypt
   --keylength ec-384
+  --alpn
   )
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
