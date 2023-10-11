@@ -253,7 +253,7 @@ class TestSSL_sh:
       list_ratings = cmd_json_out['scanResult'][0]['rating']
       json_rating = next(x for x in list_ratings if x["id"] == "overall_grade")
       grade = json_rating["finding"]
-      logger.debug(f"SSL rating: {grade}")
+      logger.info(f"Grade: {grade} [{url}]")
       # assemble report
       parsed_uri = urlparse(url)
       report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
