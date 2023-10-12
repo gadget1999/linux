@@ -16,6 +16,7 @@ sudo 7za a -p$BACKUP_KEY $ARCHIVE \
   /root \
   -xr\!*config/deps \
   -xr\!influxdb \
+  -xr\!.local \  
   -xr\!.cache
 
 $CMD_PATH/dropbox upload $ARCHIVE Backup/$HOST/$FILENAME
