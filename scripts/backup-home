@@ -13,6 +13,7 @@ sudo 7za a -p$BACKUP_KEY $ARCHIVE \
   /home/$MAIN_USER \
   $CMD_PATH \
   $CONTAINER_CONFIG_ROOT \
+  $CMD_PATH \
   /root \
   -xr\!*config/deps \
   -xr\!influxdb \
