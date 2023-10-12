@@ -575,9 +575,14 @@ class WebMonitor:
             ignore_until = row[1].value
             if ignore_until and self.is_future_time(ignore_until):
               logger.debug(f"{line} is under maintenance until {ignore_until}")
-              continue            
+              continue
+            if self._include_SSL_grade and len(row) > 2:
+              # check if SSL report is required for the URL
+              include_ssl_grade = row[2].value
+              if include_ssl_grade is None or ("yes" not in include_ssl_grade.lower()):
+                continue
             urls_in_sheet.append(line)
-            url_count += 1
+            url_count += 1            
         # Excel only logic: if there are URLs in 'Internal' tab, record them separately
         if sheet.title == 'Internal':
           logger.debug(f"Found {url_count} INTERNAL URLs")
@@ -889,6 +894,7 @@ class WebMonitor:
       self._retry_delay = config.getint("Global", "RetryDelay", fallback=120)
       self._max_retries = config.getint("Global", "MaxRetries", fallback=5)
       self._include_SSL_report = config.getboolean("SSL", "GetSSLReport", fallback=False)
+      self._include_SSL_grade = config.getboolean("SSL", "GenerateSSLRating", fallback=False)
       url_list_file = config["Global"]["URLFile"]
       if url_list_file == os.path.basename(url_list_file):
         url_list_file = os.path.join(self._config_dir, url_list_file)
