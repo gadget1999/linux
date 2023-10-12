@@ -267,7 +267,7 @@ class TestSSL_sh:
 
 @dataclass
 class SSLScannerConfig:
-  generate_rating: bool = True
+  generate_rating: bool = False
   use_ssllabs: bool = False
   local_scanner: str = None
   openssl_path: str = None
@@ -670,7 +670,7 @@ class WebMonitor:
   def _load_sslscanner_config(self, sslscannerconfig):
     try:
       settings = SSLScannerConfig()
-      settings.generate_rating = sslscannerconfig.getboolean("GenerateSSLRating", fallback=True)
+      settings.generate_rating = sslscannerconfig.getboolean("GenerateSSLRating", fallback=False)
       settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=False)
       if not settings.use_ssllabs:
         settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')
