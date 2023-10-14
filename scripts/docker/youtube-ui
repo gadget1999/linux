@@ -16,7 +16,11 @@ YOUTUBE_PORT_EXT=22287
 [ ! -d $YOUTUBE_ROOT ] && fatal_error "Failed to create folder: $YOUTUBE_ROOT"
 grant_container_access $YOUTUBE_ROOT
 
+# use isolated network
+create_docker_network bridge sandbox
+
 EXTRA_OPTS=(
+ --network sandbox
  -p $YOUTUBE_PORT:8081
  -v $YOUTUBE_ROOT:/downloads
  -e DELETE_FILE_ON_TRASHCAN=true
