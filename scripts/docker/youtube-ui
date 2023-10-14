@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-CONTAINER="youtube"
+CONTAINER="youtube-ui"
 IMAGE="marcobaobao/yt-dlp-webui"
 
 check_env "YOUTUBE_ROOT"
