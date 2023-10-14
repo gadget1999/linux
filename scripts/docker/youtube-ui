@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+CONTAINER="youtube"
+IMAGE="marcobaobao/yt-dlp-webui"
+
+check_env "YOUTUBE_ROOT"
+
+YOUTUBE_PORT=15936
+YOUTUBE_PORT_EXT=22287
+
+[ ! -d $YOUTUBE_ROOT ] && mkdir -p $YOUTUBE_ROOT
+[ ! -d $YOUTUBE_ROOT ] && fatal_error "Failed to create folder: $YOUTUBE_ROOT"
+grant_container_access $YOUTUBE_ROOT
+
+EXTRA_OPTS=(
+ -p $YOUTUBE_PORT:3033
+ -v $YOUTUBE_ROOT:/downloads
+ -u $CONTAINER_UID
+ )
+
+ENTRYPOINT=()
+
+new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+
+debug "Starting nginx reverse proxy..."
+nginx $CONTAINER $YOUTUBE_PORT_EXT $YOUTUBE_PORT
