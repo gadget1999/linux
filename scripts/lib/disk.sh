@@ -116,6 +116,7 @@ function mount_bitlocker() {
  check_packages "dislocker"
  local partition=$1
  local mount_point=$2
+ local mount_mode=$3
  local unlock_area=/tmp/bitlocker
 
  debug "Creating mount points..."
@@ -124,11 +125,17 @@ function mount_bitlocker() {
 
  local password
  read -s -p "Password:" password
- debug "Unlocking [$partition]..."
- sudo dislocker -r $partition -u$password -- $unlock_area
 
- debug "Mounting partition to [$mount_point]..."
- sudo mount -o ro,loop $unlock_area/dislocker-file $mount_point
+ debug "Unlocking [$partition]..."
+ sudo dislocker -V $partition -u$password -- $unlock_area
+
+ if [ "$mount_mode" = "RW" ]; then
+  debug "Mounting partition to [$mount_point]... (Rear-Write)"
+  sudo mount -o loop $unlock_area/dislocker-file $mount_point
+ else
+  debug "Mounting partition to [$mount_point]... (Read-Only)"
+  sudo mount -o ro,loop $unlock_area/dislocker-file $mount_point
+ fi
 }
 
 function unmount_bitlocker() {
@@ -150,6 +157,12 @@ function mount_bitlocker_vhd() {
  local vhd_dev=/dev/$NBD_DEV
  local vhd_partition="$vhd_dev""p$2"
  local mount_point=$3
+ local mount_mode=$4
+
+ if [ ! -f "$vhd_file" ]; then
+  log_error "Invalid VHD file: $vhd_file"
+  return
+ fi
 
  if [ "$(lsmod | grep nbd)" == "" ]; then
   debug "Load nbd kernel module"
@@ -162,7 +175,7 @@ function mount_bitlocker_vhd() {
  debug "Reload partition table"
  sudo partprobe "$vhd_dev"
 
- mount_bitlocker "$vhd_partition" "$mount_point"
+ mount_bitlocker "$vhd_partition" "$mount_point" $mount_mode
 }
 
 function unmount_bitlocker_vhd() {

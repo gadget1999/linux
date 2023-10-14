@@ -9,21 +9,18 @@ source $CMD_PATH/lib/disk.sh
 MOUNT_POINT=/tmp/vhd
 
 function usage() {
- show_usage "on vhd_file_path partition_number | off"
+ show_usage "vhd_file_path [RW] | off"
 }
 
 case $1 in
- on)
-  [ "$#" != "3" ] && usage && exit 1
-  VHD_FILE="$2"
-  PARTITION_NUM=$3
-  unmount_bitlocker_vhd $MOUNT_POINT
-  mount_bitlocker_vhd $VHD_FILE $PARTITION_NUM $MOUNT_POINT
-  ;;
  off)
   unmount_bitlocker_vhd $MOUNT_POINT
   ;;
  *)
-  usage
+  VHD_FILE="$1"
+  MOUNT_MODE="$2"
+  unmount_bitlocker_vhd $MOUNT_POINT
+  # seems partition number is always 2
+  mount_bitlocker_vhd $VHD_FILE 2 $MOUNT_POINT $MOUNT_MODE
   ;;
 esac
