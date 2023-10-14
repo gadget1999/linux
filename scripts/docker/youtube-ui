@@ -19,6 +19,7 @@ grant_container_access $YOUTUBE_ROOT
 EXTRA_OPTS=(
  -p $YOUTUBE_PORT:8081
  -v $YOUTUBE_ROOT:/downloads
+ -e DELETE_FILE_ON_TRASHCAN=true
  -u $CONTAINER_UID
  )
 
