@@ -130,7 +130,7 @@ function mount_bitlocker() {
  sudo dislocker -V $partition -u$password -- $unlock_area
 
  if [ "$mount_mode" = "RW" ]; then
-  debug "Mounting partition to [$mount_point]... (Rear-Write)"
+  debug "Mounting partition to [$mount_point]... (Read-Write)"
   sudo mount -o loop $unlock_area/dislocker-file $mount_point
  else
   debug "Mounting partition to [$mount_point]... (Read-Only)"
