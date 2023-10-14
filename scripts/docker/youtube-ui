@@ -12,7 +12,7 @@ check_env "YOUTUBE_ROOT"
 YOUTUBE_PORT=15936
 YOUTUBE_PORT_EXT=22287
 
-[ ! -d $YOUTUBE_ROOT ] && mkdir -p $YOUTUBE_ROOT
+[ ! -d $YOUTUBE_ROOT ] && sudo mkdir -p $YOUTUBE_ROOT
 [ ! -d $YOUTUBE_ROOT ] && fatal_error "Failed to create folder: $YOUTUBE_ROOT"
 grant_container_access $YOUTUBE_ROOT
 
