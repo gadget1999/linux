@@ -139,7 +139,7 @@ function fatal_error() {
 
 ############# Locking (single-run) #############
 
-LOCKFILE=/tmp/$PROGRAM.lock
+LOCKFILE=/tmp/$PROGRAM.$(id -u).lock
 
 function cleanup() {
   if [ "$LOCKFILE" != "" ]; then
