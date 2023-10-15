@@ -80,6 +80,23 @@
       "type": "python"
     },
     {
+      "name": "Python: AZVM",
+      "request": "launch",
+      "program": "${file}",
+      "args": [
+        "add-ip",
+        "/subscriptions/GUID_XYZ/resourceGroups/RG_XYZ/providers/Microsoft.Network/networkSecurityGroups/NSG_XYZ/securityRules/RULE_XYZ",
+        "2.1.1.1"
+      ],
+      "env": {
+        "AZURE_TENANT_ID": "TENANT_GUID",
+        "AZURE_APP_ID": "APP_ID",
+        "AZURE_APP_KEY": "APP_KEY"
+      },
+      "console": "integratedTerminal",
+      "type": "python"
+    },
+    {
       "name": "Python: WebMonitor",
       "request": "launch",
       "program": "${file}",

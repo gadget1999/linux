@@ -188,19 +188,28 @@ class AzureCLI:
     return None
 
   def add_ip_whitelist(self, rule_id, ip_list):
-    API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2020-04-01"
+    API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-05-01"
     logger.info(f"Getting current NSG rule settings...")
-    response = self.API_call(API_URL)
-    rule = response['properties']
-    old_list = rule['sourceAddressPrefixes']
+    rule = self.API_call(API_URL)
+    properties = rule['properties']
+    target_list = properties['sourceAddressPrefixes']
+    if not target_list and 'sourceAddressPrefix' in properties:
+      if properties['sourceAddressPrefix'] != "*" :
+        target_list.append(properties['sourceAddressPrefix'])
     need_update = False
     for ip in ip_list:
-      if ip not in old_list:
+      if ip not in target_list:
+        target_list.append(ip)
         need_update = True
     if need_update:
-      rule['sourceAddressPrefixes'] = ip_list
-      logger.info(f"Updating NSG rule settings with IPs: {ip_list}")
-      response = self.API_call_put(API_URL, data=str(response))
+      rule['properties']['sourceAddressPrefix'] = ""
+      rule['properties']['sourceAddressPrefixes'] = []
+      if len(target_list) == 1:
+        rule['properties']['sourceAddressPrefix'] = target_list[0]
+      else:
+        rule['properties']['sourceAddressPrefixes'] = target_list
+      logger.info(f"Updating NSG rule settings with IPs: {target_list}")
+      self.API_call_put(API_URL, data=str(rule))
       logger.info(f"Completed.")
     else:
       logger.info(f"No need to update NSG rule settings.")
