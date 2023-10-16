@@ -168,6 +168,14 @@ class AzureCLI:
     assert (response is not None), "API result is empty."
     assert (response.status_code < 400), f"API returned error: {response.status_code}"
 
+  def API_call_patch(self, url, data=None, headers=None):
+    if (self.__access_token is not None):
+      headers = { "Authorization": f"Bearer {self.__access_token}",
+               "Content-Type": "application/json" }
+    response = self.__request_with_retry(requests.patch, url, data, headers, 60)
+    assert (response is not None), "API result is empty."
+    assert (response.status_code < 400), f"API returned error: {response.status_code}"
+
   @property
   def subscriptions(self):
     if not self.__subscriptions:
@@ -187,32 +195,58 @@ class AzureCLI:
         return vm
     return None
 
-  def add_ip_whitelist(self, rule_id, ip_list):
+  def add_ip_to_nsg(self, rule_id, new_ip):
     API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-05-01"
-    logger.info(f"Getting current NSG rule settings...")
+    logger.info("Getting current NSG rule settings...")
     rule = self.API_call(API_URL)
     properties = rule['properties']
     target_list = properties['sourceAddressPrefixes']
     if not target_list and 'sourceAddressPrefix' in properties:
       if properties['sourceAddressPrefix'] != "*" :
         target_list.append(properties['sourceAddressPrefix'])
-    need_update = False
-    for ip in ip_list:
-      if ip not in target_list:
-        target_list.append(ip)
-        need_update = True
-    if need_update:
-      rule['properties']['sourceAddressPrefix'] = ""
-      rule['properties']['sourceAddressPrefixes'] = []
-      if len(target_list) == 1:
-        rule['properties']['sourceAddressPrefix'] = target_list[0]
-      else:
-        rule['properties']['sourceAddressPrefixes'] = target_list
-      logger.info(f"Updating NSG rule settings with IPs: {target_list}")
-      self.API_call_put(API_URL, data=str(rule))
-      logger.info(f"Completed.")
+    if new_ip in target_list:
+      logger.info(f"IP {new_ip} already exists in network rules.")
+      return
+    # new IP not found, add it
+    target_list.append(new_ip)
+    rule['properties']['sourceAddressPrefix'] = ""
+    rule['properties']['sourceAddressPrefixes'] = []
+    if len(target_list) == 1:
+      rule['properties']['sourceAddressPrefix'] = target_list[0]
     else:
-      logger.info(f"No need to update NSG rule settings.")
+      rule['properties']['sourceAddressPrefixes'] = target_list
+    logger.info(f"Updating NSG rule settings with IPs: {target_list}")
+    self.API_call_put(API_URL, data=str(rule))
+    logger.info("Succeeded.")
+
+  def add_ip_to_storage(self, rule_id, new_ip):
+    API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-01-01"
+    logger.info("Getting current Storage Account properties...")
+    storAcctInfo = self.API_call(API_URL)
+    network_acls = storAcctInfo['properties']['networkAcls']
+    ip_rules = network_acls['ipRules']
+    if len(ip_rules) == 0:
+      logger.error("Only non-empty IP firewall is supported.")
+      return
+    for ip_rule in ip_rules:
+      if new_ip == ip_rule['value']:
+        logger.info(f"IP {new_ip} already exists in firewall rules.")
+        return
+    new_ip_rule = { "value": new_ip, "action": "Allow" }
+    ip_rules.append(new_ip_rule)
+    logger.info(f"Updating firewall rule settings: {ip_rules}")
+    network_acls['ipRules'] = ip_rules
+    payload = {'properties': { 'networkAcls': network_acls}}
+    self.API_call_patch(API_URL, data=str(payload))
+    logger.info("Succeeded.")
+
+  def add_ip_whitelist(self, rule_id, new_ip):
+    if "/Microsoft.Network/networkSecurityGroups/" in rule_id:
+      return self.add_ip_to_nsg(rule_id, new_ip)
+    elif "/Microsoft.Storage/storageAccounts/" in rule_id:
+      return self.add_ip_to_storage(rule_id, new_ip)
+    else:
+      logger.error(f"Network device not supported: {rule_id}")
   
 ########################################
 # CLI interface
@@ -261,8 +295,8 @@ def stop_idle_vms(args):
 
 def add_ip_whitelist(args):
   rule_id = args.rule_id
-  ip_list = args.ip
-  vm_cli.add_ip_whitelist(rule_id, ip_list)
+  new_ip = args.ip
+  vm_cli.add_ip_whitelist(rule_id, new_ip)
 
 #################################
 # Program starts
@@ -279,8 +313,8 @@ if __name__ == "__main__":
       'params': [{ 'name': '--charged-only', 'action': 'store_true', 'help': 'Only list ones not in deallocated status' }] },
     { 'name': 'stop-idle', 'help': 'Shutdown idle virtual machines', 'func': stop_idle_vms },
     { 'name': 'add-ip', 'help': 'Add current public IP to NSG rule whitelist', 'func': add_ip_whitelist, 
-      'params': [{ 'name': 'rule_id', 'help': 'NSG rule id' },
-                 { 'name': 'ip', 'help': 'IP ranges', 'multi-value':'yes' }] },
+      'params': [{ 'name': 'rule_id', 'help': 'Network rule id' },
+                 { 'name': 'ip', 'help': 'IP address'}] },
     { 'name': 'start', 'help': 'Start virtual machines', 'func': start_vms, 
       'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] },
     { 'name': 'stop', 'help': 'Stop virtual machines', 'func': stop_vms,
