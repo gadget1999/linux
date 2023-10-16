@@ -15,7 +15,6 @@ sudo 7za a -p$BACKUP_KEY $ARCHIVE \
   $CONTAINER_CONFIG_ROOT \
   /root \
   -xr\!*config/deps \
-  -xr\!influxdb \
   -xr\!.local \
   -xr\!.cache
 

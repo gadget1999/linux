@@ -13,8 +13,10 @@ INFLUXDB_ROOT=$CONTAINER_CONFIG_ROOT/$CONTAINER
 INFLUXDB_PORT=15636
 INFLUXDB_PORT_EXT=53360
 
-SUBFOLDERS=(data config)
+SUBFOLDERS=(config)
 prepare_container_folders $INFLUXDB_ROOT SUBFOLDERS
+
+# remember to create docker volume before first run (setup)
 
 #########################
 # Helper functions
@@ -24,7 +26,7 @@ function setup_influxdb() {
  check_env "DOCKER_INFLUXDB_USER DOCKER_INFLUXDB_PWD DOCKER_INFLUXDB_ORG"
  EXTRA_OPTS=(
   -p $INFLUXDB_PORT:8086
-  -v $INFLUXDB_ROOT/data:/var/lib/influxdb2
+  -v $CONTAINER:/var/lib/influxdb2
   -v $INFLUXDB_ROOT/config:/etc/influxdb2
   -e DOCKER_INFLUXDB_INIT_MODE=setup
   -e DOCKER_INFLUXDB_INIT_USERNAME=$DOCKER_INFLUXDB_USER
@@ -46,7 +48,7 @@ function delete_influxdb() {
 function run_influxdb() {
  EXTRA_OPTS=(
   -p $INFLUXDB_PORT:8086
-  -v $INFLUXDB_ROOT/data:/var/lib/influxdb2
+  -v $CONTAINER:/var/lib/influxdb2
   -v $INFLUXDB_ROOT/config:/etc/influxdb2
   )
 
