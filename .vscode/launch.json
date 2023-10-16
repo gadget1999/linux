@@ -85,13 +85,13 @@
       "program": "${file}",
       "args": [
         "add-ip",
-        "/subscriptions/GUID_XYZ/resourceGroups/RG_XYZ/providers/Microsoft.Network/networkSecurityGroups/NSG_XYZ/securityRules/RULE_XYZ",
-        "2.1.1.1"
+        "/subscriptions/f18c0b5c-786c-4af0-a8cd-0c0c16f64066/resourceGroups/Test/providers/Microsoft.Storage/storageAccounts/deletensg",
+        "3.3.3.3"
       ],
       "env": {
-        "AZURE_TENANT_ID": "TENANT_GUID",
-        "AZURE_APP_ID": "APP_ID",
-        "AZURE_APP_KEY": "APP_KEY"
+        "AZURE_TENANT_ID": "271d6ac1-5f24-4d02-8eb3-c3a6de3e60ff",
+        "AZURE_APP_ID": "5bc5783c-763a-4220-afb6-c02375a55960",
+        "AZURE_APP_KEY": "JKb8Q~TBR.FFYNVEkwSDN8azkMIKfUV5j8bMCbY0"
       },
       "console": "integratedTerminal",
       "type": "python"
