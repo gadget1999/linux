@@ -195,7 +195,7 @@ class AzureCLI:
         return vm
     return None
 
-  def add_ip_to_nsg(self, rule_id, new_ip):
+  def update_nsg_ip(self, rule_id, new_ip, old_ip=None):
     API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-05-01"
     logger.info("Getting current NSG rule settings...")
     rule = self.API_call(API_URL)
@@ -209,6 +209,10 @@ class AzureCLI:
       return
     # new IP not found, add it
     target_list.append(new_ip)
+    # remove old IP if found
+    if old_ip and old_ip != new_ip and old_ip in target_list:
+      logger.debug(f"Old IP {old_ip} will be removed.")
+      target_list.remove(old_ip)
     rule['properties']['sourceAddressPrefix'] = ""
     rule['properties']['sourceAddressPrefixes'] = []
     if len(target_list) == 1:
@@ -219,7 +223,7 @@ class AzureCLI:
     self.API_call_put(API_URL, data=str(rule))
     logger.info("Succeeded.")
 
-  def add_ip_to_storage(self, rule_id, new_ip):
+  def update_storage_firewall_ip(self, rule_id, new_ip, old_ip=None):
     API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-01-01"
     logger.info("Getting current Storage Account properties...")
     storAcctInfo = self.API_call(API_URL)
@@ -228,10 +232,17 @@ class AzureCLI:
     if len(ip_rules) == 0:
       logger.error("Only non-empty IP firewall is supported.")
       return
-    for ip_rule in ip_rules:
-      if new_ip == ip_rule['value']:
+    rules_to_delete = []
+    for index in range(len(ip_rules)):
+      ip_in_rule = ip_rules[index]['value']
+      if new_ip == ip_in_rule:
         logger.info(f"IP {new_ip} already exists in firewall rules.")
         return
+      if old_ip == ip_in_rule:
+        logger.debug(f"Old IP {old_ip} will be removed.")
+        rules_to_delete.append(index)
+    for index in sorted(rules_to_delete, reverse=True):
+      del ip_rules[index]
     new_ip_rule = { "value": new_ip, "action": "Allow" }
     ip_rules.append(new_ip_rule)
     logger.info(f"Updating firewall rule settings: {ip_rules}")
@@ -240,11 +251,12 @@ class AzureCLI:
     self.API_call_patch(API_URL, data=str(payload))
     logger.info("Succeeded.")
 
-  def add_ip_whitelist(self, rule_id, new_ip):
+  def update_ip_firewall(self, rule_id, new_ip, old_ip=None):
+    old_ip = None if old_ip == new_ip else old_ip
     if "/Microsoft.Network/networkSecurityGroups/" in rule_id:
-      return self.add_ip_to_nsg(rule_id, new_ip)
+      return self.update_nsg_ip(rule_id, new_ip, old_ip)
     elif "/Microsoft.Storage/storageAccounts/" in rule_id:
-      return self.add_ip_to_storage(rule_id, new_ip)
+      return self.update_storage_firewall_ip(rule_id, new_ip, old_ip)
     else:
       logger.error(f"Network device not supported: {rule_id}")
   
@@ -293,10 +305,11 @@ def stop_idle_vms(args):
     if (status == VM_STATUS_STOPPED):
       vm.Stop()
 
-def add_ip_whitelist(args):
+def update_ip_firewall(args):
   rule_id = args.rule_id
-  new_ip = args.ip
-  vm_cli.add_ip_whitelist(rule_id, new_ip)
+  new_ip = args.new_ip
+  old_ip = args.old_ip
+  vm_cli.update_ip_firewall(rule_id, new_ip, old_ip)
 
 #################################
 # Program starts
@@ -312,9 +325,11 @@ if __name__ == "__main__":
     { 'name': 'list', 'help': 'List virtual machines', 'func': list_vms, 
       'params': [{ 'name': '--charged-only', 'action': 'store_true', 'help': 'Only list ones not in deallocated status' }] },
     { 'name': 'stop-idle', 'help': 'Shutdown idle virtual machines', 'func': stop_idle_vms },
-    { 'name': 'add-ip', 'help': 'Add current public IP to NSG rule whitelist', 'func': add_ip_whitelist, 
+    { 'name': 'update-ip', 'help': 'Add current public IP to NSG rule whitelist', 'func': update_ip_firewall, 
       'params': [{ 'name': 'rule_id', 'help': 'Network rule id' },
-                 { 'name': 'ip', 'help': 'IP address'}] },
+                 { 'name': 'new_ip', 'help': 'IP address to add'},
+                 { 'name': 'old_ip', 'help': 'IP address to remove'}
+                 ] },
     { 'name': 'start', 'help': 'Start virtual machines', 'func': start_vms, 
       'params': [{ 'name': 'names', 'help': 'Virtual machines names', 'multi-value':'yes' }] },
     { 'name': 'stop', 'help': 'Stop virtual machines', 'func': stop_vms,

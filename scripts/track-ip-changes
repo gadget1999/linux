@@ -31,11 +31,12 @@ function update_ip_whitelist {
  check_env "AZURE_NSG_RULES"
  [ "$AZURE_NSG_RULES" == "" ] && return
 
+ local new_ip=$1
+ local old_ip=$2
  for RULE in ${AZURE_NSG_RULES[*]}; do
-  local new_ip=$1
-  log "Adding new IP ($new_ip) into NSG rule ($RULE)"
+  log "Updating new IP $new_ip (old IP:$old_ip) with NSG rules ($RULE)"
 
-  invoke_azvm_api add-ip $RULE $new_ip
+  invoke_azvm_api update-ip $RULE $new_ip $old_ip
   if [ "$invoke_azvm_api" != "" ]; then
    update_ip_whitelist="Failed to add $new_ip to Azure NSG. Please check manually."
   else
@@ -45,8 +46,8 @@ function update_ip_whitelist {
 }
 
 function notify_ip_change {
- local old_ip=$1
- local new_ip=$2
+ local new_ip=$1
+ local old_ip=$2
 
  debug "Sending email notification to $MAIN_EMAIL"
  send_email \
@@ -73,10 +74,10 @@ function check_ip_change {
  [ "$old_ip" == "" ] && return
 
  # update IP whitelist
- update_ip_whitelist $new_ip
+ update_ip_whitelist $new_ip $old_ip
 
  # send email to notify
- notify_ip_change $old_ip $new_ip
+ notify_ip_change $new_ip $old_ip
 }
 
 while true; do
