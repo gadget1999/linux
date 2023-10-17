@@ -33,8 +33,25 @@ from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36'
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
 POSSIBLE_DNS_GLITCH = "Name or service not known"
+
+def get_latest_user_agent():
+  # it's OK to read global variable within a function
+  # but must use 'global' if need to change its value
+  global USER_AGENT
+  try:
+    url = "https://jnrbsn.github.io/user-agents/user-agents.json"
+    r = requests.get(url)
+    if r.status_code >= 400:
+      logger.warning(f"Failed to get latest user agent list. (status={r.status_code})")
+      return
+    user_agent = r.json()[0]
+    if user_agent.startswith("Mozilla/") and user_agent != USER_AGENT:
+      logger.info(f"Found a newer user agent: {user_agent}")
+      USER_AGENT = user_agent
+  except Exception as e:
+    logger.warning(f"Failed to get the latest user agent list. ({e})")
 
 # Some times requests or socket get 'Name or service not known' incorrectly, can use a different DNS server to confirm
 def is_host_reachable(url):
@@ -45,7 +62,7 @@ def is_host_reachable(url):
     answers = dns.resolver.resolve(host, 'A')
     if not answers:
       logger.error(f"Custom DNS lookup failed for {url}")
-      return False    
+      return False
     # verify each IP from results
     for answer in answers:
       ip = answer.address
@@ -144,7 +161,7 @@ class SSLLabs:
     elif r.status_code > 400:
       raise Exception(f"SSLLabs API failed: error={r.status_code}")
     return r.json()
-  
+
   def __track_server_load():
     try:
       info_endpoint = 'https://api.ssllabs.com/api/v3/info'
@@ -257,7 +274,7 @@ class TestSSL_sh:
       # assemble report
       parsed_uri = urlparse(url)
       report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
-      rating = SSLRecord(url=url, report=report_url)      
+      rating = SSLRecord(url=url, report=report_url)
       rating.grade = grade
       ratings.append(rating)
       return ratings
@@ -286,7 +303,7 @@ class SSLReport:
     if (SSLReport._settings.use_ssllabs):
       return SSLLabs.get_site_rating(url)
     else :
-      return TestSSL_sh.get_site_rating(url)    
+      return TestSSL_sh.get_site_rating(url)
 
   def __get_ssl_expiration_date(host, ip=None, port=443):
     import ssl
@@ -564,14 +581,14 @@ class WebMonitor:
       workbook = load_workbook(filepath)
       for sheet in workbook.worksheets:
         url_count = 0
-        urls_in_sheet = []     
+        urls_in_sheet = []
         for row in sheet.rows:
           line = row[0].value
           if not line:
             break
           line = line.lower().strip(' \r\'\"\n')
           if line.startswith(("http://", "https://")):
-            # also check if there is a maintenance            
+            # also check if there is a maintenance
             ignore_until = row[1].value
             if ignore_until and self.is_future_time(ignore_until):
               logger.debug(f"{line} is under maintenance until {ignore_until}")
@@ -582,7 +599,7 @@ class WebMonitor:
               if include_ssl_grade is None or ("yes" not in include_ssl_grade.lower()):
                 continue
             urls_in_sheet.append(line)
-            url_count += 1            
+            url_count += 1
         # Excel only logic: if there are URLs in 'Internal' tab, record them separately
         if sheet.title == 'Internal':
           logger.debug(f"Found {url_count} INTERNAL URLs")
@@ -594,7 +611,7 @@ class WebMonitor:
       return urls
     except Exception as e:
       logger.critical(f"Cannot load site list file [{filepath}]: {e}")
-      sys.exit(1)    
+      sys.exit(1)
 
   def _load_urls_from_txt(self, filepath):
     try:
@@ -721,7 +738,7 @@ class WebMonitor:
       record = SiteRecord(url=url, alive=True, online=True, error="Internal URL not blocked.")
       report_blocked.append(record)
     return report_blocked
-    
+
   def _reconfirm_sites(self, report):
     has_down_sites = False
     for record in report:
@@ -861,7 +878,7 @@ class WebMonitor:
 
   def _store_influxdb_report(self, report):
     influxdb_settings = InfluxDBConfig(
-      endpoint=self._influxdb_settings.endpoint, 
+      endpoint=self._influxdb_settings.endpoint,
       token=self._influxdb_settings.token,
       tenant=self._influxdb_settings.tenant,
       bucket=self._influxdb_settings.bucket
