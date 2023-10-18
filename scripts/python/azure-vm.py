@@ -196,6 +196,7 @@ class AzureCLI:
     return None
 
   def update_nsg_ip(self, rule_id, new_ip, old_ip=None):
+    old_ip = None if old_ip == new_ip else old_ip
     API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-05-01"
     logger.info("Getting current NSG rule settings...")
     rule = self.API_call(API_URL)
@@ -210,7 +211,7 @@ class AzureCLI:
     # new IP not found, add it
     target_list.append(new_ip)
     # remove old IP if found
-    if old_ip and old_ip != new_ip and old_ip in target_list:
+    if old_ip and old_ip in target_list:
       logger.debug(f"Old IP {old_ip} will be removed.")
       target_list.remove(old_ip)
     rule['properties']['sourceAddressPrefix'] = ""
@@ -224,6 +225,7 @@ class AzureCLI:
     logger.info("Succeeded.")
 
   def update_storage_firewall_ip(self, rule_id, new_ip, old_ip=None):
+    old_ip = None if old_ip == new_ip else old_ip
     API_URL = f"{AZURE_API_ENDPOINT}/{rule_id}?api-version=2023-01-01"
     logger.info("Getting current Storage Account properties...")
     storAcctInfo = self.API_call(API_URL)
@@ -238,7 +240,7 @@ class AzureCLI:
       if new_ip == ip_in_rule:
         logger.info(f"IP {new_ip} already exists in firewall rules.")
         return
-      if old_ip == ip_in_rule:
+      if old_ip and old_ip == ip_in_rule:
         logger.debug(f"Old IP {old_ip} will be removed.")
         rules_to_delete.append(index)
     for index in sorted(rules_to_delete, reverse=True):
