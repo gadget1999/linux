@@ -7,3 +7,10 @@ xlsxwriter
 influxdb-client
 sendgrid
 dnspython
+pyusb
+psutil
+paho-mqtt
+gpiozero
+pigpio
+RPi.GPIO
+lgpio
