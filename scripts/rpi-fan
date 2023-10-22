@@ -19,4 +19,4 @@ export INFLUXDB_BUCKET
 [ "$1" == "debug" ] && export DEBUG
 # no need to use sudo if user in gpio group
 # (if use sudo, use 'sudo -E' to keep exported variables)
-python3 $CMD_PATH/python/rpi-fan.py
+"$PYTHON_VENV"python3 $CMD_PATH/python/rpi-fan.py

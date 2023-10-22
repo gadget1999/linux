@@ -16,7 +16,7 @@ KEY=$CERT_STORAGE/privkey.pem
 [ ! -e $KEY ] && fatal_error "Key file [$KEY] not found"
 
 cd $ROOT_FOLDER
-$SUDO python3 $CMD_PATH/python/web-server.py \
+$SUDO "$PYTHON_VENV"python3 $CMD_PATH/python/web-server.py \
  $ROOT_FOLDER \
  $PORT \
  --cert_file $CERT \
