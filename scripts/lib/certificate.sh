@@ -27,7 +27,7 @@ function issue_certificate_docker()  {
  local force=$1
  local cmd_args=(
   --issue
-  --ocsp
+  --ocsp-must-staple
   $force
   -d $DDNS_DOMAIN
   --server letsencrypt
@@ -47,6 +47,7 @@ function renew_certificate_docker()  {
  local force=$1
  local cmd_args=(
   --renew
+  --ocsp-must-staple
   $force
   -d $DDNS_DOMAIN
   --server letsencrypt
