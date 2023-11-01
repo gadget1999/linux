@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
 CONTAINER="youtube-ui"
-IMAGE="ghcr.io/alexta69/metube"
+IMAGE="alexta69/metube"
 
 check_env "YOUTUBE_ROOT"
 
