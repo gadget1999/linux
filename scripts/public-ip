@@ -3,4 +3,15 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-/usr/bin/curl -s http://ipinfo.io/ip; echo
+IP_PROVIDERS=(
+ "http://ip.42.pl/short"
+ "http://ipinfo.io/ip"
+ )
+
+for ((i=0; i<${#IP_PROVIDERS[@]}; i++)); do
+ #debug "${IP_PROVIDERS[i]}"
+ PUBLIC_IP=$(/usr/bin/curl -s --fail "${IP_PROVIDERS[i]}")
+ [ "$PUBLIC_IP" != "" ] &&
+  echo -n "$PUBLIC_IP" &&
+  exit
+done

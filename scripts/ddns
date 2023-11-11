@@ -13,7 +13,7 @@ check_packages "$PACKAGES"
 
 $CMD_PATH/wait-internet
 
-PUBLIC_IP=$(curl -s ifconfig.me)
+PUBLIC_IP=$(curl -s --fail ifconfig.me)
 
 if [ "$PUBLIC_IP" == "" ] || [ "$DNS_IP" == "" ]; then
  log_error "Failed to get IPs. (Public: $PUBLIC_IP, DNS: $DNS_IP)"
