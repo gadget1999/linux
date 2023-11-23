@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 source $CMD_PATH/lib/certificate.sh
 
-[ $# != 3 ] && [ $# != 4 ] && show_usage "app external_port proxy_url [tls_ver]"
+[ $# != 3 ] && [ $# != 4 ] && show_usage "app external_port proxy_url [1.2]"
 
 check_cert_env
 check_env "CONTAINER_CONFIG_ROOT CERT_ROOT"
@@ -20,8 +20,9 @@ else
  PROXY_URL=${3/local/172.17.0.1}
 fi
 
-# get TLS version
-[ "$4" != "" ] && TLS_VER=$4
+# see if TLS1.2 is allowed
+OPTIONAL_TLS_VER=""
+[ "$4" == "1.2" ] && OPTIONAL_TLS_VER="TLSv1.2"
 
 debug "Starting Nginx on port $APP_PORT with proxy URL: $PROXY_URL"
 
@@ -49,7 +50,7 @@ function create_nginx_app_conf() {
  local dns_name=$2
  local external_port=$3
  local proxy_url=$4
- local tls_version=$5
+ local optional_tls_version=$5
 
  local template=$CMD_PATH/lib/nginx_proxy.template
  debug "Creating $conf_file ..."
@@ -61,13 +62,12 @@ function create_nginx_app_conf() {
  sudo sed -i "s/{{dns_name}}/$DDNS_DOMAIN/g" $conf_file
  sudo sed -i "s%{{proxy_address}}%$proxy_url%g" $conf_file
 
- [ "$tls_version" == "" ] && tls_version="1.3"
- debug "Using TLS: $tls_version"
- sudo sed -i "s/{{tls_version}}/$tls_version/g" $conf_file
+ [ "$optional_tls_version" != "" ] && debug "Allow TLS1.2"
+ sudo sed -i "s/{{optional_tls_version}}/$optional_tls_version/g" $conf_file
 }
 
 create_nginx_conf $NGINX_CONFIG
-create_nginx_app_conf $APP_CONFIG $DDNS_DOMAIN $APP_PORT $PROXY_URL $TLS_VER
+create_nginx_app_conf $APP_CONFIG $DDNS_DOMAIN $APP_PORT $PROXY_URL $OPTIONAL_TLS_VER
 grant_container_access $NGINX_CONFIG
 grant_container_access $SSL_CONFIG
 
