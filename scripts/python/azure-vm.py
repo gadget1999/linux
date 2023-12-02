@@ -212,7 +212,7 @@ class AzureCLI:
     target_list.append(new_ip)
     # remove old IP if found
     if old_ip and old_ip in target_list:
-      logger.debug(f"Old IP {old_ip} will be removed.")
+      logger.info(f"Old IP {old_ip} will be removed.")
       target_list.remove(old_ip)
     rule['properties']['sourceAddressPrefix'] = ""
     rule['properties']['sourceAddressPrefixes'] = []
@@ -241,7 +241,7 @@ class AzureCLI:
         logger.info(f"IP {new_ip} already exists in firewall rules.")
         return
       if old_ip and old_ip == ip_in_rule:
-        logger.debug(f"Old IP {old_ip} will be removed.")
+        logger.info(f"Old IP {old_ip} will be removed.")
         rules_to_delete.append(index)
     for index in sorted(rules_to_delete, reverse=True):
       del ip_rules[index]
@@ -254,11 +254,12 @@ class AzureCLI:
     logger.info("Succeeded.")
 
   def update_ip_firewall(self, rule_id, new_ip, old_ip=None):
+    logger.info(f"Firewall rule ID: {rule_id}, new IP: {new_ip}, old IP: {old_ip}")
     old_ip = None if old_ip == new_ip else old_ip
     if "/Microsoft.Network/networkSecurityGroups/" in rule_id:
-      return self.update_nsg_ip(rule_id, new_ip, old_ip)
+      self.update_nsg_ip(rule_id, new_ip, old_ip)
     elif "/Microsoft.Storage/storageAccounts/" in rule_id:
-      return self.update_storage_firewall_ip(rule_id, new_ip, old_ip)
+      self.update_storage_firewall_ip(rule_id, new_ip, old_ip)
     else:
       logger.error(f"Network device not supported: {rule_id}")
   
