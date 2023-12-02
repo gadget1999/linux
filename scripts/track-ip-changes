@@ -23,7 +23,7 @@ function invoke_azvm_api {
  export AZURE_APP_ID
  export AZURE_APP_KEY
 
- python3 $CMD_PATH/python/azure-vm.py $@
+ "$PYTHON_VENV"python3 $CMD_PATH/python/azure-vm.py $@
  [ "$?" != "0" ] && invoke_azvm_api="$?"
 }
 
