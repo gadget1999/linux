@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "python3"
+check_env "MQTT2INFLUXDB_CONFIG"
+
+lock
+
+"$PYTHON_VENV"python3 $CMD_PATH/python/mqtt2influxdb.py $MQTT2INFLUXDB_CONFIG
