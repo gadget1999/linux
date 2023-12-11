@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+function invoke_azvm_api {
+ check_packages "python3"
+ check_env "AZURE_TENANT_ID AZURE_APP_ID AZURE_APP_KEY"
+
+ export AZURE_TENANT_ID
+ export AZURE_APP_ID
+ export AZURE_APP_KEY
+
+ "$PYTHON_VENV"python3 $CMD_PATH/python/azure-vm.py $@
+ [ "$?" != "0" ] && invoke_azvm_api="$?"
+}
+
+function update_ip_whitelist {
+ check_env "AZURE_NSG_RULES"
+ [ "$AZURE_NSG_RULES" == "" ] && return
+
+ local new_ip=$1
+ local old_ip=$2
+ for RULE in ${AZURE_NSG_RULES[*]}; do
+  log "Updating new IP $new_ip (old IP:$old_ip) with NSG rules ($RULE)"
+
+  invoke_azvm_api update-ip $RULE $new_ip $old_ip
+  if [ "$invoke_azvm_api" != "" ]; then
+   update_ip_whitelist="Failed to add $new_ip to Azure NSG. Please check manually."
+  else
+   update_ip_whitelist="Adding $new_ip to Azure NSG succeeded."
+  fi
+ done
+}
+
+[ "$1" == "" ] && show_usage "NEW_IP [OLD_IP]"
+
+NEW_IP=$1
+OLD_IP=$2
+update_ip_whitelist $NEW_IP $OLD_IP
