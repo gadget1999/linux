@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "SENDGRID_API_KEY MONITOR_CONFIG"
+
+lock 7200 # assume hang if not completed within two hours
+
+if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
+  download_file $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
+fi
+
+IMAGE="gadget1999/rpi-web-monitor"
+
+touch $LOG
+grant_container_access $LOG
+
+MAX_RAM="512m"
+EXTRA_OPTS=(
+ --read-only
+ --tmpfs /run
+ -e SENDGRID_API_KEY=$SENDGRID_API_KEY
+ -e APP_NAME=$PROGRAM
+ -v $MONITOR_CONFIG:/config:ro
+ -v $LOG:/tmp/web-monitor.log
+ -m $MAX_RAM
+ )
+
+ENTRYPOINT=()
+
+case "$1" in
+ "debug")
+  DEBUG_DOCKER=1
+  EXTRA_OPTS+=(-u $CONTAINER_UID)
+    ;;
+
+ "debug-dev")
+  DEBUG_DOCKER=1
+  unset 'EXTRA_OPTS[0]'
+  EXTRA_OPTS+=(-e DEBUG=TRUE)
+  ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
+    ;;
+
+ *)
+  EXTRA_OPTS+=(-u $CONTAINER_UID)
+  ;;
+esac
+
+container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
