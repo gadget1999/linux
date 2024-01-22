@@ -4,48 +4,57 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "SENDGRID_API_KEY MONITOR_CONFIG"
-
-lock 7200 # assume hang if not completed within two hours
-
-if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
-  download_file $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
-fi
+check_env "SENDGRID_API_KEY MONITOR_CONFIG_ROOT"
 
 IMAGE="gadget1999/rpi-web-monitor"
 
-touch $LOG
-grant_container_access $LOG
+# usage: web-monitor [app-name [monitor-list]]
+WEB_MONITOR_FILE_NAME="web-monitor.xlsx"
+if [ "$#" == "0" ]; then
+ # other monitors already have locks
+ # assume hang if not completed within two hours
+ lock 7200
+
+ APP_NAME=$PROGRAM
+ WEB_MONITOR_LIST="$MONITOR_CONFIG_ROOT/$WEB_MONITOR_FILE_NAME"
+elif [ "$#" == "1" ]; then
+ APP_NAME=$1
+ WEB_MONITOR_LIST="$MONITOR_CONFIG_ROOT/$WEB_MONITOR_FILE_NAME"
+elif [ "$#" == "2" ]; then
+ APP_NAME=$1
+ WEB_MONITOR_LIST=$2
+ # list already provided, skip downloading
+ MONITOR_REMOTE_FILE_ID=""
+else
+ fatal_error "Usage: web-monitor [app-name [monitor-list]]"
+fi
+
+WEB_MONITOR_CONFIG_DIR="$MONITOR_CONFIG_ROOT/$APP_NAME"
+WEB_MONITOR_LOG="/tmp/$APP_NAME-docker.log"
+debug "Using config [$WEB_MONITOR_CONFIG_DIR] and log file [$WEB_MONITOR_LOG]."
+[ ! -d "$WEB_MONITOR_CONFIG_DIR" ] && fatal_error "$WEB_MONITOR_CONFIG_DIR doesn't exist."
+
+if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
+ download_file $MONITOR_REMOTE_FILE_ID $WEB_MONITOR_FILE_NAME $WEB_MONITOR_LIST
+fi
+[ ! -e "$WEB_MONITOR_LIST" ] && fatal_error "$WEB_MONITOR_LIST doesn't exist."
+
+$SUDO touch "$WEB_MONITOR_LOG"
+grant_container_access "$WEB_MONITOR_LOG"
 
 MAX_RAM="512m"
 EXTRA_OPTS=(
  --read-only
  --tmpfs /run
  -e SENDGRID_API_KEY=$SENDGRID_API_KEY
- -e APP_NAME=$PROGRAM
- -v $MONITOR_CONFIG:/config:ro
- -v $LOG:/tmp/web-monitor.log
+ -e APP_NAME=$APP_NAME
+ -v $WEB_MONITOR_CONFIG_DIR:/config
+ -v $WEB_MONITOR_LIST:/config/$WEB_MONITOR_FILE_NAME
+ -v $WEB_MONITOR_LOG:/tmp/web-monitor.log
  -m $MAX_RAM
+ -u $CONTAINER_UID
  )
 
 ENTRYPOINT=()
-
-case "$1" in
- "debug")
-  DEBUG_DOCKER=1
-  EXTRA_OPTS+=(-u $CONTAINER_UID)
-    ;;
-
- "debug-dev")
-  DEBUG_DOCKER=1
-  unset 'EXTRA_OPTS[0]'
-  EXTRA_OPTS+=(-e DEBUG=TRUE)
-  ENTRYPOINT=(sh -c "echo 'Please enter-container and debug.' ; sleep infinity")
-    ;;
-
- *)
-  EXTRA_OPTS+=(-u $CONTAINER_UID)
-  ;;
-esac
 
 container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
