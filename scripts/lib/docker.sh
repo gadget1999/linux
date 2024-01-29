@@ -434,7 +434,7 @@ function build_image_from_github() {
  [ "$default_tag" != "" ] && \
    $DOCKER_CMD rmi "$image_name:$default_tag"
 
- log "Building docker image [$image_name] ..."
+ log "Building docker image [$image_name:$target_platform] ..."
  $DOCKER_CMD build --force-rm --no-cache \
    --build-arg TARGET_PLATFORM=$target_platform \
    $github_path -t $image_name:$target_platform
