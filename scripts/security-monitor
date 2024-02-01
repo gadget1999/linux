@@ -3,19 +3,9 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 
-check_packages "python3"
-check_env "SENDGRID_API_KEY SSL_REPORT_CONFIG MONITOR_HOSTS"
+check_env "SENDGRID_API_KEY MONITOR_CONFIG_ROOT"
 
 lock
-
-if [ "$MONITOR_REMOTE_FILE_ID" != "" ]; then
-  download_file $MONITOR_REMOTE_FILE_ID $MONITOR_LIST $MONITOR_HOSTS
-fi
-
-export SENDGRID_API_KEY
-export APP_NAME=$PROGRAM
-
-[ "$1" == "debug" ] && export DEBUG
 
 if [ "$1" != "force" ]; then
  # 4th Saturday only
@@ -25,5 +15,5 @@ if [ "$1" != "force" ]; then
  fi
 fi
 
-"$PYTHON_VENV"python3 $CMD_PATH/python/web-monitor.py $SSL_REPORT_CONFIG
+$CMD_PATH/web-monitor "ssl-report"
 [ "$?" == "0" ] && set_lastrun

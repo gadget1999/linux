@@ -11,10 +11,14 @@ function zerofile() {
  [ ! -s "$file" ] && return # file empty
 
  debug "Truncate $file"
- sudo truncate -s 0 $file
+ $SUDO truncate -s 0 $file
  if [ $? -ne 0 ]; then
   log_error "Truncating $file failed. Retry..."
   truncate -s 0 $file
+  if [ $? -ne 0 ]; then
+   log_error "Deleting $file..."
+   $SUDO rm $file
+  fi
  fi
 }
 
