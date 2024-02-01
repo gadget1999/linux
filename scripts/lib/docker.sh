@@ -434,7 +434,7 @@ function build_image_from_github() {
  [ "$default_tag" != "" ] && \
    $DOCKER_CMD rmi "$image_name:$default_tag"
 
- log "Building docker image [$image_name] ..."
+ log "Building docker image [$image_name:$target_platform] ..."
  $DOCKER_CMD build --force-rm --no-cache \
    --build-arg TARGET_PLATFORM=$target_platform \
    $github_path -t $image_name:$target_platform
@@ -453,31 +453,25 @@ function build_image_from_github() {
    $DOCKER_CMD rmi "$image_name:$default_tag"
 }
 
-# use buildx to build cross-platform images (currently it doesn't support GitHub subfolders)
+# use buildx to build multi-arch images
 function buildx_image_from_github() {
  local github_repo=$1
  local image_prefix=$2
  local container_name=$3
- local github_path="https://raw.githubusercontent.com/$github_repo/master/$container_name/Dockerfile"
- local local_folder=/tmp/$github_repo/$container_name
- local image_name="$image_prefix$container_name:latest"
+ local target_platform=$4
+ local image_name="$image_prefix$container_name"
+ local github_path="https://github.com/$github_repo.git#master:$container_name"
 
  log "Removing previous local copies of [$image_name].."
- $DOCKER_CMD rmi $image_name
+ $DOCKER_CMD rmi "$image_name:latest"
 
- log "Building docker image [$image_name] (buildx) ..."
- mkdir -p $local_folder && cd $local_folder 
- wget -q $github_path
- $DOCKER_CMD buildx build --force-rm --no-cache . -t $image_name
-
- #log "Squashing the image..."
- #squash_image $IMAGE_NAME
-
- log "Pushing image to docker hub..."
- $DOCKER_CMD push $image_name
+ log "Building docker image [$image_name @ $target_platform] ..."
+ $DOCKER_CMD buildx build --force-rm --no-cache \
+   --platform=$target_platform --push \
+   $github_path -t $image_name:latest
 
  log "Removing local image..."
- $DOCKER_CMD rmi $image_name 
+ $DOCKER_CMD rmi "$image_name:latest"
 }
 
 ####################
