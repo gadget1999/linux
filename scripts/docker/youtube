@@ -24,6 +24,7 @@ EXTRA_OPTS=(
  -p $YOUTUBE_PORT:8081
  -v $YOUTUBE_ROOT:/downloads
  -e DELETE_FILE_ON_TRASHCAN=true
+ -e OUTPUT_TEMPLATE="%(title).50s.%(ext)s" 
  -u $CONTAINER_UID
  )
 
