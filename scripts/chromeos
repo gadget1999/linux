@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+# download ChromeOS Flex image from this page:
+# https://support.google.com/chromeosflex/answer/11541904?hl=en
+IMAGE_PATH="/mnt/Azure/Share/ChromeOS/chromeos.bin"
+TARGET_DEVICE=/dev/sdb
+
+log "Creating ChromeOS Flex image on [$TARGET_DEVICE] from [$IMAGE_PATH]..."
+sudo dd if=$IMAGE_PATH of=$TARGET_DEVICE bs=4M status=progress
