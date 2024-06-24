@@ -53,6 +53,17 @@
       "type": "python"
     },
     {
+      "name": "Python: EXIF",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "args": [
+        "tag",
+        "/tmp"
+      ],
+      "type": "python"
+    },
+    {
       "name": "Python: MP3",
       "request": "launch",
       "program": "${file}",

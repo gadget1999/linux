@@ -24,9 +24,9 @@ class AzureVM:
     self._azure_cli = cli
     vm_id = vm_json["id"]
     # parse resource group from id: e.g., /subscriptions/<GUID>/resourceGroups/
-    self.subscription_id = re.search('\/subscriptions\/(.+?)\/resourceGroups\/', vm_id).group(1)
+    self.subscription_id = re.search(r"\/subscriptions\/(.+?)\/resourceGroups\/", vm_id).group(1)
     # parse resource group from id: e.g., /resourceGroups/<NAME>/providers/
-    self.resource_group_name = re.search('\/resourceGroups\/(.+?)\/providers\/', vm_id).group(1)
+    self.resource_group_name = re.search(r"\/resourceGroups\/(.+?)\/providers\/", vm_id).group(1)
     self.name = vm_json["name"]
     size = vm_json['properties']['hardwareProfile']['vmSize']
     self.size = re.search('Standard_(.*)', size).group(1)
