@@ -9,7 +9,8 @@ check_env "SENDGRID_API_KEY MONITOR_CONFIG_ROOT"
 IMAGE="gadget1999/rpi-web-monitor"
 
 # usage: web-monitor [app-name [monitor-list]]
-WEB_MONITOR_FILE_NAME="web-monitor.xlsx"
+[ "$WEB_MONITOR_FILE_NAME" == "" ] && \
+ WEB_MONITOR_FILE_NAME="web-monitor.xlsx"
 if [ "$#" == "0" ]; then
  # other monitors already have locks
  # assume hang if not completed within two hours
