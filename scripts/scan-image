@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+# a quick script to scan remotely with SANE connected scanner
+
+check_packages "scanimage"
+
+TMP_FILE="/tmp/$NOW.jpg"
+
+log "Scan image to $TMP_FILE"
+scanimage --format=jpeg --resolution 300 > "$TMP_FILE"
+
+debug "Upload to Dropbox"
+share "$TMP_FILE"
+
+debug "Delete tmp scan image"
+$SUDO rm "$TMP_FILE"

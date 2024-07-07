@@ -3,7 +3,7 @@
 ''' Utility class to manage JPG files EXIF in batch
 '''
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 import zlib
 from PIL import Image, ExifTags
@@ -33,6 +33,10 @@ class GuessDate:
     seconds_to_add = 54000 + hash_value % 10800  # between 15:00-18:00
     return date_base + timedelta(seconds=seconds_to_add)
 
+CAMERA_MAPPING = {
+  "CanoScan LiDE 400": "LiDE4"
+}
+
 class EXIF:
   TAG_CAMERA = 272
   TAG_TIME_TAKEN = 306
@@ -57,8 +61,19 @@ class EXIF:
       return
     self.__exif_info[EXIF.TAG_TIME_TAKEN] = self.TimeTaken
     self.__exif_info[EXIF.TAG_CAMERA] = self.Camera
-    logger.info(f"{self.__path}: set new date to {self.TimeTaken}")
     self.__jpg_stream.save(self.__path, exif=self.__exif_info)
+
+  def rename_file(self):
+    camera = CAMERA_MAPPING[self.Camera]
+    time_taken = datetime.strptime(self.TimeTaken, "%Y-%m-%d %H:%M:%S")
+    new_filename = f"{time_taken.strftime("%Y%m%d_%H%M%S")}_{camera}.jpg"
+    new_filepath = os.path.join(os.path.dirname(self.__path), new_filename)
+    os.rename(self.__path, new_filepath)
+    # copy over (one-off code)
+    #target_folder = f"/tmp/Final/{time_taken.strftime("%Y")}/{time_taken.strftime("%Y.%m")}"
+    #os.makedirs(target_folder, exist_ok=True)
+    #target_filepath = os.path.join(target_folder, new_filename)
+    #os.rename(new_filepath, target_filepath)
 
   def close(self):
     if self.__jpg_stream:
@@ -91,10 +106,16 @@ class EXIF_Utility:
       logger.debug(f"{jpg.Name}: {jpg.Camera} on {jpg.TimeTaken}")
       timestamp = GuessDate.from_path(path)
       jpg.TimeTaken = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-      jpg.save_exif()      
+      logger.info(f"{path}: set new date to {jpg.TimeTaken}")
+      jpg.save_exif()
+      jpg.close()
+      # update creation/modification time (this doesn't work for dates before 1970)
+      #timestamp_utc = timestamp.astimezone(timezone.utc)
+      #os.utime(path, times=(timestamp_utc, timestamp_utc))
+      # rename file
+      jpg.rename_file()
     except Exception as e:
       logger.error(f"Failed to tag EXIF for [{path}]: {e}")
-    finally:
       jpg.close()
 
 ########################################
