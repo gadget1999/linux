@@ -13,7 +13,7 @@ log "Scan image to $TMP_FILE"
 scanimage --format=jpeg --resolution 300 > "$TMP_FILE"
 
 debug "Upload to Dropbox"
-share "$TMP_FILE"
+dropbox upload "$TMP_FILE" "Scanned-Images/$NOW.jpg"
 
 debug "Delete tmp scan image"
 $SUDO rm "$TMP_FILE"
