@@ -1,5 +1,6 @@
 server {
- listen {{external_port}} ssl http2;
+ listen {{external_port}} ssl;
+ http2 on;
  server_name {{dns_name}};
 
  # check https://securityheaders.com
