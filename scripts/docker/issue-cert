@@ -7,7 +7,7 @@ source $CMD_PATH/lib/docker.sh
 source $CMD_PATH/lib/certificate.sh
 
 check_cert_env
-check_env "CERT_STORAGE"
+check_env "CERT_STORAGE CERT_ROOT"
 [ "$1" == "force" ] && FORCE="--force"
 
 if [ "$ENABLE_JIT_ACCESS" != "" ]; then

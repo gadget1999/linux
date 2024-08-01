@@ -222,6 +222,8 @@ conditional_copy adb $TMP_CMD_FOLDER/android $CMD_PATH/android
 conditional_copy_links adb $CMD_PATH/android $CMD_PATH
 conditional_copy docker $TMP_CMD_FOLDER/docker $CMD_PATH/docker
 conditional_copy_links docker $CMD_PATH/docker $CMD_PATH
+conditional_copy podman $TMP_CMD_FOLDER/docker $CMD_PATH/docker
+conditional_copy_links podman $CMD_PATH/docker $CMD_PATH
 conditional_copy mosquitto_sub $TMP_CMD_FOLDER/mosquitto $CMD_PATH/mosquitto
 conditional_copy_links mosquitto_sub $CMD_PATH/mosquitto $CMD_PATH
 conditional_copy python3 $TMP_CMD_FOLDER/python $CMD_PATH/python

@@ -20,7 +20,8 @@ function check_cert_env() {
 ACME_IMAGE_NAME="neilpang/acme.sh"
 ACME_DOCKER_OPTS=(
  -v $CERT_ROOT:/acme.sh
- --net=host
+ -p 80:80
+ -p 443:443
  )
 
 function issue_certificate_docker()  {
