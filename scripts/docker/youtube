@@ -7,10 +7,7 @@ source $CMD_PATH/lib/docker.sh
 CONTAINER="youtube"
 IMAGE="alexta69/metube"
 
-check_env "YOUTUBE_ROOT"
-
-YOUTUBE_PORT=15936
-YOUTUBE_PORT_EXT=22287
+check_env "YOUTUBE_ROOT YOUTUBE_PORT_LOCAL"
 
 [ ! -d $YOUTUBE_ROOT ] && sudo mkdir -p $YOUTUBE_ROOT
 [ ! -d $YOUTUBE_ROOT ] && fatal_error "Failed to create folder: $YOUTUBE_ROOT"
@@ -21,10 +18,10 @@ create_docker_network bridge sandbox
 
 EXTRA_OPTS=(
  --network sandbox
- -p $YOUTUBE_PORT:8081
+ -p $YOUTUBE_PORT_LOCAL:8081
  -v $YOUTUBE_ROOT:/downloads
  -e DELETE_FILE_ON_TRASHCAN=true
- -e OUTPUT_TEMPLATE="%(title).30s.%(ext)s" 
+ -e OUTPUT_TEMPLATE="%(title).80s.%(ext)s" 
  -u $CONTAINER_UID
  )
 
@@ -32,5 +29,7 @@ ENTRYPOINT=()
 
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 
-debug "Starting nginx reverse proxy..."
-nginx $CONTAINER $YOUTUBE_PORT_EXT $YOUTUBE_PORT 1.2
+if [ "$YOUTUBE_PORT_EXT" != "" ]; then
+ debug "Starting nginx reverse proxy..."
+ nginx $CONTAINER $YOUTUBE_PORT_EXT $YOUTUBE_PORT_LOCAL 1.2
+fi
