@@ -21,12 +21,14 @@ EXTRA_OPTS=(
  -p $YOUTUBE_PORT_LOCAL:8081
  -v $YOUTUBE_ROOT:/downloads
  -e DELETE_FILE_ON_TRASHCAN=true
- -e OUTPUT_TEMPLATE="%(title).80s.%(ext)s" 
+ -e OUTPUT_TEMPLATE="%(title).80s.%(ext)s"
+ -e YTDL_OPTIONS='{"cookiefile":"/downloads/.metube/cookies.txt"}' 
  -u $CONTAINER_UID
  )
 
 ENTRYPOINT=()
 
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 
 if [ "$YOUTUBE_PORT_EXT" != "" ]; then
