@@ -70,6 +70,7 @@ create_nginx_conf $NGINX_CONFIG
 create_nginx_app_conf $APP_CONFIG $DDNS_DOMAIN $APP_PORT $PROXY_URL $OPTIONAL_TLS_VER
 grant_container_access $NGINX_CONFIG
 grant_container_access $SSL_CONFIG
+debug "SSL location: $SSL_CONFIG"
 
 MAX_RAM="100m"
 EXTRA_OPTS=(
