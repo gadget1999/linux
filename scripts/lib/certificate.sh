@@ -37,7 +37,7 @@ function issue_certificate_docker()  {
   ) 
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
- if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 120 ; then
+ if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 86400 ; then
   return 0
  else
   return 1
@@ -57,7 +57,7 @@ function renew_certificate_docker()  {
   )
 
  container_cli "$ACME_IMAGE_NAME" ACME_DOCKER_OPTS cmd_args
- if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 120 ; then
+ if is_file_modified_recently "$CERT_FULLCHAIN_PATH" 86400 ; then
   return 0
  else
   return 1
