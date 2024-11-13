@@ -56,13 +56,20 @@ function notify_ip_change {
   "$update_ip_whitelist"
 }
 
+# track IP changes, can take FQDN as input, or just check public IP
 function check_ip_change {
+ local fqdn=$1
  local old_ip=$(cat $IP_CACHE)
  local new_ip=$($CMD_PATH/public-ip)
 
+ if [ "$fqdn" != "" ]; then
+  new_ip=$(dig @1.1.1.1 $fqdn +short | tail -1)
+  debug "$fqdn -> IP: $new_ip"
+ fi
+
  debug "Old IP: $old_ip;  New IP: $new_ip"
  if [ "$new_ip" == "" ]; then
-  log "Failed to get public IP."
+  error "Failed to get public IP."
   return
  fi
 
@@ -80,8 +87,9 @@ function check_ip_change {
  notify_ip_change $new_ip $old_ip
 }
 
+FQDN=$1
 while true; do
- check_ip_change
+ check_ip_change $FQDN
 
  sleep $CHECK_INTERVAL
 done
