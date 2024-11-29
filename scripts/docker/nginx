@@ -35,6 +35,7 @@ NGINX_CONFIG=$NGINX_CONFIG_ROOT/nginx.conf
 APP_CONFIG_ROOT=$NGINX_CONFIG_ROOT/conf.d
 [ ! -d $APP_CONFIG_ROOT ] && sudo mkdir -p $APP_CONFIG_ROOT
 APP_CONFIG=$APP_CONFIG_ROOT/$APP_NAME.conf
+PWD_CONFIG=$APP_CONFIG_ROOT/$APP_NAME.pwd && sudo touch $PWD_CONFIG
 SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
 
 function create_nginx_conf() {
@@ -56,11 +57,22 @@ function create_nginx_app_conf() {
  debug "Creating $conf_file ..."
  sudo cp $template $conf_file
 
- check_packages "sed" 
+ check_packages "sed"
  debug "Updating variables in conf file..."
  sudo sed -i "s/{{external_port}}/$external_port/g" $conf_file
  sudo sed -i "s/{{dns_name}}/$DDNS_DOMAIN/g" $conf_file
  sudo sed -i "s%{{proxy_address}}%$proxy_url%g" $conf_file
+
+ if [[ -s "$PWD_CONFIG" ]]; then
+  debug "Enable password for reverse proxy..."
+  local auth_basic="auth_basic \"Restricted Area\"\;"
+  local auth_basic_user_file="auth_basic_user_file \/etc\/nginx\/\.htpasswd\;"
+  sudo sed -i "s/{{auth_basic_placeholder}}/$auth_basic/g" $conf_file
+  sudo sed -i "s/{{auth_basic_user_file_placeholder}}/$auth_basic_user_file/g" $conf_file
+ else
+  sudo sed -i "/{{auth_basic_placeholder}}/d" $conf_file
+  sudo sed -i "/{{auth_basic_user_file_placeholder}}/d" $conf_file
+ fi
 
  [ "$optional_tls_version" != "" ] && debug "Allow TLS1.2"
  sudo sed -i "s/{{optional_tls_version}}/$optional_tls_version/g" $conf_file
@@ -78,6 +90,7 @@ EXTRA_OPTS=(
  --restart unless-stopped
  -v $NGINX_CONFIG:/etc/nginx/nginx.conf:ro
  -v $APP_CONFIG:/etc/nginx/conf.d/default.conf:ro
+ -v $PWD_CONFIG:/etc/nginx/.htpasswd:ro
  -v $SSL_CONFIG:/etc/nginx/ssl:ro
  -p $APP_PORT:$APP_PORT/tcp
  -u $CONTAINER_UID
