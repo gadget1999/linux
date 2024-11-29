@@ -7,7 +7,7 @@ ENABLE_LOGGING=1
 check_env "DDNS_DOMAIN DDNS_KEY"
 
 PACKAGES="dig curl"
-DNS_IP=$(dig @1.1.1.1 $DDNS_DOMAIN +short)
+DNS_IP=$(dig @1.1.1.1 $DDNS_DOMAIN +short | tail -1)
 
 check_packages "$PACKAGES"
 
