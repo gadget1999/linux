@@ -144,7 +144,10 @@ function patch_seafile_nginx_conf() {
  debug "Updating nginx conf..."
  docker cp $GOOD_NGINX_CONF seafile:/etc/nginx/sites-enabled/seafile.nginx.conf
  debug "Restarting nginx..."
- $DOCKER_CMD /usr/sbin/nginx -s reload 
+ $DOCKER_CMD /usr/sbin/nginx -s reload
+
+ debug "Ensure SeaHub is running."
+ $DOCKER_CMD /opt/seafile/seafile-server-latest/seahub.sh start
 }
 
 #########################
