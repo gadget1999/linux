@@ -284,10 +284,13 @@ function copy_file() {
  local overwrite=$3
 
  # see if this is a regular file
- [ ! -f $source ] && return 0
- 
+ if sudo test ! -f $source ; then
+  debug "$source is not a regular file"
+  return 1
+ fi
+
  # copy if target does not exist
- if [ ! -f $target ]; then
+ if sudo test ! -f $target ; then
   log "Copying $target"
   $SUDO cp $source $target
   return 1
