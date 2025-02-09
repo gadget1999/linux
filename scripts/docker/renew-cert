@@ -29,8 +29,9 @@ if [ "$MAIN_EMAIL" != "" ]; then
   "Enjoy!"
 fi
 
-log "Copying new certificates to $CERT_STORAGE"
+log "Copying $CERT_ROOT/$CERT_FULLCHAIN to $CERT_STORAGE/fullchain.pem"
 copy_file "$CERT_ROOT/$CERT_FULLCHAIN" "$CERT_STORAGE/fullchain.pem" overwrite
+log "Copying $CERT_ROOT/$CERT_KEY to $CERT_STORAGE/privkey.pem"
 copy_file "$CERT_ROOT/$CERT_KEY" "$CERT_STORAGE/privkey.pem" overwrite
 grant_container_access "$CERT_STORAGE/*"
 sudo chmod 600 $CERT_STORAGE/*
