@@ -22,6 +22,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - '2283:2283'
+    environment:
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD}
+      DB_USERNAME: ${IMMICH_DB_USER}
+      DB_DATABASE_NAME: immich
     depends_on:
       - redis
       - database
@@ -39,6 +43,10 @@ services:
     #   service: cpu # set to one of [armnn, cuda, rocm, openvino, openvino-wsl, rknn] for accelerated inference - use the `-wsl` version for WSL2 where applicable
     volumes:
       - model-cache:/cache
+    environment:
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD}
+      DB_USERNAME: ${IMMICH_DB_USER}
+      DB_DATABASE_NAME: immich
     restart: always
     healthcheck:
       disable: false

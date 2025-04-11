@@ -9,7 +9,7 @@ source $CMD_PATH/lib/common.sh
 
 #DOCKER_CMD="sudo docker"
 #DOCKER_CMD="podman"
-[ "$DOCKER_CMD" == "" ] && DOCKER_CMD="sudo docker"
+[ "$DOCKER_CMD" == "" ] && DOCKER_CMD="sudo -E docker"
 
 DOCKER_LOCAL_REPO_FLAG=/tmp/docker-use-local-repo
 function use_local_docker_repo() {
