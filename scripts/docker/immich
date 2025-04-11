@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+source $CMD_PATH/lib/certificate.sh
+
+check_env "IMMICH_VERSION IMMICH_DB IMMICH_DB_USER IMMICH_DB_PASSWORD IMMICH_DATA IMMICH_PORT"
+check_packages "docker-compose docker"
+check_cert_env
+
+export IMMICH_VERSION
+export IMMICH_DB
+export IMMICH_DB_USER
+export IMMICH_DB_PASSWORD
+export IMMICH_DATA
+
+POD="immich"
+COMPOSE_FILE_ROOT="$CMD_PATH/kubernetes"
+
+#########################
+# Helper functions
+#########################
+
+function start_pod() {
+ local pod_name=$1
+ local compose_file="$COMPOSE_FILE_ROOT/$pod_name/docker-compose.yaml"
+
+ local detach_mode="-d"
+ [ "$DEBUG_POD" != "" ] && detach_mode=""
+
+ debug "Starting pod from $compose_file..."
+ docker-compose -f $compose_file up $detach_mode
+
+ debug "Starting reverse proxy..."
+ $CMD_PATH/nginx $pod_name $IMMICH_PORT 2283 1.2
+}
+
+function stop_pod() {
+ local pod_name=$1
+ local compose_file="$COMPOSE_FILE_ROOT/$pod_name/docker-compose.yaml"
+
+ debug "Stopping pod from $compose_file..."
+ docker-compose -f $compose_file down
+
+ debug "Stopping reverse proxy..."
+ $DOCKER_CMD stop "nginx-$pod_name"
+}
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ stop)
+  stop_pod $POD
+  ;;
+ debug)
+  DEBUG_POD=1
+  start_pod $POD
+  ;;
+ *)
+  start_pod $POD
+  ;;
+esac
