@@ -31,6 +31,7 @@ server {
  ssl_stapling_verify on;
 
  proxy_buffering off;
+ client_max_body_size 4G;
 
  location / {
   {{auth_basic_placeholder}}
