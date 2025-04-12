@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+
+check_env "IMMICH_API_ENDPOINT IMMICH_API_KEY"
+check_packages "docker"
+
+IMAGE="ghcr.io/immich-app/immich-cli:latest"
+
+EXTRA_OPTS=(
+ --cap-drop all
+ -e IMMICH_INSTANCE_URL=$IMMICH_API_ENDPOINT
+ -e IMMICH_API_KEY=$IMMICH_API_KEY
+ -v "$(pwd)":/import:ro
+ )
+
+ENTRYPOINT=(
+ "$@"
+ )
+
+container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
