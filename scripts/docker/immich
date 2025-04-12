@@ -3,7 +3,6 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
-source $CMD_PATH/lib/certificate.sh
 
 check_env "IMMICH_VERSION IMMICH_DB IMMICH_DB_USER IMMICH_DB_PASSWORD IMMICH_DATA IMMICH_PORT"
 check_packages "docker"
