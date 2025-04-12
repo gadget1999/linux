@@ -43,6 +43,7 @@ function stop_pod() {
 
  debug "Stopping reverse proxy..."
  $DOCKER_CMD stop "nginx-$pod_name"
+ $DOCKER_CMD rm "nginx-$pod_name"
 }
 
 #########################
