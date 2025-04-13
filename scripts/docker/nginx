@@ -14,7 +14,7 @@ check_env "CONTAINER_CONFIG_ROOT CERT_ROOT"
 APP_NAME=$1
 if [ "$APP_NAME" == "proxy" ]; then
  PROXY_DOMAIN=$2    # use the external domain's certificate
- APP_PORT=443       # use default HTTPS port
+ APP_PORT=2053      # use default Cloudflare HTTPS port
  CONFIG_NAME="$APP_NAME-$PROXY_DOMAIN"
 else
  PROXY_DOMAIN=$DDNS_DOMAIN  # use the server's own domain and certificate (from Let's Encrypt)
@@ -98,7 +98,7 @@ EXTRA_OPTS=(
  --tmpfs /run
  --restart unless-stopped
  -v $NGINX_CONFIG:/etc/nginx/nginx.conf:ro
- -v $APP_CONFIG:/etc/nginx/conf.d/default.conf:ro
+ -v $APP_CONFIG_ROOT:/etc/nginx/conf.d:ro
  -v $PWD_CONFIG:/etc/nginx/.htpasswd:ro
  -v $SSL_CONFIG:/etc/nginx/ssl:ro
  -p $APP_PORT:$APP_PORT/tcp
