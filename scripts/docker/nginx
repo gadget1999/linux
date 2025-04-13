@@ -3,79 +3,89 @@
 CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
-source $CMD_PATH/lib/certificate.sh
+#source $CMD_PATH/lib/certificate.sh
 
-[ $# != 3 ] && [ $# != 4 ] && \
- show_usage "app external_port local_url (or local_port) [1.2]
-or: nginx proxy external_domain local_url (or local_port) [1.2]"
+check_env "CONTAINER_CONFIG_ROOT"
 
-check_env "CONTAINER_CONFIG_ROOT CERT_ROOT"
-
-APP_NAME=$1
-if [ "$APP_NAME" == "proxy" ]; then
- PROXY_DOMAIN=$2    # use the external domain's certificate
- APP_PORT=2053      # use default Cloudflare HTTPS port
- CONFIG_NAME="$APP_NAME-$PROXY_DOMAIN"
-else
- PROXY_DOMAIN=$DDNS_DOMAIN  # use the server's own domain and certificate (from Let's Encrypt)
- APP_PORT=$2
- CONFIG_NAME=$APP_NAME
-fi
-
-# get proxy target (local url)
-if [[ $3 =~ ^[0-9]+$ ]]; then
- LOCAL_URL="http://172.17.0.1:$3"
-else
- LOCAL_URL=${3/local/172.17.0.1}
-fi
-
-# see if TLS1.2 is allowed
-OPTIONAL_TLS_VER=""
-[ "$4" == "1.2" ] && OPTIONAL_TLS_VER="TLSv1.2"
-
-debug "Starting reverse proxy: https://$PROXY_DOMAIN:$APP_PORT -> $LOCAL_URL"
-
-CONTAINER="nginx-$APP_NAME"
+CONTAINER="nginx"
 IMAGE="nginxinc/nginx-unprivileged:stable-alpine"
 
-NGINX_CONFIG_ROOT=$CONTAINER_CONFIG_ROOT/nginx
-[ ! -d $CONTAINER_CONFIG_ROOT ] && sudo mkdir -p $CONTAINER_CONFIG_ROOT
-NGINX_CONFIG=$NGINX_CONFIG_ROOT/nginx.conf
-APP_CONFIG_ROOT=$NGINX_CONFIG_ROOT/conf.d
-[ ! -d $APP_CONFIG_ROOT ] && sudo mkdir -p $APP_CONFIG_ROOT
-APP_CONFIG=$APP_CONFIG_ROOT/$CONFIG_NAME.conf
-PWD_CONFIG=$APP_CONFIG_ROOT/$CONFIG_NAME.pwd && sudo touch $PWD_CONFIG
-SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
+function parse_args() {
+ APP_NAME=$1
+ if [ "$APP_NAME" == "proxy" ]; then
+  PROXY_DOMAIN=$2    # use the external domain's certificate
+  APP_PORT=2053      # use default Cloudflare HTTPS port
+  CONFIG_NAME="$APP_NAME-$PROXY_DOMAIN"
+ else
+  PROXY_DOMAIN=$DDNS_DOMAIN  # use the server's own domain and certificate (from Let's Encrypt)
+  APP_PORT=$2
+  CONFIG_NAME=$APP_NAME
+  CONTAINER="$CONTAINER-$APP_NAME"
+ fi
+
+ # get proxy target (local url)
+ if [[ $3 =~ ^[0-9]+$ ]]; then
+  LOCAL_URL="http://172.17.0.1:$3"
+ else
+  LOCAL_URL=${3/local/172.17.0.1}
+ fi
+
+ # see if TLS1.2 is allowed
+ OPTIONAL_TLS_VER=""
+ [ "$4" == "1.2" ] && OPTIONAL_TLS_VER="TLSv1.2"
+}
+
+function init_nginx_env() {
+ # init global env 
+ NGINX_CONFIG_ROOT=$CONTAINER_CONFIG_ROOT/nginx
+ debug "NGINX configuration root: $NGINX_CONFIG_ROOT"
+ [ ! -d $CONTAINER_CONFIG_ROOT ] && sudo mkdir -p $CONTAINER_CONFIG_ROOT
+ NGINX_CONFIG=$NGINX_CONFIG_ROOT/nginx.conf
+ grant_container_access $NGINX_CONFIG
+ APP_CONFIG_ROOT=$NGINX_CONFIG_ROOT/conf.d
+ [ ! -d $APP_CONFIG_ROOT ] && sudo mkdir -p $APP_CONFIG_ROOT
+ # use Cloudflare port by default
+ APP_PORT=2053
+ # SSL certificates
+ SSL_CONFIG=$CONTAINER_CONFIG_ROOT/ssl
+ debug "SSL location: $SSL_CONFIG"
+ grant_container_access $SSL_CONFIG
+}
 
 function create_nginx_conf() {
  local conf_file=$1
 
+ # init server level config
  local template=$CMD_PATH/lib/nginx_conf.template
  debug "Creating $conf_file ..."
  sudo cp $template $conf_file
 }
 
 function create_nginx_app_conf() {
- local conf_file=$1
+ local conf_name=$1
  local dns_name=$2
  local external_port=$3
  local local_url=$4
  local optional_tls_version=$5
+
+ # init app level config
+ local conf_file=$APP_CONFIG_ROOT/$conf_name.conf
+ local pwd_config=$APP_CONFIG_ROOT/$conf_name.pwd && sudo touch $pwd_config
 
  local template=$CMD_PATH/lib/nginx_proxy.template
  debug "Creating $conf_file ..."
  sudo cp $template $conf_file
 
  check_packages "sed"
- debug "Updating variables in conf file..."
+ debug "Updating variables in $conf_file ..."
  sudo sed -i "s/{{external_port}}/$external_port/g" $conf_file
  sudo sed -i "s/{{dns_name}}/$dns_name/g" $conf_file
  sudo sed -i "s%{{proxy_address}}%$local_url%g" $conf_file
 
- if [[ -s "$PWD_CONFIG" ]]; then
+ if [[ -s "$pwd_config" ]]; then
   debug "Enable password for reverse proxy..."
   local auth_basic="auth_basic \"Restricted Area\"\;"
-  local auth_basic_user_file="auth_basic_user_file \/etc\/nginx\/\.htpasswd\;"
+  local auth_basic_user_file="auth_basic_user_file \/etc\/nginx\/conf\.d\/$conf_name\.pwd\;"
   sudo sed -i "s/{{auth_basic_placeholder}}/$auth_basic/g" $conf_file
   sudo sed -i "s/{{auth_basic_user_file_placeholder}}/$auth_basic_user_file/g" $conf_file
  else
@@ -85,28 +95,43 @@ function create_nginx_app_conf() {
 
  [ "$optional_tls_version" != "" ] && debug "Allow TLS1.2"
  sudo sed -i "s/{{optional_tls_version}}/$optional_tls_version/g" $conf_file
+
+ debug "Reverse proxy mapping: https://$PROXY_DOMAIN:$APP_PORT -> $LOCAL_URL"
 }
 
-create_nginx_conf $NGINX_CONFIG
-create_nginx_app_conf $APP_CONFIG $PROXY_DOMAIN $APP_PORT $LOCAL_URL $OPTIONAL_TLS_VER
-grant_container_access $NGINX_CONFIG
-grant_container_access $SSL_CONFIG
-debug "SSL location: $SSL_CONFIG"
+function start_nginx() {
+ MAX_RAM="100m"
+ EXTRA_OPTS=(
+  --tmpfs /run
+  --restart unless-stopped
+  -v $NGINX_CONFIG:/etc/nginx/nginx.conf:ro
+  -v $APP_CONFIG_ROOT:/etc/nginx/conf.d:ro
+  -v $SSL_CONFIG:/etc/nginx/ssl:ro
+  -p $APP_PORT:$APP_PORT/tcp
+  -u $CONTAINER_UID
+  -m $MAX_RAM
+  )
+ ENTRYPOINT=()
 
-MAX_RAM="100m"
-EXTRA_OPTS=(
- --tmpfs /run
- --restart unless-stopped
- -v $NGINX_CONFIG:/etc/nginx/nginx.conf:ro
- -v $APP_CONFIG_ROOT:/etc/nginx/conf.d:ro
- -v $PWD_CONFIG:/etc/nginx/.htpasswd:ro
- -v $SSL_CONFIG:/etc/nginx/ssl:ro
- -p $APP_PORT:$APP_PORT/tcp
- -u $CONTAINER_UID
- -m $MAX_RAM
- )
+ #DEBUG_DOCKER=1
+ new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+}
 
-ENTRYPOINT=()
+init_nginx_env
 
-#DEBUG_DOCKER=1
-new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+case $# in
+ 0)
+  # restart nginx proxy
+  start_nginx
+  ;;
+ 3|4)
+  create_nginx_conf $NGINX_CONFIG
+  parse_args "$@"
+  create_nginx_app_conf $CONFIG_NAME $PROXY_DOMAIN $APP_PORT $LOCAL_URL $OPTIONAL_TLS_VER
+  start_nginx
+  ;;
+ *)
+  show_usage "app external_port local_url (or local_port) [1.2]
+or: nginx proxy external_domain local_url (or local_port) [1.2]"
+  ;;
+esac
