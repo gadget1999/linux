@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "IMMICH_VERSION IMMICH_DB IMMICH_DB_USER IMMICH_DB_PASSWORD IMMICH_DATA IMMICH_PORT"
+check_env "IMMICH_VERSION IMMICH_DB IMMICH_DB_USER IMMICH_DB_PASSWORD IMMICH_DATA IMMICH_DOMAIN"
 check_packages "docker"
 
 export IMMICH_VERSION
@@ -30,8 +30,9 @@ function start_pod() {
  debug "Starting pod from $compose_file..."
  $DOCKER_CMD compose -f $compose_file up $detach_mode
 
+ # use Cloudflare protected domain instead
  debug "Starting reverse proxy..."
- $CMD_PATH/nginx $pod_name $IMMICH_PORT 2283 1.2
+ $CMD_PATH/nginx proxy $IMMICH_DOMAIN 2283
 }
 
 function stop_pod() {
@@ -40,10 +41,6 @@ function stop_pod() {
 
  debug "Stopping pod from $compose_file..."
  $DOCKER_CMD compose -f $compose_file down
-
- debug "Stopping reverse proxy..."
- $DOCKER_CMD stop "nginx-$pod_name"
- $DOCKER_CMD rm "nginx-$pod_name"
 }
 
 #########################
