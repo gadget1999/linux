@@ -29,10 +29,12 @@ if [ "$MAIN_EMAIL" != "" ]; then
   "Enjoy!"
 fi
 
-log "Copying $CERT_ROOT/$CERT_FULLCHAIN to $CERT_STORAGE/fullchain.pem"
-copy_file "$CERT_ROOT/$CERT_FULLCHAIN" "$CERT_STORAGE/fullchain.pem" overwrite
-log "Copying $CERT_ROOT/$CERT_KEY to $CERT_STORAGE/privkey.pem"
-copy_file "$CERT_ROOT/$CERT_KEY" "$CERT_STORAGE/privkey.pem" overwrite
+FULLCHAIN_FILENAME="$DDNS_DOMAIN.fullchain.pem"
+KEY_FILENAME="$DDNS_DOMAIN.privkey.pem"
+log "Copying $CERT_ROOT/$CERT_FULLCHAIN to $CERT_STORAGE/$FULLCHAIN_FILENAME"
+copy_file "$CERT_ROOT/$CERT_FULLCHAIN" "$CERT_STORAGE/$FULLCHAIN_FILENAME" overwrite
+log "Copying $CERT_ROOT/$CERT_KEY to $CERT_STORAGE/$KEY_FILENAME"
+copy_file "$CERT_ROOT/$CERT_KEY" "$CERT_STORAGE/$KEY_FILENAME" overwrite
 grant_container_access "$CERT_STORAGE/*"
 sudo chmod 600 $CERT_STORAGE/*
 ls -l $CERT_STORAGE
