@@ -43,6 +43,13 @@ function stop_pod() {
  $DOCKER_CMD compose -f $compose_file down
 }
 
+function upgrade_pod() {
+ local pod_name=$1
+ local compose_file="$COMPOSE_FILE_ROOT/$pod_name/docker-compose.yaml"
+
+ debug "Upgrade immich server ..."
+}
+
 #########################
 # Main entrance
 #########################
@@ -50,6 +57,9 @@ function stop_pod() {
 case $1 in
  stop)
   stop_pod $POD
+  ;;
+ upgrade)
+  upgrade_pod $POD
   ;;
  debug)
   DEBUG_POD=1
