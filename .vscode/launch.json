@@ -85,7 +85,7 @@
       ],
       "env": {
         "M3U8_WORK_DIR": "/tmp",
-        "FFMPEG": "ffmpeg"
+        "FFMPEG": "/tmp/ffmpeg.exe"
       },
       "console": "integratedTerminal",
       "type": "python"
