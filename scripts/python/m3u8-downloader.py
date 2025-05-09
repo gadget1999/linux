@@ -7,12 +7,15 @@ from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/112.0'
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36'
 WORK_DIR = os.environ['M3U8_WORK_DIR']
 FFMPEG = "ffmpeg"
 if "FFMPEG" in os.environ:
   FFMPEG = os.environ["FFMPEG"]
+if not os.path.exists(FFMPEG):
+  exit(1)
 
+# to get m3u8 playlist: use browser -> F12 -> Network -> Media
 class M3U8:
   def __http_call(self, url):
     time.sleep(1)
