@@ -1,5 +1,7 @@
 import os, sys, time
 import requests
+import m3u8
+from collections import namedtuple
 from urllib.parse import urljoin
 import subprocess
 
@@ -13,12 +15,36 @@ FFMPEG = "ffmpeg"
 if "FFMPEG" in os.environ:
   FFMPEG = os.environ["FFMPEG"]
 if not os.path.exists(FFMPEG):
+  logger.error(f"FFmpeg not found: {FFMPEG}")
   exit(1)
 
 # to get m3u8 playlist: use browser -> F12 -> Network -> Media
-class M3U8:
+# m3u8 format:
+# 1. m3u8: contains the playlists information, for adaptive streaming with different resolutions
+# 2. envelope playlist: for one video with both video and audio playlists (this is a virtual playlist without .m3u8 file)
+# 3. VOD playlist: the actual playlist with media segments, could be audio only, video only, or already mixed video and audio
+#   (VOD means it's not live streaming, the #EXT-X-ENDLIST tag is set)
+
+# playlist that contains the media segments
+class M3U8_VOD_Playlist:
+  def __init__(self, url):
+    # basic properties
+    self.Url = url
+    self.__m3u8_obj = m3u8.load(url)
+    self.Files = []
+    for segment in self.__m3u8_obj.files:
+      segment_url = urljoin(self.__m3u8_obj.base_uri, segment)
+      Segment = namedtuple('Segment', ['name', 'uri'])
+      self.Files.append(Segment(segment, segment_url))
+    # download related properties
+    self.Workarea = None
+    self.TargetFile = None
+
+  def Info(self):
+    return f"URL: {self.Url}, Files: {len(self.Files)}"
+
   def __http_call(self, url):
-    time.sleep(1)
+    time.sleep(0.1)
     headers = { "User-Agent": USER_AGENT }
     response = requests.get(url, headers=headers)
     return response.content
@@ -30,70 +56,145 @@ class M3U8:
     with open(output, "wb") as f:
       f.write(data)
 
-  def __init__(self, url, root_folder):
-    self.Url = url
-    self.Name = os.path.basename(url)
-    self.Workarea = os.path.join(root_folder, self.Name)
-    self.List_file = os.path.join(self.Workarea, "Segments.txt")
-    self.Combined_file = ""
-    logger.info(f"Creating working folder [{self.Workarea}]...(URL={url})")
-    os.makedirs(self.Workarea, exist_ok=True)
-
-  def Download(self):
-    logger.info(f"Downloading m3u8 ...")
-    playlist_text = self.__http_call(self.Url).decode("utf-8")
-    # process the playlist text to extract the URLs of the media segments
-    media_segments = [line.strip() for line in playlist_text.split("\n") if line.strip() and not line.startswith("#")]
-    segment_list = []
-    # download the media segments
-    base_url = urljoin(self.Url, ".")
-    for segment in media_segments:
-      segment_url = urljoin(base_url, segment)
-      segment_file_name = os.path.join(self.Workarea, segment)
-      if not self.Combined_file:
-        ext = os.path.splitext(segment_file_name)[1]
-        self.Combined_file = os.path.join(self.Workarea, f"CombinedSegments{ext}")
-      self.__download_file(segment_url, segment_file_name)
-      segment_list.append(f"file '{segment_file_name}'\n")
-      print('.', end='')
-    logger.info(f"Saving segment list (total {len(segment_list)} entries) ...")
-    with open(self.List_file, "w") as f:
-      f.writelines(segment_list)
-
-  def CombineSegments(self):    
-    if not self.Combined_file or os.path.exists(self.Combined_file):
+  def __combine_segments(self, workarea, file_list, target_file):
+    if not target_file or os.path.exists(target_file):
+      logger.error(f"File already exists: {target_file}")
       return
-
-    logger.info(f"Combining segment files to {self.Combined_file}...")
-    ffmpeg_cmd = f"{FFMPEG} -f concat -safe 0 -i \"{self.List_file}\" -c copy \"{self.Combined_file}\""
-    status = subprocess.run(ffmpeg_cmd, cwd=self.Workarea)
+    logger.debug(f"Combining segment files to {target_file}...")
+    ffmpeg_cmd = f"{FFMPEG} -f concat -safe 0 -i \"{file_list}\" -c copy \"{target_file}\""
+    status = subprocess.run(ffmpeg_cmd, cwd=workarea)
     return status
 
-class M3U8Downloader:
-  def DownloadStreams(urls, title):
-    root_folder = os.path.join(WORK_DIR, title)
-    logger.info(f"Creating root folder [{root_folder}]...)")
-    os.makedirs(root_folder, exist_ok=True)
+  def Download(self, workarea):
+    self.Workarea = workarea
+    # get final file name
+    logger.info(f"Downloading playlist {self.Url} (total {len(self.Files)} segments) ...")
+    ext = os.path.splitext(self.Files[0].name)[1]
+    self.TargetFile = os.path.join(self.Workarea, f"CombinedSegments{ext}")
+    # download segment files
+    segment_list_file = os.path.join(self.Workarea, "Segments.txt")
+    segment_list = []
+    for index, segment in enumerate(self.Files):
+      segment_file_path = os.path.join(self.Workarea, segment.name)
+      self.__download_file(segment.uri, segment_file_path)
+      segment_list.append(f"file '{segment_file_path}'\n")
+      if (index + 1) % 10 == 0:
+        print(f"{index + 1}", end='')
+      else:
+        print('.', end='')
+    logger.debug(f"Saving segment list file [self.List_file]...")
+    with open(segment_list_file, "w") as f:
+      f.writelines(segment_list)
+    # combine segments to one file
+    self.__combine_segments(self.Workarea, segment_list_file, self.TargetFile)
 
-    combined_list = []
-    for url in urls:
-      worker = M3U8(url, root_folder)
-      worker.Download()
-      worker.CombineSegments()
-      combined_list.append(worker.Combined_file)
+class M3U8_Envelope_Playlist:
+  def __init__(self, m3u8_playlist):
+    # basic properties
+    self.Resolution = min(m3u8_playlist.stream_info.resolution)
+    self.VideoUri = m3u8_playlist.absolute_uri
+    self.AudioUri = None
+    for media in m3u8_playlist.media:
+      if (media.type == "AUDIO") and (media.group_id == m3u8_playlist.stream_info.audio):
+        self.AudioUri = media.absolute_uri
+        break
+    # download related properties
+    self.Workarea = None
+    self.VideoPlaylist = None
+    self.AudioPlaylist = None
 
-    # combine streams to MP4
-    output_file = os.path.join(root_folder, f"{title}.mp4")
-    logger.info(f"Combining video and audio files to {output_file}...")
+  def Info(self):
+    return f"Video: {self.VideoUri}, Resolution: {self.Resolution}p, Audio: {self.AudioUri}"
+ 
+  def Download(self, workarea):
+    self.Workarea = workarea
+    # download video and audio files
+    self.VideoPlaylist = M3U8_VOD_Playlist(self.VideoUri)
+    self.VideoPlaylist.Download(workarea)
+    if self.AudioUri:
+      # need to mix video and audio files, use subfolder for audio segments
+      audio_workarea = os.path.join(workarea, "audio")
+      logger.debug(f"Creating working folder for audio [{audio_workarea}]...")
+      os.makedirs(audio_workarea, exist_ok=True)
+      self.AudioPlaylist = M3U8_VOD_Playlist(self.AudioUri)
+      self.AudioPlaylist.Download(audio_workarea)
+
+class M3U8:
+  def __init__(self, url):
+    # basic properties
+    self.Url = url
+    self.__m3u8_obj = m3u8.load(url)
+    self.Playlists = []
+    self.__load_playlists()
+    # download related properties
+    self.Title = None
+    self.Workarea = None
+    self.TargetFile = None
+
+  def __load_playlists(self):
+    if not self.__m3u8_obj.playlist_type:
+      # this is not the playlist with media segments
+      for playlist in self.__m3u8_obj.playlists:
+        self.Playlists.append(M3U8_Envelope_Playlist(playlist))
+    elif self.__m3u8_obj.playlist_type.lower() == "vod":
+      self.Playlists.append(M3U8_VOD_Playlist(self.Url))
+    else:
+      logger.error(f"Playlist type is not supported: {self.m3u8_obj.playlist_type}")
+
+  # combine streams to MP4
+  def __combine_video_audio(self, target_file, video_file, audio_file = None):
+    logger.info(f"Combining video and audio files to {target_file}...")
     # build the FFmpeg command
     ffmpeg_cmd = [f"{FFMPEG}"]
-    for input_file in combined_list:
-      ffmpeg_cmd.extend(["-i", f"{input_file}"])
+    ffmpeg_cmd.extend(["-i", f"{video_file}"])
+    if audio_file:
+      ffmpeg_cmd.extend(["-i", f"{audio_file}"])
     ffmpeg_cmd.extend([
       "-c", "copy",
       "-bsf:a", "aac_adtstoasc",
-      f"{output_file}"])
+      f"{target_file}"])
     subprocess.run(ffmpeg_cmd)
+  
+  # if there are multiple playlists, use preference to select (default: max resolution)
+  # preference: '+': max resolution, '-': min resolution, '+|-number': match resolution if possible
+  def __select_playlist(self, preference):
+    if (self.Playlists.count == 1):
+      return self.Playlists[0]
+    # sort the playlists by resolution
+    self.Playlists.sort(key=lambda x: x.Resolution)
+    # try to match the resolution
+    if len(preference) > 1:
+      preferred_resolution = int(preference[1:])
+      for playlist in self.Playlists:
+        if playlist.Resolution == preferred_resolution:
+          return playlist
+    # if no match, return the min or max resolution    
+    if preference[0] == '+':
+      return self.Playlists[-1]
+    elif preference[0] == '-':
+      return self.Playlists[0]
+    else:
+      logger.error(f"Invalid preference: {preference}")
+      return None
+
+  def Download(self, title, root_folder, preference="+"):
+    self.Title = title
+    self.Workarea = os.path.join(root_folder, title)
+    logger.debug(f"Creating working folder [{self.Workarea}]...")
+    os.makedirs(self.Workarea, exist_ok=True)
+    # download media file(s) according to preference
+    playlist = self.__select_playlist(preference)
+    playlist.Download(self.Workarea)
+    # create final video
+    self.TargetFile = os.path.join(root_folder, f"{title}.mp4")
+    if playlist.AudioPlaylist:
+      # need to mix video and audio files
+      logger.debug(f"Combining video and audio files to {self.TargetFile}...")
+      self.__combine_video_audio(self.TargetFile, playlist.VideoPlaylist.TargetFile,
+                                 playlist.AudioPlaylist.TargetFile)
+    else:
+      logger.debug(f"Creating final file: {self.TargetFile}...")
+      self.__combine_video_audio(self.TargetFile, playlist.VideoPlaylist.TargetFile)
 
 #################################
 # Program starts
@@ -102,13 +203,13 @@ class M3U8Downloader:
 if __name__ == "__main__":
   args = sys.argv
   if len(args) < 2: exit()
-  urls = []  
+  url = None  
   title = None
-  index = 1
-  while (index < len(args)):
-    arg = args[index]; index += 1
+  for index, arg in enumerate(args):
+    if index == 0: continue
     if arg.lower().startswith("https://"):
-      urls.append(arg)
-    else:
+      url = arg
+    elif title is None:
       title = arg
-  M3U8Downloader.DownloadStreams(urls, title)
+  downloader = M3U8(url)
+  downloader.Download(title, WORK_DIR, "+720")

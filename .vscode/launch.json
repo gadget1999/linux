@@ -79,8 +79,7 @@
       "request": "launch",
       "program": "${file}",
       "args": [
-        "https://test.com/playlist_audio.m3u8",
-        "https://test.com/playlist_1080.m3u8",
+        "https://abr-streaming.ondemandchina.com/brightcove/6083446408001/duda-and-dada-01.mp4/HLS/modified_playlist_1080p.m3u8",
         "Test Video"
       ],
       "env": {
