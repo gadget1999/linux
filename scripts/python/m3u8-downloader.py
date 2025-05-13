@@ -3,6 +3,7 @@ import requests
 import m3u8
 from collections import namedtuple
 from urllib.parse import urljoin
+from pathvalidate import sanitize_filename
 import subprocess
 
 from common import Logger, CLIParser
@@ -202,14 +203,14 @@ class M3U8:
 
 if __name__ == "__main__":
   args = sys.argv
-  if len(args) < 2: exit()
-  url = None  
+  url = None
   title = None
-  for index, arg in enumerate(args):
-    if index == 0: continue
-    if arg.lower().startswith("https://"):
-      url = arg
-    elif title is None:
-      title = arg
+  if len(args) == 3:
+    # usage: m3u8-downloader.py [url title]
+    url = args[1]
+    title = sanitize_filename(args[2])
+  else:
+    url = input("Enter the m3u8 URL: ")
+    title = sanitize_filename(input("Enter the title: "))
   downloader = M3U8(url)
   downloader.Download(title, WORK_DIR, "+720")
