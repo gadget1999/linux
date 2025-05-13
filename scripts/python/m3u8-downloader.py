@@ -51,8 +51,7 @@ class M3U8_VOD_Playlist:
     return response.content
 
   def __download_file(self, url, output):
-    if os.path.exists(output):
-      return
+    if os.path.exists(output): return
     data = self.__http_call(url)
     with open(output, "wb") as f:
       f.write(data)
@@ -69,14 +68,14 @@ class M3U8_VOD_Playlist:
   def Download(self, workarea):
     self.Workarea = workarea
     # get final file name
-    logger.info(f"Downloading playlist {self.Url} (total {len(self.Files)} segments) ...")
+    logger.info(f"Downloading playlist {self.Url} ({len(self.Files)} segments) ...")
     ext = os.path.splitext(self.Files[0].name)[1]
     self.TargetFile = os.path.join(self.Workarea, f"CombinedSegments{ext}")
     # download segment files
     segment_list_file = os.path.join(self.Workarea, "Segments.txt")
     segment_list = []
     for index, segment in enumerate(self.Files):
-      segment_file_path = os.path.join(self.Workarea, segment.name)
+      segment_file_path = os.path.join(self.Workarea, sanitize_filename(segment.name))
       self.__download_file(segment.uri, segment_file_path)
       segment_list.append(f"file '{segment_file_path}'\n")
       if (index + 1) % 10 == 0:
@@ -92,6 +91,10 @@ class M3U8_VOD_Playlist:
 class M3U8_Envelope_Playlist:
   def __init__(self, m3u8_playlist):
     # basic properties
+    self.HasVideo = True
+    if not m3u8_playlist.stream_info.resolution:
+      self.HasVideo = False
+      return
     self.Resolution = min(m3u8_playlist.stream_info.resolution)
     self.VideoUri = m3u8_playlist.absolute_uri
     self.AudioUri = None
@@ -136,7 +139,9 @@ class M3U8:
     if not self.__m3u8_obj.playlist_type:
       # this is not the playlist with media segments
       for playlist in self.__m3u8_obj.playlists:
-        self.Playlists.append(M3U8_Envelope_Playlist(playlist))
+        tmp_playlist = M3U8_Envelope_Playlist(playlist)
+        if tmp_playlist.HasVideo:
+          self.Playlists.append(tmp_playlist)
     elif self.__m3u8_obj.playlist_type.lower() == "vod":
       self.Playlists.append(M3U8_VOD_Playlist(self.Url))
     else:
@@ -158,32 +163,34 @@ class M3U8:
   # if there are multiple playlists, use preference to select (default: max resolution)
   # preference: '+': max resolution, '-': min resolution, '+|-number': match resolution if possible
   def __select_playlist(self, preference):
-    if (self.Playlists.count == 1):
-      return self.Playlists[0]
+    if (self.Playlists.count == 1): return self.Playlists[0]
     # sort the playlists by resolution
     self.Playlists.sort(key=lambda x: x.Resolution)
     # try to match the resolution
+    if not preference: preference = "+"
     if len(preference) > 1:
       preferred_resolution = int(preference[1:])
       for playlist in self.Playlists:
         if playlist.Resolution == preferred_resolution:
           return playlist
     # if no match, return the min or max resolution    
-    if preference[0] == '+':
-      return self.Playlists[-1]
-    elif preference[0] == '-':
-      return self.Playlists[0]
+    if preference[0] == '+':   return self.Playlists[-1]
+    elif preference[0] == '-': return self.Playlists[0]
     else:
       logger.error(f"Invalid preference: {preference}")
       return None
 
   def Download(self, title, root_folder, preference="+"):
+    if not self.Playlists:
+      logger.error(f"No playlist found for {self.Url}")
+      return
     self.Title = title
     self.Workarea = os.path.join(root_folder, title)
-    logger.debug(f"Creating working folder [{self.Workarea}]...")
+    logger.info(f"Processing [{title}] (pref: {preference}, Uri: {self.Url})...")
     os.makedirs(self.Workarea, exist_ok=True)
     # download media file(s) according to preference
     playlist = self.__select_playlist(preference)
+    logger.debug(f"Selected playlist: {playlist.Info()}")
     playlist.Download(self.Workarea)
     # create final video
     self.TargetFile = os.path.join(root_folder, f"{title}.mp4")
@@ -204,12 +211,15 @@ if __name__ == "__main__":
   args = sys.argv
   url = None
   title = None
-  if len(args) == 3:
+  preference = None
+  if len(args) in [3, 4]:
     # usage: m3u8-downloader.py [url title]
     url = args[1]
     title = sanitize_filename(args[2])
+    if len(args) == 4: preference = args[3]
   else:
     url = input("Enter the m3u8 URL: ")
     title = sanitize_filename(input("Enter the title: "))
+    preference = input("Enter the resolution preference (+/-num): ")
   downloader = M3U8(url)
-  downloader.Download(title, WORK_DIR, "+720")
+  downloader.Download(title, WORK_DIR, preference)
