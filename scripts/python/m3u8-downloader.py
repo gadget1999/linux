@@ -80,9 +80,9 @@ class M3U8_VOD_Playlist:
       self.__download_file(segment.uri, segment_file_path)
       segment_list.append(f"file '{segment_file_path}'\n")
       if (index + 1) % 10 == 0:
-        print(f"{index + 1}", end='')
+        print(f"{index + 1}", end='', flush=True)
       else:
-        print('.', end='')
+        print('.', end='', flush=True)
     logger.debug(f"Saving segment list file [self.List_file]...")
     with open(segment_list_file, "w") as f:
       f.writelines(segment_list)
