@@ -61,7 +61,10 @@ class M3U8_VOD_Playlist:
       logger.error(f"File already exists: {target_file}")
       return
     logger.debug(f"Combining segment files to {target_file}...")
-    ffmpeg_cmd = f"{FFMPEG} -f concat -safe 0 -i \"{file_list}\" -c copy \"{target_file}\""
+    ffmpeg_cmd = [FFMPEG, '-f', 'concat', '-safe', '0',
+                  '-i', file_list,
+                  '-c', 'copy',
+                  target_file]
     status = subprocess.run(ffmpeg_cmd, cwd=workarea)
     return status
 
@@ -149,14 +152,12 @@ class M3U8:
 
   # combine streams to MP4
   def __combine_video_audio(self, target_file, video_file, audio_file = None):
-    if not audio_file:
-      logger.info(f"Creating final file: {target_file}...")
-      ffmpeg_cmd = f"{FFMPEG} -i \"{video_file}\" -c copy -bsf:a aac_adtstoasc \"{target_file}\""
-    else:
+    ffmpeg_cmd = [FFMPEG, "-i", video_file]
+    if audio_file:
       # combine video and audio files
-      logger.info(f"Combining video and audio files to {target_file}...")
-      ffmpeg_cmd = f"{FFMPEG} -i \"{video_file}\" -i \"{audio_file}\" -c copy -bsf:a aac_adtstoasc \"{target_file}\""
-
+      logger.info(f"Combining video and audio files to {target_file}...")      
+      ffmpeg_cmd.extend(['-i', audio_file])
+    ffmpeg_cmd.extend(['-c', 'copy', '-bsf:a', 'aac_adtstoasc', target_file])
     status = subprocess.run(ffmpeg_cmd, cwd=self.Workarea)
     return status
   
