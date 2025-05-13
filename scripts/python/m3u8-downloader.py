@@ -144,17 +144,16 @@ class M3U8:
 
   # combine streams to MP4
   def __combine_video_audio(self, target_file, video_file, audio_file = None):
-    logger.info(f"Combining video and audio files to {target_file}...")
-    # build the FFmpeg command
-    ffmpeg_cmd = [f"{FFMPEG}"]
-    ffmpeg_cmd.extend(["-i", f"{video_file}"])
-    if audio_file:
-      ffmpeg_cmd.extend(["-i", f"{audio_file}"])
-    ffmpeg_cmd.extend([
-      "-c", "copy",
-      "-bsf:a", "aac_adtstoasc",
-      f"{target_file}"])
-    subprocess.run(ffmpeg_cmd)
+    if not audio_file:
+      logger.info(f"Creating final file: {target_file}...")
+      ffmpeg_cmd = f"{FFMPEG} -i \"{video_file}\" -c copy -bsf:a aac_adtstoasc \"{target_file}\""
+    else:
+      # combine video and audio files
+      logger.info(f"Combining video and audio files to {target_file}...")
+      ffmpeg_cmd = f"{FFMPEG} -i \"{video_file}\" -i \"{audio_file}\" -c copy -bsf:a aac_adtstoasc \"{target_file}\""
+
+    status = subprocess.run(ffmpeg_cmd, cwd=self.Workarea)
+    return status
   
   # if there are multiple playlists, use preference to select (default: max resolution)
   # preference: '+': max resolution, '-': min resolution, '+|-number': match resolution if possible
