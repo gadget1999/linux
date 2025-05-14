@@ -10,20 +10,21 @@ from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
+DEBUG = False
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36'
 WORK_DIR = os.environ['M3U8_WORK_DIR']
 FFMPEG = "ffmpeg"
-if "FFMPEG" in os.environ:
-  FFMPEG = os.environ["FFMPEG"]
+if "DEBUG" in os.environ:  DEBUG = True
+if "FFMPEG" in os.environ: FFMPEG = os.environ["FFMPEG"]
 if not os.path.exists(FFMPEG):
   logger.error(f"FFmpeg not found: {FFMPEG}")
   exit(1)
 
 # to get m3u8 playlist: use browser -> F12 -> Network -> Media
 # m3u8 format:
-# 1. m3u8: contains the playlists information, for adaptive streaming with different resolutions
-# 2. envelope playlist: for one video with both video and audio playlists (this is a virtual playlist without .m3u8 file)
-# 3. VOD playlist: the actual playlist with media segments, could be audio only, video only, or already mixed video and audio
+# 1. envelope: contains the playlists information, for adaptive streaming with different resolutions
+# 2. playlist: for one video with both video and audio streams seaparted or mixed (this is a virtual playlist without .m3u8 file)
+# 3. stream: the actual media stream with segments, could be audio only, video only, or both already mixed
 #   (VOD means it's not live streaming, the #EXT-X-ENDLIST tag is set)
 
 # playlist that contains the media segments
@@ -33,7 +34,7 @@ class M3U8_Media_Segment:
   name: str = ''
   duration: float = 0.0
 
-class M3U8_VOD_Playlist:
+class M3U8_VOD_Stream:
   def __init__(self, url):
     # basic properties
     self.Url = url
@@ -52,7 +53,7 @@ class M3U8_VOD_Playlist:
     return f"URL: {self.Url} ({int(self.Duration)}s, {len(self.Segments)} segments)"
 
   def __http_call(self, url):
-    time.sleep(0.1)
+    if not DEBUG: time.sleep(1)
     headers = { "User-Agent": USER_AGENT }
     response = requests.get(url, headers=headers)
     return response.content
@@ -110,11 +111,20 @@ class M3U8_VOD_Playlist:
     # combine segments to one file
     self.__combine_segments(self.Workarea, segment_list_file, self.TargetFile)
 
-class M3U8_Envelope_Playlist:
-  def __init__(self, m3u8_playlist):
+class M3U8_Playlist:
+  def __init__(self, m3u8_playlist = None):
+    # download related properties
+    self.HasVideo = True
+    self.Resolution = 0
+    self.Name = None
+    self.VideoUri = None
+    self.AudioUri = None
+    self.Workarea = None
+    self.VideoStream = None
+    self.AudioStream = None
     # basic properties
     self.HasVideo = True
-    if not m3u8_playlist.stream_info.resolution:
+    if (not m3u8_playlist) or (not m3u8_playlist.stream_info.resolution):
       self.HasVideo = False
       return
     self.Resolution = min(m3u8_playlist.stream_info.resolution)
@@ -125,10 +135,6 @@ class M3U8_Envelope_Playlist:
       if (media.type == "AUDIO") and (media.group_id == m3u8_playlist.stream_info.audio):
         self.AudioUri = media.absolute_uri
         break
-    # download related properties
-    self.Workarea = None
-    self.VideoPlaylist = None
-    self.AudioPlaylist = None
 
   def Info(self):
     return f"Video: {self.Name}, Resolution: {self.Resolution}p, Audio: {not not self.AudioUri}"
@@ -136,17 +142,17 @@ class M3U8_Envelope_Playlist:
   def Download(self, workarea):
     self.Workarea = workarea
     # download video and audio files
-    self.VideoPlaylist = M3U8_VOD_Playlist(self.VideoUri)
-    self.VideoPlaylist.Download(workarea)
+    self.VideoStream = M3U8_VOD_Stream(self.VideoUri)
+    self.VideoStream.Download(workarea)
     if self.AudioUri:
       # need to mix video and audio files, use subfolder for audio segments
       audio_workarea = os.path.join(workarea, "audio")
       logger.debug(f"Creating working folder for audio [{audio_workarea}]...")
       os.makedirs(audio_workarea, exist_ok=True)
-      self.AudioPlaylist = M3U8_VOD_Playlist(self.AudioUri)
-      self.AudioPlaylist.Download(audio_workarea)
+      self.AudioStream = M3U8_VOD_Stream(self.AudioUri)
+      self.AudioStream.Download(audio_workarea)
 
-class M3U8:
+class M3U8_Envelope:
   def __init__(self, url):
     # basic properties
     self.Url = url
@@ -162,12 +168,17 @@ class M3U8:
     if not self.__m3u8_obj.playlist_type:
       # this is not the playlist with media segments
       for index, playlist in enumerate(self.__m3u8_obj.playlists):
-        tmp_playlist = M3U8_Envelope_Playlist(playlist)
+        tmp_playlist = M3U8_Playlist(playlist)
         if tmp_playlist.HasVideo:
           logger.debug(f"Playlist {index + 1}: {tmp_playlist.Info()}")
           self.Playlists.append(tmp_playlist)
     elif self.__m3u8_obj.playlist_type.lower() == "vod":
-      self.Playlists.append(M3U8_VOD_Playlist(self.Url))
+      tmp_playlist = M3U8_Playlist()
+      tmp_playlist.Url = self.Url
+      tmp_playlist.Name = "VOD_Stream"
+      tmp_playlist.VideoUri = self.Url
+      tmp_playlist.VideoStream = M3U8_VOD_Stream(self.Url)
+      self.Playlists.append(tmp_playlist)
     else:
       logger.error(f"Playlist type is not supported: {self.m3u8_obj.playlist_type}")
 
@@ -214,8 +225,21 @@ class M3U8:
     except subprocess.CalledProcessError as e:
       logger.error(f"Failed to create final video: {e.stderr}")
       return False, e.stderr
+    
+  def __delete_folder(self, path):
+    for item in os.listdir(path):
+      item_path = os.path.join(path, item)
+      if os.path.isfile(item_path):
+        os.remove(item_path)
+      else:
+        self.__delete_folder(item_path)  # Recursive call for subdirectories
+    os.rmdir(path)
 
   def Download(self, title, root_folder, preference="+"):
+    self.TargetFile = os.path.join(root_folder, f"{title}.mp4")
+    if os.path.exists(self.TargetFile):
+      logger.error(f"File already exists: {self.TargetFile}")
+      return
     if not self.Playlists:
       logger.error(f"No playlist found for {self.Url}")
       return
@@ -231,15 +255,15 @@ class M3U8:
       logger.debug(f"Selected playlist: {playlist.Info()}")
     playlist.Download(self.Workarea)
     # create final video
-    self.TargetFile = os.path.join(root_folder, f"{title}.mp4")
+    video_file = playlist.VideoStream.TargetFile
     audio_file = None
-    if isinstance(playlist, M3U8_Envelope_Playlist):
-      video_file = playlist.VideoPlaylist.TargetFile
-      if playlist.AudioPlaylist:
-        audio_file = playlist.AudioPlaylist.TargetFile
-    else:
-      video_file = playlist.TargetFile
+    if playlist.AudioStream:
+      audio_file = playlist.AudioStream.TargetFile
     self.__combine_video_audio(self.TargetFile, video_file, audio_file)
+    # cleanup if not in debug mode
+    if not DEBUG:
+      logger.debug(f"Cleaning up working folder [{self.Workarea}]...")
+      self.__delete_folder(self.Workarea)
 
 #################################
 # Program starts
@@ -256,8 +280,9 @@ if __name__ == "__main__":
     title = sanitize_filename(args[2])
     if len(args) == 4: preference = args[3]
   else:
+    DEBUG = True
     url = input("Enter the m3u8 URL: ")
     title = sanitize_filename(input("Enter the title: "))
     preference = input("Enter the resolution preference ([num]+/-, default: +): ")
-  downloader = M3U8(url)
+  downloader = M3U8_Envelope(url)
   downloader.Download(title, WORK_DIR, preference)

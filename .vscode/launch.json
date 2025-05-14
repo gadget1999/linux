@@ -84,6 +84,7 @@
         "240-"
       ],
       "env": {
+        "DEBUG": "True",
         "M3U8_WORK_DIR": "/tmp",
         "FFMPEG": "/tmp/ffmpeg.exe"
       },
