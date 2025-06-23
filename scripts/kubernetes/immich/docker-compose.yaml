@@ -18,7 +18,7 @@ services:
     #   service: cpu # set to one of [nvenc, quicksync, rkmpp, vaapi, vaapi-wsl] for accelerated transcoding
     volumes:
       # Do not edit the next line. If you want to change the media storage location on your system, edit the value of UPLOAD_LOCATION in the .env file
-      - ${export IMMICH_DATA}:/usr/src/app/upload
+      - ${IMMICH_DATA}:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     ports:
       - '2283:2283'
@@ -53,7 +53,7 @@ services:
 
   redis:
     container_name: immich_redis
-    image: docker.io/valkey/valkey:8-bookworm@sha256:c855f98e09d558a0d7cc1a4e56473231206a4c54c0114ada9c485b47aeb92ec8
+    image: docker.io/valkey/valkey:8-bookworm@sha256:42cba146593a5ea9a622002c1b7cba5da7be248650cbb64ecb9c6c33d29794b1
     healthcheck:
       test: redis-cli ping || exit 1
     restart: always
