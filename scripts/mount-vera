@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+
+check_packages "veracrypt"
+
+
+#########################
+# Helper functions
+#########################
+
+
+VERA_MOUNTPOINT=/tmp/vera
+
+
+function mount_vera_volume() {
+ local vol_file=$1
+
+
+ debug "Mounting Veracrypt volume [$vol_file] to $VERA_MOUNTPOINT..."
+ mkdir -p $VERA_MOUNTPOINT
+ sudo veracrypt --text --mount $vol_file $VERA_MOUNTPOINT \
+                --pim 0 --keyfiles "" --protect-hidden no
+ ls -l $VERA_MOUNTPOINT
+}
+
+
+function unmount_vera_volume() {
+ debug "Unmounting Veracrypt at $VERA_MOUNTPOINT..."
+ sudo veracrypt --text --dismount $VERA_MOUNTPOINT
+}
+
+
+#########################
+# Main entrance
+#########################
+
+case $1 in
+ off|unmount)
+  unmount_vera_volume
+  ;;
+ *)
+  VERA_FILE="$1"
+  mount_vera_volume $VERA_FILE
+  ;;
+esac
