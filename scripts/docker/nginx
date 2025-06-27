@@ -86,11 +86,14 @@ function create_nginx_app_conf() {
   debug "Enable password for reverse proxy..."
   local auth_basic="auth_basic \"Restricted Area\"\;"
   local auth_basic_user_file="auth_basic_user_file \/etc\/nginx\/conf\.d\/$conf_name\.pwd\;"
+  local no_cache_header='add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"; add_header Pragma "no-cache"; add_header Expires "0";'
   sudo sed -i "s/{{auth_basic_placeholder}}/$auth_basic/g" $conf_file
   sudo sed -i "s/{{auth_basic_user_file_placeholder}}/$auth_basic_user_file/g" $conf_file
+  sudo sed -i "s%{{no_cache_header}}%$no_cache_header%g" $conf_file
  else
   sudo sed -i "/{{auth_basic_placeholder}}/d" $conf_file
   sudo sed -i "/{{auth_basic_user_file_placeholder}}/d" $conf_file
+  sudo sed -i "/{{no_cache_header}}/d" $conf_file
  fi
 
  [ "$optional_tls_version" != "" ] && debug "Allow TLS1.2"
