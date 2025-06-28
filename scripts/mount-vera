@@ -44,6 +44,7 @@ case $1 in
   ;;
  *)
   VERA_FILE="$1"
+  unmount_vera_volume
   mount_vera_volume $VERA_FILE
   ;;
 esac
