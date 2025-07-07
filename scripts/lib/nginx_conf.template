@@ -25,6 +25,7 @@ http {
 
   sendfile        on;
   #tcp_nopush     on;
+  tcp_nodelay     off; # Better for power savings
 
   keepalive_timeout  65;
   server_tokens off;
