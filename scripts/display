@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+# device to control screen brightness
+# e.g., like /sys/class/backlight/intel_backlight/brightness
+check_env "SCREEN_DEVICE"
+
+function screen_off() {
+ debug "Turning off screen..."
+ echo 0 | $SUDO tee $SCREEN_DEVICE
+}
+
+function screen_on() {
+ debug "Turning on screen..."
+ echo 30 | $SUDO tee $SCREEN_DEVICE
+}
+
+case $1 in
+ on)
+  screen_on
+  ;;
+ off)
+  screen_off
+  ;;
+ *)
+  show_usage "on|off"
+  ;;
+esac

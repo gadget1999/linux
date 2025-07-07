@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_packages "wakeonlan"
+
+TARGET=$1
+TARGET_MAC_VAR="MAC_${TARGET^^}"
+TARGET_MAC="${!TARGET_MAC_VAR}"
+
+[ "$TARGET_MAC" == "" ] && fatal_error "MAC address for [$TARGET] cannot be found."
+
+log "Waking up $TARGET with MAC address $TARGET_MAC..."
+wakeonlan "$TARGET_MAC"

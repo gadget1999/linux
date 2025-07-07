@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+function is_wol_enabled() {
+ local nic_name=$1
+
+ $SUDO /sbin/ethtool $nic_name | grep "Wake-on: g" &> /dev/null
+ if [ $? == 0 ]; then
+  echo "true"
+ else
+  echo "false"
+ fi
+}
+
+function enable_wol() {
+ local nic_name=$1
+
+ if [ $(is_wol_enabled $nic_name) == "true" ]; then
+  debug "WOL for [$nic_name] already enabled."
+  return
+ fi
+
+ log "Enabling WOL for [$nic_name]..."
+ $SUDO /sbin/ethtool -s $nic_name wol g
+}
+
+check_env "MAIN_NIC"
+
+enable_wol $MAIN_NIC
