@@ -9,14 +9,28 @@ source $CMD_PATH/lib/common.sh
 # e.g., like /sys/class/backlight/intel_backlight/brightness
 check_env "SCREEN_DEVICE"
 
+OFF_BRIGHTNESS=0
+ON_BRIGHTNESS=30
+CURRENT_BRIGHTNESS=$(cat $SCREEN_DEVICE)
+
 function screen_off() {
+ if [ "$CURRENT_BRIGHTNESS" = "$OFF_BRIGHTNESS" ]; then
+  debug "Screen is already off."
+  return
+ fi
+
  debug "Turning off screen..."
- echo 0 | $SUDO tee $SCREEN_DEVICE
+ echo $OFF_BRIGHTNESS | $SUDO tee $SCREEN_DEVICE
 }
 
 function screen_on() {
+ if [ "$CURRENT_BRIGHTNESS" = "$ON_BRIGHTNESS" ]; then
+  debug "Screen is already on."
+  return
+ fi
+
  debug "Turning on screen..."
- echo 30 | $SUDO tee $SCREEN_DEVICE
+ echo $ON_BRIGHTNESS | $SUDO tee $SCREEN_DEVICE
 }
 
 case $1 in
