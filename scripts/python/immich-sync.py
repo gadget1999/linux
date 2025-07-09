@@ -74,6 +74,7 @@ class ImmichUploader:
   def upload_file(self, file_path):
     """Upload a single file to Immich"""
     try:
+      logger.debug(f"Uploading file: {file_path}")
       with open(file_path, 'rb') as f:
         file_name = os.path.basename(file_path)
         create_time = self.get_media_time(file_path)
