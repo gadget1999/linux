@@ -92,6 +92,20 @@
       "type": "python"
     },
     {
+      "name": "Python: immich-sync",
+      "request": "launch",
+      "program": "${file}",
+      "args": [
+        "/path"
+      ],
+      "env": {
+        "IMMICH_DOMAIN": "your immich server domain here",
+        "IMMICH_API_KEY": "your API key here"
+      },
+      "console": "integratedTerminal",
+      "type": "python"
+    },
+    {
       "name": "Python: AZVM",
       "request": "launch",
       "program": "${file}",
