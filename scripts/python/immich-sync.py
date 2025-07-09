@@ -13,11 +13,11 @@ logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
 class ImmichUploader:
-  def __init__(self, api_key, server_url, folder_path):
+  def __init__(self, api_key, api_endpoint, folder_path):
     self.api_key = api_key
-    self.server_url = server_url.rstrip('/')
+    self.api_endpoint = api_endpoint.rstrip('/')
     self.folder_path = folder_path
-    self.upload_url = f"{self.server_url}/api/assets"
+    self.upload_url = f"{self.api_endpoint}/api/assets"
     self.headers = {'Accept': 'application/json', 'x-api-key': self.api_key}
     self.config_file = os.path.expanduser("~") + "/.immich_sync_config"
     self.__get_reference_time()
@@ -121,11 +121,11 @@ class ImmichUploader:
     self.save_reference_time()
   
 def immich_sync(args):
-  server_url = f"https://{os.environ['IMMICH_DOMAIN']}"
+  api_endpoint = os.environ['IMMICH_API_ENDPOINT']
   api_key = os.environ['IMMICH_API_KEY']
   uploader = ImmichUploader(
     api_key=api_key,
-    server_url=server_url,
+    api_endpoint=api_endpoint,
     folder_path=args.folder
   )
   uploader.upload_changed_files()

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_packages "python3"
+check_env "IMMICH_API_ENDPOINT IMMICH_API_KEY MEDIA_LIBRARY_PATH"
+
+export IMMICH_API_ENDPOINT
+export IMMICH_API_KEY
+
+"$PYTHON_VENV"python3 $CMD_PATH/python/immich-sync.py "$MEDIA_LIBRARY_PATH"
