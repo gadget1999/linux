@@ -14,10 +14,11 @@ Logger.disable_http_tracing()
 
 class ImmichUploader:
   def __init__(self, api_key, api_endpoint, folder_path):
+    self.__ignore_ssl_errors = True if "DEBUG" in os.environ else False
     self.api_key = api_key
     self.api_endpoint = api_endpoint.rstrip('/')
     self.folder_path = folder_path
-    self.upload_url = f"{self.api_endpoint}/api/assets"
+    self.upload_url = f"{self.api_endpoint}/assets"
     self.headers = {'Accept': 'application/json', 'x-api-key': self.api_key}
     self.config_file = os.path.expanduser("~") + "/.immich_sync_config"
     self.__get_reference_time()
@@ -91,7 +92,7 @@ class ImmichUploader:
           headers=self.headers,
           data=data,
           files=files,
-          verify=False  # Disable SSL verification for self-signed certificates
+          verify=self.__ignore_ssl_errors
         )
       if response.status_code < 300:
         create_time_str = time.strftime("%Y%m%d_%H%M%S", create_time)
@@ -116,10 +117,11 @@ class ImmichUploader:
     success_count = 0
     for file in changed_files:
       if self.upload_file(file):
-        success_count += 1    
+        success_count += 1
     if (success_count != len(changed_files)):
       logger.warn(f"Some files failed: {success_count}/{len(changed_files)} files uploaded.")
-    self.save_reference_time()
+    else:
+      self.save_reference_time()
   
 def immich_sync(args):
   api_endpoint = os.environ['IMMICH_API_ENDPOINT']
