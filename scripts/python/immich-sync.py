@@ -14,7 +14,7 @@ Logger.disable_http_tracing()
 
 class ImmichUploader:
   def __init__(self, api_key, api_endpoint, folder_path):
-    self.__ignore_ssl_errors = True if "DEBUG" in os.environ else False
+    self.__verify_ssl = False if "DEBUG" in os.environ else True
     self.api_key = api_key
     self.api_endpoint = api_endpoint.rstrip('/')
     self.folder_path = folder_path
@@ -25,6 +25,7 @@ class ImmichUploader:
 
   def __get_reference_time(self):
     try:
+      logger.debug(f"Loading config file: {self.config_file}")
       key_hash = hashlib.md5(self.api_key.encode('utf-8')).hexdigest()
       with open(self.config_file, 'r', encoding='utf-8') as file:
         config_json = json.load(file)
@@ -84,19 +85,24 @@ class ImmichUploader:
          'deviceId': 'ImmichSync',
          'fileCreatedAt': datetime.fromtimestamp(time.mktime(create_time)).isoformat(),
          'fileModifiedAt': datetime.fromtimestamp(time.mktime(create_time)).isoformat(),
-         'isFavorite': 'false'
+         'isFavorite': 'false',
+         'filename': file_name,
         }
-        files = {'assetData': f}
+        files = {'assetData': (file_name, f, 'application/octet-stream')}
         response = requests.post(
           self.upload_url,
           headers=self.headers,
           data=data,
           files=files,
-          verify=self.__ignore_ssl_errors
+          verify=self.__verify_ssl
         )
       if response.status_code < 300:
+        response_json = response.json()
+        if 'status' in response_json and response_json['status'] == 'duplicate':
+          logger.debug(f"Duplicate file: {file_name}")
+        else:
+          logger.info(f"Uploaded: {file_path}")
         create_time_str = time.strftime("%Y%m%d_%H%M%S", create_time)
-        logger.info(f"Uploaded: {file_path}")
         if create_time_str > self.since_str:
           self.since_str = create_time_str
         return True

@@ -38,7 +38,7 @@ class M3U8_VOD_Stream:
   def __init__(self, url):
     # basic properties
     self.Url = url
-    self.__ignore_ssl_errors = True if "DEBUG" in os.environ else False
+    self.__verify_ssl = False if "DEBUG" in os.environ else True
     self.__m3u8_obj = m3u8.load(url)
     self.Duration = 0.0
     self.Segments = []
@@ -56,7 +56,7 @@ class M3U8_VOD_Stream:
   def __http_call(self, url):
     if not DEBUG: time.sleep(1)
     headers = { "User-Agent": USER_AGENT }
-    response = requests.get(url, headers=headers, verify=self.__ignore_ssl_errors)
+    response = requests.get(url, headers=headers, verify=self.__verify_ssl)
     return response.content
 
   def __download_file(self, url, output):

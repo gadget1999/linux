@@ -96,11 +96,12 @@
       "request": "launch",
       "program": "${file}",
       "args": [
-        "/path"
+        "/tmp/immich"
       ],
       "env": {
-        "IMMICH_DOMAIN": "your immich server domain here",
-        "IMMICH_API_KEY": "your API key here"
+        "IMMICH_API_ENDPOINT": "https://yourdomain/api",
+        "IMMICH_API_KEY": "your_api_key",
+        "DEBUG": "True",
       },
       "console": "integratedTerminal",
       "type": "python"
