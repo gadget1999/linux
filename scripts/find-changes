@@ -1,14 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 
-echo Search whole filesystem for changed files in the last $1 minutes
-sudo find / \
- ! -path "/proc/*" \
- ! -path "/sys/*" \
- ! -path "/run/*" \
- ! -path "/dev/*" \
- ! -path "/media/*" \
- ! -path "/mnt/*" \
- ! -path "/var/log/*" \
- ! -path "/tmp/*" \
- -cmin -$1 \
- -exec stat -c "%.19z %s %n" {} \;
+# Define an array of directories to exclude
+excluded_dirs=(
+  "/proc" "/sys" "/run" "/dev"
+  "/media" "/mnt"
+  "/tmp" "/var/log"
+  )
+
+find_opts=()
+for dir in "${excluded_dirs[@]}"; do
+  find_opts+=(-path "$dir" -o)
+done
+
+INTERVAL=$1
+echo "Searching whole disk for changes over last $INTERVAL minutes"
+sudo find / \( "${find_opts[@]}" -false \) -prune -o \
+  -mmin -$INTERVAL -printf "%TY-%Tm-%Td %TH:%TM %s %p\n"
