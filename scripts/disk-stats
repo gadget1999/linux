@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+if [ "$ROOT_DISK" != "" ]; then
+ DISK=$ROOT_DISK
+else
+ # try to get root disk automatically
+ DISK=$(df --output=source / | awk -F'[/0-9]' 'NR==2 {print $3}')
+fi
+
+WRITTEN_MB=$(cat /sys/block/$DISK/stat | awk '{print $7*512/1024/1024}')
+log "/dev/$DISK written $WRITTEN_MB MB"
