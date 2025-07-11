@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+# 1. install acpid
+# 2. create files in /etc/acpi/events/ to register the events, common ones:
+#    brightness-up, brightness-down, lid-open, lid-close
+# 3. in these registration files, specify the action to run this script:
+#    event=EVENT_CODES
+#    action=/path/to/this/script.sh event_type
+#
+#    EVENT_CODES can be found in /etc/acpi/events/README, like:
+#     video/brightnessup BRTUP 00000086
+#     video/brightnessdown BRTDN 00000087
+#     button/lid LID open
+#     button/lid LID close
+
+[[ $# != 1 ]] && show_usage "event_type"
+EVENT_TYPE="$1"
+
+function lid_open_handler() {
+  log "Lid opened."
+  $CMD_PATH/display on
+}
+
+function lid_close_handler() {
+  log "Lid closed."
+  $CMD_PATH/display off
+}
+
+function brightness_up_handler() {
+  log "Brightness_Up pressed."
+  $CMD_PATH/display up
+}
+
+function brightness_down_handler() {
+  log "Brightness_Down pressed."
+  $CMD_PATH/display down
+}
+
+case "$EVENT_TYPE" in
+ lid_open)
+  lid_open_handler
+  ;;
+ lid_close)
+  lid_close_handler
+  ;;
+ brightness_up)
+  brightness_up_handler
+  ;;
+ brightness_down)
+  brightness_down_handler
+  ;;
+ *)
+  error "Unknown event type: $EVENT_TYPE"
+  ;;
+esac

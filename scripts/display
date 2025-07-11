@@ -11,6 +11,7 @@ check_env "SCREEN_DEVICE"
 
 OFF_BRIGHTNESS=10  # do not set to 0 in case cannot connect but need to check console
 ON_BRIGHTNESS=30
+MAX_BRIGHTNESS=100  # maximum brightness level
 CURRENT_BRIGHTNESS=$(cat $SCREEN_DEVICE)
 
 function screen_off() {
@@ -33,6 +34,23 @@ function screen_on() {
  echo $ON_BRIGHTNESS | $SUDO tee $SCREEN_DEVICE
 }
 
+function adjust_brightness() {
+ local adjustment=$1
+ local new_brightness=$((CURRENT_BRIGHTNESS + adjustment))
+ if [ $new_brightness -lt $OFF_BRIGHTNESS ]; then
+  new_brightness=$OFF_BRIGHTNESS
+ elif [ $new_brightness -gt $MAX_BRIGHTNESS ]; then
+  new_brightness=$MAX_BRIGHTNESS
+ fi
+
+ if [ "$CURRENT_BRIGHTNESS" = "$new_brightness" ]; then
+  return
+ fi
+
+ log "Adjust brightness to $new_brightness..."
+ echo $new_brightness | $SUDO tee $SCREEN_DEVICE
+}
+
 case $1 in
  on)
   screen_on
@@ -40,7 +58,13 @@ case $1 in
  off)
   screen_off
   ;;
+ up)
+  adjust_brightness 10
+  ;;
+ down)
+  adjust_brightness -10
+  ;;
  *)
-  show_usage "on|off"
+  show_usage "on|off|up|down"
   ;;
 esac
