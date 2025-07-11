@@ -10,11 +10,11 @@ from common import Logger, CLIParser
 logger = Logger.getLogger()
 Logger.disable_http_tracing()
 
-DEBUG = False
+VERIFY_SSL = True
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36'
 WORK_DIR = os.environ['M3U8_WORK_DIR']
 FFMPEG = "ffmpeg"
-if "DEBUG" in os.environ:  DEBUG = True
+if "DEBUG" in os.environ:  VERIFY_SSL = False
 if "FFMPEG" in os.environ: FFMPEG = os.environ["FFMPEG"]
 if not os.path.exists(FFMPEG):
   logger.error(f"FFmpeg not found: {FFMPEG}")
@@ -38,8 +38,7 @@ class M3U8_VOD_Stream:
   def __init__(self, url):
     # basic properties
     self.Url = url
-    self.__verify_ssl = False if "DEBUG" in os.environ else True
-    self.__m3u8_obj = m3u8.load(url)
+    self.__m3u8_obj = m3u8.load(url, verify_ssl=VERIFY_SSL)
     self.Duration = 0.0
     self.Segments = []
     for segment in self.__m3u8_obj.segments:
@@ -56,7 +55,7 @@ class M3U8_VOD_Stream:
   def __http_call(self, url):
     if not DEBUG: time.sleep(1)
     headers = { "User-Agent": USER_AGENT }
-    response = requests.get(url, headers=headers, verify=self.__verify_ssl)
+    response = requests.get(url, headers=headers, verify=VERIFY_SSL)
     return response.content
 
   def __download_file(self, url, output):
@@ -157,7 +156,7 @@ class M3U8_Envelope:
   def __init__(self, url):
     # basic properties
     self.Url = url
-    self.__m3u8_obj = m3u8.load(url)
+    self.__m3u8_obj = m3u8.load(url, verify_ssl=VERIFY_SSL)
     self.Playlists = []
     self.__load_playlists()
     # download related properties
