@@ -9,7 +9,7 @@ source $CMD_PATH/lib/common.sh
 # e.g., like /sys/class/backlight/intel_backlight/brightness
 check_env "SCREEN_DEVICE"
 
-OFF_BRIGHTNESS=10  # do not set to 0 in case cannot connect but need to check console
+OFF_BRIGHTNESS=0
 ON_BRIGHTNESS=30
 MAX_BRIGHTNESS=100  # maximum brightness level
 CURRENT_BRIGHTNESS=$(cat $SCREEN_DEVICE)
