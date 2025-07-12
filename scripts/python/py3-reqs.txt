@@ -10,7 +10,8 @@ dnspython
 pyusb
 psutil
 paho-mqtt
-gpiozero
-pigpio
-RPi.GPIO
-lgpio
+# uncomment for Raspberry Pi
+#gpiozero
+#pigpio
+#RPi.GPIO
+#lgpio
