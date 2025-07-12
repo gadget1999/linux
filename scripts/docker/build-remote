@@ -4,22 +4,27 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-[ "$1" == "" ] && show_usage "container-name"
+[ "$1" == "" ] && show_usage "image-name | all"
+check_env "GITHUB_REPO DOCKER_HUB_USER IMAGE_PREFIX IMAGE_PLATFORMS"
 
-check_env "GITHUB_ID GITHUB_REPO IMAGE_PREFIX"
+function build_docker_hub_image() {
+ local short_name=$1
+ buildx_image_from_github "$GITHUB_REPO" "$IMAGE_PREFIX" "$short_name" \
+   "$IMAGE_PLATFORMS" "$DOCKER_HUB_USER"
+}
 
-# do not pull from remote repo so that it's easier to test
-use_local_docker_repo
+function build_all() {
+ check_env "IMAGE_LIST"
+ for image in ${IMAGE_LIST[*]}; do
+  build_docker_hub_image "$image"
+ done
+}
 
-GITHUB_DIR="$GITHUB_REPO.git#master:$1"
-IMAGE_NAME="$GITHUB_ID/$IMAGE_PREFIX-$1:latest"
-
-debug "Removing previous local copies.."
-docker rmi $IMAGE_NAME
-
-debug "Building docker image [$IMAGE_NAME] ..."
-docker build --force-rm --no-cache \
- https://github.com/$GITHUB_ID/$GITHUB_DIR \
- -t $IMAGE_NAME
-
-$CMD_PATH/clear-images
+case $1 in
+ all)
+  build_all
+  ;;
+ *)
+  build_docker_hub_image $1
+  ;;
+esac

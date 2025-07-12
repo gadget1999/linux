@@ -459,7 +459,8 @@ function buildx_image_from_github() {
  local image_prefix=$2
  local container_name=$3
  local target_platform=$4
- local image_name="$image_prefix$container_name"
+ local docker_hub_user=$5
+ local image_name="$docker_hub_user/$image_prefix$container_name"
  local github_path="https://github.com/$github_repo.git#master:$container_name"
 
  log "Removing previous local copies of [$image_name].."
