@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, time
+import glob, os, time
 import psutil
 from influxdb import InfluxDBHelper
 from common import Logger, CLIParser
@@ -26,16 +26,24 @@ class SystemMetrics:
   def cpu_temperature():
     if not SystemMetrics.__has_temperature_sensor:
       return None
+    try:
+      # use psutil to get CPU temperature
+      temps = psutil.sensors_temperatures()
+      if 'coretemp' in temps:  # Intel CPUs
+        core_temps = [t.current for t in temps['coretemp']]
+        return max(core_temps)
+      elif 'k10temp' in temps:  # AMD CPUs
+        return temps['k10temp'][0].current
 
-    # use psutil to get CPU temperature
-    temps = psutil.sensors_temperatures()
-    if 'coretemp' in temps:  # Intel CPUs
-      core_temps = [t.current for t in temps['coretemp']]
-      return max(core_temps)
-    elif 'k10temp' in temps:  # AMD CPUs
-      return temps['k10temp'][0].current
-    else:
-      logger.error("Temperature sensors not supported by psutil.")
+      # Temperature sensors not supported by psutil, try system files (Linux only)
+      temps = []
+      for thermal_zone in glob.glob('/sys/class/thermal/thermal_zone*/temp'):
+        with open(thermal_zone, 'r') as f:
+          temp = int(f.read().strip()) / 1000  # Convert millidegrees to °C
+          temps.append(temp)
+      return max(temps) if temps else None
+    except Exception as e:
+      logger.error(f"Failed to read CPU temperature: {e}")
       return None
 
 class FanControl:
