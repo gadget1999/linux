@@ -18,7 +18,7 @@ else
 fi
 check_packages "jq"
 
-MAX_DELAY=3600
+MAX_DELAY=7300
 
 function check_alive() {
  local host=$1
@@ -34,7 +34,8 @@ function check_alive() {
   return
  fi
 
- debug "[$host]: $delta seconds passed since last update."
+ local temperature=$(firebase_get_attr "heartbeat/$host" "temperature")
+ debug "[$host] ($temperature°): last seen $delta seconds ago." 
 }
 
 function send_host_report() {

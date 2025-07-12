@@ -27,20 +27,15 @@ class SystemMetrics:
     if not SystemMetrics.__has_temperature_sensor:
       return None
 
-    """Get the core temperature.
-    Read file from /sys to get CPU temp in temp in C *1000
-    Returns:
-      int: The core temperature in thousanths of degrees Celsius.
-    """
-    try:
-      temp_str = None
-      with open('/sys/class/thermal/thermal_zone0/temp') as f:
-        temp_str = f.read()
-
-      return int(temp_str) / 1000
-    except Exception as e:
-      logger.error(f"Could not read CPU temperature: {e}. Treating as no sensor.")
-      SystemMetrics.__has_temperature_sensor = False
+    # use psutil to get CPU temperature
+    temps = psutil.sensors_temperatures()
+    if 'coretemp' in temps:  # Intel CPUs
+      core_temps = [t.current for t in temps['coretemp']]
+      return max(core_temps)
+    elif 'k10temp' in temps:  # AMD CPUs
+      return temps['k10temp'][0].current
+    else:
+      logger.error("Temperature sensors not supported by psutil.")
       return None
 
 class FanControl:

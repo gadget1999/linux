@@ -10,10 +10,8 @@ check_env "METRICS_FB_URL METRICS_FB_KEY"
 check_packages "curl jq"
 
 function get_cpu_temperature() {
- local temperature_file=/sys/class/thermal/thermal_zone*/temp
- [ ! -f $temperature_file ] && echo "N/A" && return
-
- local temperature=$(( $(cat $temperature_file) / 1000 ))
+ local temperature=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null \
+          | awk '{print $1/1000}' | sort -nr | head -1)
  echo $temperature
 }
 
@@ -24,7 +22,7 @@ function fb_send_metrics() {
    jq -n '{timestamp:$epoch, updated:$time, temperature:$temperature}' \
     --arg epoch $EPOCH \
     --arg time $NOW \
-    --arg temperature $temperature \
+    --arg temperature "$temperature" \
    }
   )
 
