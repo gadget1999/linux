@@ -10,7 +10,7 @@ IMAGE="influxdb:alpine"
 check_env "CONTAINER CONTAINER_CONFIG_ROOT DOCKER_INFLUXDB_USER DOCKER_INFLUXDB_PWD DOCKER_INFLUXDB_ORG"
 
 INFLUXDB_ROOT=$CONTAINER_CONFIG_ROOT/$CONTAINER
-INFLUXDB_PORT=15636
+INFLUXDB_PORT_LOCAL=15636
 INFLUXDB_PORT_EXT=53360
 
 SUBFOLDERS=(config)
@@ -25,7 +25,7 @@ prepare_container_folders $INFLUXDB_ROOT SUBFOLDERS
 function setup_influxdb() {
  check_env "DOCKER_INFLUXDB_USER DOCKER_INFLUXDB_PWD DOCKER_INFLUXDB_ORG"
  EXTRA_OPTS=(
-  -p $INFLUXDB_PORT:8086
+  -p $INFLUXDB_PORT_LOCAL:8086
   -v $CONTAINER:/var/lib/influxdb2
   -v $INFLUXDB_ROOT/config:/etc/influxdb2
   -e DOCKER_INFLUXDB_INIT_MODE=setup
@@ -47,7 +47,7 @@ function delete_influxdb() {
 
 function run_influxdb() {
  EXTRA_OPTS=(
-  -p $INFLUXDB_PORT:8086
+  -p $INFLUXDB_PORT_LOCAL:8086
   -v $CONTAINER:/var/lib/influxdb2
   -v $INFLUXDB_ROOT/config:/etc/influxdb2
   )
@@ -57,7 +57,12 @@ function run_influxdb() {
  new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 
  log "Starting nginx reverse proxy..."
- nginx $CONTAINER $INFLUXDB_PORT_EXT $INFLUXDB_PORT
+ if [ "$INFLUXDB_DOMAIN" != "" ]; then
+  debug "Starting nginx reverse proxy with external domain ($INFLUXDB_DOMAIN)..."
+  nginx proxy $INFLUXDB_DOMAIN $INFLUXDB_PORT_LOCAL
+ else
+  nginx $CONTAINER $INFLUXDB_PORT_EXT $INFLUXDB_PORT_LOCAL
+ fi 
 }
 
 #########################

@@ -14,8 +14,8 @@ server {
  add_header Expect-CT "enforce, max-age=300";
  add_header Feature-Policy "geolocation none;midi none;notifications none;push none;sync-xhr none;microphone none;camera none;magnetometer none;gyroscope none;speaker self;vibrate none;fullscreen self;payment none;";
 
- ssl_certificate /etc/nginx/ssl/{{dns_name}}.fullchain.pem;
- ssl_certificate_key /etc/nginx/ssl/{{dns_name}}.privkey.pem;
+ ssl_certificate /etc/nginx/ssl/{{certificate_name}}.fullchain.pem;
+ ssl_certificate_key /etc/nginx/ssl/{{certificate_name}}.privkey.pem;
  ssl_dhparam /etc/nginx/ssl/dhparams.pem;
 
  ssl_protocols TLSv1.3 {{optional_tls_version}};

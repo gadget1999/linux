@@ -34,9 +34,7 @@ new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 if [ "$YOUTUBE_DOMAIN" != "" ]; then
  debug "Starting nginx reverse proxy with external domain ($YOUTUBE_DOMAIN)..."
  nginx proxy $YOUTUBE_DOMAIN $YOUTUBE_PORT_LOCAL
-fi
-
-if [ "$YOUTUBE_PORT_EXT" != "" ]; then
+elif [ "$YOUTUBE_PORT_EXT" != "" ]; then
  debug "Starting nginx reverse proxy..."
  nginx $CONTAINER $YOUTUBE_PORT_EXT $YOUTUBE_PORT_LOCAL 1.2
 fi

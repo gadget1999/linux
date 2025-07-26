@@ -82,6 +82,14 @@ function create_nginx_app_conf() {
  sudo sed -i "s/{{dns_name}}/$dns_name/g" $conf_file
  sudo sed -i "s%{{proxy_address}}%$local_url%g" $conf_file
 
+ local certificate_name=$dns_name
+ if [[ ! -f "$SSL_CONFIG/$certificate_name.fullchain.pem" ]]; then
+  # use wildcard certificate domain if certificate for exact domain is not found
+  certificate_name="${dns_name#*.}" 
+  debug "Use wildcard certificate: $certificate_name"
+ fi
+ sudo sed -i "s/{{certificate_name}}/$certificate_name/g" $conf_file
+
  if [[ -s "$pwd_config" ]]; then
   debug "Enable password for reverse proxy..."
   local auth_basic="auth_basic \"Restricted Area\"\;"

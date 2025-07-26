@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "WEATHER_API_PROVIDER_1 WEATHER_API_KEY_1 WEATHER_PORT GPS_COORDINATES CONTAINER_UID"
+check_env "WEATHER_API_PROVIDER_1 WEATHER_API_KEY_1 WEATHER_PORT_LOCAL GPS_COORDINATES CONTAINER_UID"
 
 CONTAINER="nook"
 IMAGE="gadget1999/rpi-nook-weather"
@@ -30,7 +30,7 @@ EXTRA_OPTS=(
  -e QUOTE_FILE=/quotes/quotes.csv
  -v $WORK_DIR/quotes:/quotes:ro
  -v $LOG:/tmp/nook-weather.log
- -p $WEATHER_PORT:8080
+ -p $WEATHER_PORT_LOCAL:8080
  -m $MAX_RAM
  )
 
@@ -56,7 +56,10 @@ esac
 
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
 
-if [ "$WEATHER_PORT_EXT" != "" ]; then
+if [ "$WEATHER_DOMAIN" != "" ]; then
+ debug "Starting nginx reverse proxy with external domain ($WEATHER_DOMAIN)..."
+ nginx proxy $WEATHER_DOMAIN $WEATHER_PORT_LOCAL
+elif [ "$WEATHER_PORT_EXT" != "" ]; then
  debug "Starting nginx reverse proxy..."
- nginx $CONTAINER $WEATHER_PORT_EXT $WEATHER_PORT 1.2
+ nginx $CONTAINER $WEATHER_PORT_EXT $WEATHER_PORT_LOCAL 1.2
 fi
