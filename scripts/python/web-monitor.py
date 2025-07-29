@@ -30,6 +30,7 @@ dns.resolver.default_resolver.nameservers = ["9.9.9.9"]
 # for logging and CLI arguments parsing
 import configparser
 import common
+import threading
 logger = common.Logger.getLogger()
 common.Logger.disable_http_tracing()
 
@@ -204,7 +205,7 @@ class WebMonitor:
 
   def _load_urls_from_xlsx(self, filepath):
     try:
-      urls = []
+      urls_by_sheet = {}
       workbook = openpyxl.load_workbook(filepath)
       for sheet in workbook.worksheets:
         url_count = 0
@@ -233,9 +234,9 @@ class WebMonitor:
           self._URLS_BLOCKED = urls_in_sheet
         else:
           logger.debug(f"Sheet [{sheet.title}]: found {url_count} URLs")
-          urls.extend(urls_in_sheet)
+          urls_by_sheet[sheet.title] = urls_in_sheet
       workbook.close()
-      return urls
+      return urls_by_sheet
     except Exception as e:
       logger.critical(f"Cannot load site list file [{filepath}]: {e}")
       sys.exit(1)
@@ -260,14 +261,14 @@ class WebMonitor:
     if filepath.lower().endswith('.xlsx'):
       return self._load_urls_from_xlsx(filepath)
     else:
-      return self._load_urls_from_txt(filepath)
+      # For txt, treat as a single "Default" sheet
+      return {"Default": self._load_urls_from_txt(filepath)}
 
   def _load_email_config(self, config, section):
     try:
       if section not in config:
         return None
-        
-      section_config = config[section]      
+      section_config = config[section]
       # Convert config file section to dictionary for the new API
       config_dict = {
         "provider": section_config.get("EmailProvider", "brevo"),
@@ -277,26 +278,25 @@ class WebMonitor:
         "body_template": section_config.get("BodyTemplate", ""),
         "attachment": section_config.getboolean('Attachment', fallback=True)
       }
-      
       # Handle template file path relative to config directory
-      template_file = config_dict["body_template"].strip('\" ')
+      template_file = config_dict["body_template"].strip('" ')
       if template_file and template_file == os.path.basename(template_file):
         template_file = os.path.join(self._config_dir, template_file)
       config_dict["body_template"] = template_file
-      
       # Use the new dictionary-based loader
-      return email_util.load_email_config(config_dict)      
+      return email_util.load_email_config(config_dict)
     except Exception as e:
       logger.error(f"Email configuration is invalid: {e}")
       raise
 
   def _load_webhook_config(self, config, section):
     try:
-      if section not in config: return None
+      if section not in config:
+        return None
       sectionConfig = config[section]
       settings = WebHookConfig()
-      settings.endpoint = sectionConfig["EndPoint"].strip('\" ')
-      settings.content_formatter = sectionConfig["Content"].strip('\" ')
+      settings.endpoint = sectionConfig["EndPoint"].strip('" ')
+      settings.content_formatter = sectionConfig["Content"].strip('" ')
       return settings
     except Exception as e:
       logger.error(f"WebHook configuration is invalid: {e}")
@@ -304,13 +304,14 @@ class WebMonitor:
 
   def _load_influxdb_config(self, config, section):
     try:
-      if section not in config: return None
+      if section not in config:
+        return None
       sectionConfig = config[section]
       settings = InfluxDBConfig()
-      settings.endpoint = sectionConfig["InfluxDBAPIEndPoint"].strip('\" ')
-      settings.token = sectionConfig["InfluxDBAPIToken"].strip('\" ')
-      settings.tenant = sectionConfig["InfluxDBTenant"].strip('\" ')
-      settings.bucket = sectionConfig["InfluxDBBucket"].strip('\" ')
+      settings.endpoint = sectionConfig["InfluxDBAPIEndPoint"].strip('" ')
+      settings.token = sectionConfig["InfluxDBAPIToken"].strip('" ')
+      settings.tenant = sectionConfig["InfluxDBTenant"].strip('" ')
+      settings.bucket = sectionConfig["InfluxDBBucket"].strip('" ')
       return settings
     except Exception as e:
       logger.error(f"InfluxDB configuration is invalid: {e}")
@@ -334,7 +335,8 @@ class WebMonitor:
       logger.error(f"SSL scanner configuration is invalid: {e}")
       raise
 
-  def _get_report(self, urls, include_ssl_rating=False):
+  def _get_report(self, urls, include_ssl_rating=False, sheet_name=None):
+    # unchanged, but now only processes a list of URLs
     full_report = []
     has_down_sites = False
     total = len(urls)
@@ -346,7 +348,8 @@ class WebMonitor:
       if not SiteInfo.is_valid_url(url):
         logger.warning(f"Skipping invalid URL: {url}")
         continue
-      logger.debug(f"Analyzing site ({i}/{total}): {url}")
+      tab_info = f"[{sheet_name}] " if sheet_name else ""
+      logger.debug(f"Analyzing site {tab_info}({i}/{total}): {url}")
       result = SiteInfo.get_report(url, include_ssl_rating)
       i += 1
       if not result[0].online:
@@ -354,6 +357,52 @@ class WebMonitor:
       for record in result:
         full_report.append(record)
     return full_report, has_down_sites
+
+  def _get_report_multithreaded(self, urls_by_sheet, include_ssl_rating=False):
+    threads = []
+    results = {}
+    errors = {}
+
+    def worker(sheet, urls):
+      try:
+        report, has_down = self._get_report(urls, include_ssl_rating, sheet_name=sheet)
+        results[sheet] = report
+        errors[sheet] = has_down
+      except Exception as e:
+        logger.error(f"Thread for sheet {sheet} failed: {e}")
+        results[sheet] = []
+        errors[sheet] = False
+
+    for sheet, urls in urls_by_sheet.items():
+      t = threading.Thread(target=worker, args=(sheet, urls))
+      t.start()
+      threads.append(t)
+
+    for t in threads:
+      t.join()
+
+    # Combine all reports and error flags
+    full_report = []
+    has_down_sites = False
+    for sheet in urls_by_sheet:
+      full_report.extend(results.get(sheet, []))
+      if errors.get(sheet, False):
+        has_down_sites = True
+    return full_report, has_down_sites
+
+  def _reconfirm_sites(self, report):
+    has_down_sites = False
+    for record in report:
+      if not record.online:
+        status = SiteInfo.get_status(record.url)
+        record.alive = status.alive
+        record.online = status.online
+        record.error = status.error
+        if not status.online:
+          has_down_sites = True
+        else:
+          logger.info(f"Site is now online: {record.url}")
+    return has_down_sites
 
   def _get_report_blocked(self, urls):
     report_blocked = []
@@ -374,20 +423,6 @@ class WebMonitor:
       record = SiteRecord(url=url, alive=True, online=True, error="Internal URL not blocked.")
       report_blocked.append(record)
     return report_blocked
-
-  def _reconfirm_sites(self, report):
-    has_down_sites = False
-    for record in report:
-      if not record.online:
-        status = SiteInfo.get_status(record.url)
-        record.alive = status.alive
-        record.online = status.online
-        record.error = status.error
-        if not status.online:
-          has_down_sites = True
-        else:
-          logger.info(f"Site is now online: {record.url}")
-    return has_down_sites
 
   def _render_template(self, template, report, outputfile=None):
     """Render output based on list of SiteRecord objects"""
@@ -577,7 +612,7 @@ class WebMonitor:
       url_list_file = config["Global"]["URLFile"]
       if url_list_file == os.path.basename(url_list_file):
         url_list_file = os.path.join(self._config_dir, url_list_file)
-      self._URLs = self._load_urls(url_list_file)
+      self._URLs_by_sheet = self._load_urls(url_list_file)
       self._email_settings = self._load_email_config(config, "Email")
       self._influxdb_settings = self._load_influxdb_config(config, "InfluxDB")
       self._webhook_settings = self._load_webhook_config(config, "WebHook")
@@ -588,7 +623,7 @@ class WebMonitor:
       raise
 
   def check_sites(self):
-    full_report, has_down_sites = self._get_report(self._URLs, self._include_SSL_report)
+    full_report, has_down_sites = self._get_report_multithreaded(self._URLs_by_sheet, self._include_SSL_report)
     # reconfirm failed sites
     retries = 0
     while has_down_sites and retries < self._max_retries:

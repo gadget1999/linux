@@ -311,7 +311,10 @@ def create_ssl_config(config_dict):
     settings.local_scanner = config_dict.get("local_scanner", "").strip('\" ')
     settings.openssl_path = config_dict.get("openssl_path", "").strip('\" ')
     settings.show_progress = config_dict.get("show_progress", False)
-    if not settings.local_scanner or not os.path.isfile(settings.local_scanner):
+
+    if settings.generate_rating and \
+      ((not settings.local_scanner) or \
+       (not os.path.isfile(settings.local_scanner))):
       raise Exception(f"Invalid local scanner path: {settings.local_scanner}")
   
   return settings
