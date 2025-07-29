@@ -28,3 +28,7 @@ case $1 in
   build_docker_hub_image $1
   ;;
 esac
+
+# clean up builder container
+BUILDER_CONTAINER="buildx_buildkit_multi-platform-builder0"
+delete_container $BUILDER_CONTAINER
