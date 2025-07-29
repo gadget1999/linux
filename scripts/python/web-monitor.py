@@ -6,389 +6,41 @@ import time, datetime
 import dateutil.parser as parser
 # for struct-like class
 import copy
-from dataclasses import dataclass
+import dataclasses
 # for web APIs
 import socket, ipaddress
 import requests
-from urllib.parse import urlparse
-# for unittest
-import unittest
+import urllib.parse
 # for reporting
-from jinja2 import Template # HTML report
-from openpyxl import Workbook, load_workbook # read Excel URL lists
-import io, xlsxwriter # Excel report
-from influxdb import InfluxDBHelper # InfluxDB history
+import jinja2 # HTML report
+import openpyxl # Excel operations
+import openpyxl.styles # Excel formatting
+import io
+import influxdb # InfluxDB history
 # for email
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import (Mail, MimeType, Attachment, FileContent, FileName,
-  FileType, Disposition, ContentId)
-import base64 # for attachment
+import email_util
+# for SSL rating
+import ssl_rating
+# for web utilities
+import web_util
 # for Azure DNS glitch (use custom DNS to confirm)
 import dns.resolver
 dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
 dns.resolver.default_resolver.nameservers = ["9.9.9.9"]
 # for logging and CLI arguments parsing
 import configparser
-from common import Logger, CLIParser
-logger = Logger.getLogger()
-Logger.disable_http_tracing()
+import common
+logger = common.Logger.getLogger()
+common.Logger.disable_http_tracing()
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
+# some constants to handle special error conditions
 POSSIBLE_DNS_GLITCH = "Name or service not known"
-
-def get_latest_user_agent():
-  # it's OK to read global variable within a function
-  # but must use 'global' if need to change its value
-  global USER_AGENT
-  try:
-    url = "https://jnrbsn.github.io/user-agents/user-agents.json"
-    r = requests.get(url)
-    if r.status_code >= 400:
-      logger.warning(f"Failed to get latest user agent list. (status={r.status_code})")
-      return
-    user_agent = r.json()[0]
-    if user_agent.startswith("Mozilla/") and user_agent != USER_AGENT:
-      logger.info(f"Found a newer user agent: {user_agent}")
-      USER_AGENT = user_agent
-  except Exception as e:
-    logger.warning(f"Failed to get the latest user agent list. ({e})")
+# add header for identity
+APP_ID = "3ec1184c-03cd-4d44-b82a-0c6b14982201"
 
 # Some times requests or socket get 'Name or service not known' incorrectly, can use a different DNS server to confirm
-def is_host_reachable(url):
-  try:
-    parsed_uri = urlparse(url)
-    host = parsed_uri.hostname if parsed_uri.hostname else url
-    port = parsed_uri.port if parsed_uri.port else 443
-    answers = dns.resolver.resolve(host, 'A')
-    if not answers:
-      logger.error(f"Custom DNS lookup failed for {url}")
-      return False
-    # verify each IP from results
-    for answer in answers:
-      ip = answer.address
-      try:
-        with socket.create_connection((ip, port), timeout=10) as conn:
-          logger.info(f"{url} IP address is reachable: {ip}")
-      except:
-        logger.info(f"{url} IP address is NOT reachable: {ip}")
-        return False
-    # now all IP addresses are verified, consider as OK for now
-    return True
-  except Exception as e:
-    logger.error(f"Custom DNS lookup failed for {url}: {e}")
-    return False
 
-def get_ip_addresses(host, port):
-  try:
-    addresses = []
-    addrInfo = socket.getaddrinfo(host, port)
-    for addr in addrInfo:
-      addresses.append(addr[4][0])
-    if addresses:
-      return addresses, None
-    else:
-      return None, f"Failed to get IP addresses for {host}"
-  except Exception as e:
-    return None, f"Failed to get IP addresses for {host}: {e}"
-
-def get_ip_location(ip):
-  try:
-    url = f"https://ipinfo.io/{ip}/json"
-    time.sleep(2)   # avoid throttling
-    headers = {
-      "User-Agent": USER_AGENT
-    }
-    r = requests.get(url, headers=headers)
-    if r.status_code >= 400:
-      logger.warning(f"Failed to get location of IP: {ip} (status={r.status_code})")
-      return None, None, None
-    data = r.json()
-    city = data['city']
-    region = data['region']
-    country = data['country']
-    return city, region, country
-  except Exception as e:
-    logger.warning(f"Failed to get location of IP: {ip} ({e})")
-    return None, None, None
-
-def get_url_location(url):
-  try:
-    parsed_uri = urlparse(url)
-    ip = socket.gethostbyname(parsed_uri.hostname)
-    return get_ip_location(ip)
-  except Exception as e:
-    logger.warning(f"Failed to get location of url: {url} ({e})")
-    return None, None, None
-
-def is_ipv6(ip):
-  try:
-    ipaddress.IPv6Address(ip)
-    return True
-  except:
-    return False
-
-def is_valid_dns(fqdn):
-  try:
-    socket.gethostbyname(fqdn)
-    return True, None
-  except Exception as e:
-    return False, f"Failed to resolve {fqdn}: {e}"
-
-@dataclass
-class SSLRecord:
-  url: str
-  report: str = ''
-  ip: str = ''
-  grade: str = ''
-  expires: str = ''
-  error: str = ''
-
-class APIThrottlingException(Exception):
-   """Raised when the API throttling happens"""
-   pass
-
-class SSLLabs:
-  def __analyze_api_call(params):
-    analyze_endpoint = 'https://api.ssllabs.com/api/v3/analyze'
-    # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
-    time.sleep(2)
-    headers = {
-      "User-Agent": USER_AGENT
-    }
-    r = requests.get(analyze_endpoint, params=params, headers=headers)
-    if r.status_code == 429 or r.status_code == 529:
-      raise APIThrottlingException(f"SSLLabs API throttled: error={r.status_code}")
-    elif r.status_code > 400:
-      raise Exception(f"SSLLabs API failed: error={r.status_code}")
-    return r.json()
-
-  def __track_server_load():
-    try:
-      info_endpoint = 'https://api.ssllabs.com/api/v3/info'
-      # force 2 seconds sleep to avoid hitting 529 (newAssessmentCoolOff)
-      time.sleep(2)
-      headers = {
-        "User-Agent": USER_AGENT
-      }
-      r = requests.get(info_endpoint, headers=headers)
-      if r.status_code > 400:
-        logger.error(f"SSLLabs API failed: error={r.status_code}")
-        return
-
-      # log the current load
-      result = r.json()
-      logger.info(f"SSLLabs server info: load={result['currentAssessments']}/{result['maxAssessments']}, yield={result['newAssessmentCoolOff']/1000}s")
-    except Exception as e:
-      logger.error(f"Failed to get server info: {e}")
-
-  def __analyze_server(url):
-    parsed_uri = urlparse(url)
-    if parsed_uri.scheme != 'https':
-      raise Exception(f"Invalid URL to scan: {url}")
-
-    payload = { 'host': url, 'fromCache': 'on', 'maxAge': 24 }
-    result = SSLLabs.__analyze_api_call(payload)
-    for i in range(0, 20):
-      if result['status'].lower() == 'ready':
-        return result
-      elif result['status'].lower() == 'error':
-        raise Exception(f"SSLLabs API error: {result['statusMessage']}")
-
-      # wait until we have a conclusion or timeout
-      time.sleep(60)
-      result = SSLLabs.__analyze_api_call(payload)
-    raise Exception(f"Analyzing SSL timed out: {url}")
-
-  def get_site_rating(url):
-    ratings = []
-    try:
-      # track SSLLabs server load
-      if 'DEBUG' in os.environ:
-        SSLLabs.__track_server_load()
-      # start new assessment
-      try:
-        logger.debug(f"Checking SSL rating for {url}...")
-        result = SSLLabs.__analyze_server(url)
-      except APIThrottlingException:
-        # retry after a while if throttled
-        logger.info("Sleeping for a while to avoid further throttling.")
-        time.sleep(1000)
-        result = SSLLabs.__analyze_server(url)
-      endpoints = result['endpoints']
-      parsed_uri = urlparse(url)
-      report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
-      for endpoint in endpoints:
-        rating = SSLRecord(url=url, report=report_url, ip=endpoint['ipAddress'])
-        if is_ipv6(rating.ip):
-          # skip non IPv4 address as Azure VM doesn't support it well yet
-          continue
-        if endpoint['statusMessage'].lower() != 'ready':
-          rating.error = endpoint['statusMessage']
-          rating.grade = 'Error'
-        else:
-          rating.grade = endpoint['grade']
-        ratings.append(rating)
-      return ratings
-    except Exception as e:
-      logger.error(f"{e}")
-      return [SSLRecord(url=url, grade='Error', error=f"{e}")]
-
-### SSLLabs reports is slow and subject to heavy throttling, switching to local scan based on TestSSL.sh
-class TestSSL_sh:
-  def set_config(local_scanner, openssl_path, show_progress):
-    TestSSL_sh._local_scanner = local_scanner
-    TestSSL_sh._openssl_scanner = openssl_path
-    TestSSL_sh._show_progress = show_progress
-
-  def __exec_cmd(args):
-    time.sleep(15) # adding some delay to reduce server impact
-    import subprocess
-    if TestSSL_sh._show_progress:
-      run_result = subprocess.run(args.split())
-    else:
-      run_result = subprocess.run(args.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if run_result.stderr:
-      logger.error(f"Error: {run_result.stderr}")
-
-  def get_site_rating(url):
-    import random
-    ratings = []
-    try:
-      logger.debug(f"Checking SSL rating for {url}... (Testssl.sh)")
-      # execute testssl.sh and get json output
-      jsonfile = f"/tmp/{random.randint(1, 1000000)}.json"
-      args = f"{TestSSL_sh._local_scanner} " \
-             f"--openssl={TestSSL_sh._openssl_scanner} --fast --ip one " \
-             f"--quiet --overwrite --jsonfile-pretty {jsonfile} " \
-             f"{url}"
-      TestSSL_sh.__exec_cmd(args)
-      cmd_json_out = {}
-      with open(jsonfile, "r") as f:
-        cmd_json_out = json.load(f)
-      os.remove(jsonfile)
-      # parse json file
-      list_ratings = cmd_json_out['scanResult'][0]['rating']
-      json_rating = next(x for x in list_ratings if x["id"] == "overall_grade")
-      grade = json_rating["finding"]
-      logger.info(f"Grade: {grade} [{url}]")
-      # assemble report
-      parsed_uri = urlparse(url)
-      report_url = f"https://www.ssllabs.com/ssltest/analyze.html?d={parsed_uri.hostname}&hideResults=on"
-      rating = SSLRecord(url=url, report=report_url)
-      rating.grade = grade
-      ratings.append(rating)
-      return ratings
-    except Exception as e:
-      logger.error(f"{e}")
-      return [SSLRecord(url=url, grade='Error', error=f"{e}")]
-
-@dataclass
-class SSLScannerConfig:
-  generate_rating: bool = False
-  use_ssllabs: bool = False
-  local_scanner: str = None
-  openssl_path: str = None
-  show_progress: bool = False
-
-class SSLReport:
-  def set_config(settings):
-    SSLReport._settings = settings
-    if not settings.use_ssllabs:
-      TestSSL_sh.set_config(settings.local_scanner, settings.openssl_path, settings.show_progress)
-
-  def should_get_rating():
-    return SSLReport._settings.generate_rating
-
-  def get_site_rating(url):
-    if (SSLReport._settings.use_ssllabs):
-      return SSLLabs.get_site_rating(url)
-    else :
-      return TestSSL_sh.get_site_rating(url)
-
-  def __get_ssl_expiration_date(host, ip=None, port=443):
-    import ssl
-
-    try:
-      if not ip:
-        ip = host
-      if not port:
-        port = 443
-      #logger.debug(f"Getting SSL certificate info: {ip}:{port}")
-      context = ssl.create_default_context()
-      with socket.create_connection((ip, port)) as sock:
-        with context.wrap_socket(sock, server_hostname=host) as ssock:
-          cert_info = ssock.getpeercert()
-          ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
-          expire_time = datetime.datetime.strptime(cert_info['notAfter'], ssl_date_fmt)
-          logger.debug(f"SSL expiration date: {expire_time.strftime('%Y-%m-%d')}")          
-          return expire_time, None
-    except Exception as e:
-      error = f"Failed to get expiration date for {host}: {e}"
-      logger.error(error)
-      if "Temporary failure" in error:
-        error = None
-      return None, error
-
-  def get_ssl_expires_in_days(url, ip=None, check_endpoints=False):
-    parsed_uri = urlparse(url)
-    host = parsed_uri.hostname
-    port = parsed_uri.port
-    if ip:
-      # only scan specified endpoint
-      addresses = [ip]
-    elif check_endpoints:
-      # check all endpoints
-      addresses, error = get_ip_addresses(host, port)
-      if error:
-        logger.error(f"{error}")
-        addresses = ['']
-    else:
-      # only check site, not endpoints
-      addresses = ['']
-    # get results for every endpoint
-    results = []
-    for ip in addresses:
-      result = SSLRecord(url=url, ip=ip)
-      expires, error = SSLReport.__get_ssl_expiration_date(host, ip, port)
-      if error:
-        # ignore once if temp DNS glitch "Name or service not known" but host reachable
-        if (POSSIBLE_DNS_GLITCH in error) and is_host_reachable(url):
-          continue
-        result.error = error
-      elif expires:
-        expires_in_days = (expires - datetime.datetime.now()).days
-        result.expires = expires_in_days
-        if (expires_in_days < 7):
-          result.error = "Certificate will expire soon!"
-          logger.error(result.error)
-      results.append(result)
-    if not results:
-      # if comes here, means all DNS glitches
-      result = SSLRecord(url=url, ip=ip)
-      result.error = "Temp DNS error"
-      results.append(result)
-    return results
-
-class SSLLabsTestCase(unittest.TestCase):
-  def test_get_ssl_ratings(self):
-    rating = SSLReport.get_site_rating("https://www.google.com")
-    self.assertEqual(len(rating), 2, 'wrong number of records')
-    rating = SSLReport.get_site_rating("https://www.google1.com")
-    self.assertEqual(len(rating), 1, 'wrong number of records')
-  def test_get_ssl_expiration(self):
-    report = SSLReport.get_ssl_expires_in_days("https://www.indiaglitz.com", check_endpoints=True)
-    self.assertEqual(len(report), 4, 'wrong number of records')
-    report = SSLReport.get_ssl_expires_in_days("https://www.indiaglitz.com")
-    self.assertEqual(len(report), 1, 'wrong number of records')
-    report = SSLReport.get_ssl_expires_in_days("https://www.google1.com")
-    self.assertEqual(len(report), 1, 'wrong number of records')
-
-if 'UNIT_TEST' in os.environ:
-  test = SSLLabsTestCase()
-  #test.test_get_ssl_ratings()
-  #test.test_get_ssl_expiration()
-
-@dataclass
+@dataclasses.dataclass
 class SiteRecord:
   url: str
   alive: bool = False
@@ -416,18 +68,19 @@ class SiteInfo:
     # by default alive and online status will be False unless explicitly set to True
     try:
       #logger.debug(f"Checking [{url}] status...")
-      time.sleep(1)
+      time.sleep(0.5)
       t_start = time.perf_counter_ns()
       headers = {
         "Accept-Language": "en-US,en;q=0.5",
-        "User-Agent": USER_AGENT
+        "User-Agent": web_util.get_user_agent(),
+        "App-Id": APP_ID
       }
       r = requests.get(url, headers=headers, timeout=120)
       r.close()
       t_stop = time.perf_counter_ns()
       t_elapsed_ms = int((t_stop - t_start) / 1000000)
       status.response_time = t_elapsed_ms
-      if r.status_code < 400:
+      if (r.status_code < 400) or (r.status_code == 401):
         logger.debug(f"Online (status={r.status_code}, time={t_elapsed_ms}ms)")
         if (t_elapsed_ms > 10000):
           logger.error(f"{url} response time too long: {t_elapsed_ms}ms")
@@ -452,7 +105,7 @@ class SiteInfo:
           return SiteInfo.get_status(url, False)
         logger.error(f"{url} DNS error: {POSSIBLE_DNS_GLITCH}")
         # retry still failed, try to ping IP directly (this may not be accurate for sites using reverse proxy)
-        if is_host_reachable(url):
+        if web_util.is_host_reachable(url):
           # ignore once since requests DNS is at fault, but hard to let it use alternative DNS
           status.alive = True
           status.online = True
@@ -469,7 +122,7 @@ class SiteInfo:
       time.sleep(1)
       headers = {
         "Accept-Language": "en-US,en;q=0.5",
-        "User-Agent": USER_AGENT
+        "User-Agent": web_util.get_user_agent()
       }
       r = requests.get(url, headers=headers)
       r.close()
@@ -492,25 +145,25 @@ class SiteInfo:
       # no point to continue if not alive, or it's HTTP, or no need for SSL info
       return [site_info]
     # basic SSL info
-    ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url)[0]
+    ssl_expiration_info = ssl_rating.SSLReport.get_ssl_expires_in_days(url, get_ip_addresses_func=web_util.get_ip_addresses, is_host_reachable_func=web_util.is_host_reachable)[0]
     site_info.ssl_expires = ssl_expiration_info.expires
     if ssl_expiration_info.error:
       site_info.error = ssl_expiration_info.error
-    if not SSLReport.should_get_rating():
+    if not ssl_rating.SSLReport.should_get_rating():
       return [site_info]
     # get full SSL report
     final_reports = []
-    ssl_rating_info = SSLReport.get_site_rating(url)
+    ssl_rating_info = ssl_rating.SSLReport.get_site_rating(url)
     for record in ssl_rating_info:
       report = copy.copy(site_info)
       report.ip = record.ip
-      ssl_expiration_info = SSLReport.get_ssl_expires_in_days(url, record.ip)[0]
+      ssl_expiration_info = ssl_rating.SSLReport.get_ssl_expires_in_days(url, record.ip, get_ip_addresses_func=web_util.get_ip_addresses, is_host_reachable_func=web_util.is_host_reachable)[0]
       report.ssl_expires = ssl_expiration_info.expires
       if ssl_expiration_info.error:
         report.error = ssl_expiration_info.error
       report.ssl_rating = record.grade
       if (not report.online) and (record.grade in ['A+', 'A', 'B']):
-        # if SSLLabs can analyze, assume it's OK then
+        # if SSL scanner can analyze, assume it's OK then
         report.online = True
       if record.error:
         # SSL rating error has higher priority
@@ -520,38 +173,12 @@ class SiteInfo:
       final_reports.append(report)
     return final_reports
 
-class SiteInfoTestCase(unittest.TestCase):
-  def test_get_site_report(self):
-    report = SiteInfo.get_report("http://us.cloud-learning.net:37828/forecast", True)
-    self.assertEqual(len(report), 1, 'wrong number of records')
-    report = SiteInfo.get_report("https://www.google.com", False)
-    self.assertEqual(len(report), 1, 'wrong number of records')
-    report = SiteInfo.get_report("https://www.google.com", True)
-    self.assertEqual(len(report), 2, 'wrong number of records')
-    report = SiteInfo.get_report("https://www.google1.com", True)
-    self.assertEqual(len(report), 1, 'wrong number of records')
-    report = SiteInfo.get_report("https://www.indiaglitz.com", False)
-    self.assertEqual(len(report), 1, 'wrong number of records')
-
-if 'UNIT_TEST' in os.environ:
-  test = SiteInfoTestCase()
-  #test.test_get_site_report()
-
-@dataclass
-class EmailConfig:
-  api_key: str = None
-  sender: str = None
-  recipients: str = None
-  subject_formatter: str = None
-  body_template: str = None
-  include_attachment: bool = True
-
-@dataclass
+@dataclasses.dataclass
 class WebHookConfig:
   endpoint: str = None
   content_formatter: str = None
 
-@dataclass
+@dataclasses.dataclass
 class InfluxDBConfig:
   endpoint: str = None
   token: str = None
@@ -578,7 +205,7 @@ class WebMonitor:
   def _load_urls_from_xlsx(self, filepath):
     try:
       urls = []
-      workbook = load_workbook(filepath)
+      workbook = openpyxl.load_workbook(filepath)
       for sheet in workbook.worksheets:
         url_count = 0
         urls_in_sheet = []
@@ -637,23 +264,28 @@ class WebMonitor:
 
   def _load_email_config(self, config, section):
     try:
-      if section not in config: return None
-      sectionConfig = config[section]
-      settings = EmailConfig()
-      settings.api_key = os.environ['SENDGRID_API_KEY'].strip('\" ')
-      settings.sender = sectionConfig["Sender"].strip('\" ')
-      raw_recipients = sectionConfig["Recipients"].strip('\" ')
-      if raw_recipients:
-        white_spaces = ' \n'
-        settings.recipients = raw_recipients.translate({ord(i): None for i in white_spaces})
-      settings.subject_formatter = sectionConfig["Subject"].strip('\" ')
-      template_file = sectionConfig["BodyTemplate"].strip('\" ')
-      if template_file == os.path.basename(template_file):
+      if section not in config:
+        return None
+        
+      section_config = config[section]      
+      # Convert config file section to dictionary for the new API
+      config_dict = {
+        "provider": section_config.get("EmailProvider", "brevo"),
+        "sender": section_config.get("Sender", ""),
+        "recipients": section_config.get("Recipients", ""),
+        "subject": section_config.get("Subject", ""),
+        "body_template": section_config.get("BodyTemplate", ""),
+        "attachment": section_config.getboolean('Attachment', fallback=True)
+      }
+      
+      # Handle template file path relative to config directory
+      template_file = config_dict["body_template"].strip('\" ')
+      if template_file and template_file == os.path.basename(template_file):
         template_file = os.path.join(self._config_dir, template_file)
-      with open(template_file, 'r') as f:
-        settings.body_template = f.read()
-      settings.include_attachment = sectionConfig.getboolean('Attachment', fallback=True)
-      return settings
+      config_dict["body_template"] = template_file
+      
+      # Use the new dictionary-based loader
+      return email_util.load_email_config(config_dict)      
     except Exception as e:
       logger.error(f"Email configuration is invalid: {e}")
       raise
@@ -686,16 +318,20 @@ class WebMonitor:
 
   def _load_sslscanner_config(self, sslscannerconfig):
     try:
-      settings = SSLScannerConfig()
-      settings.generate_rating = sslscannerconfig.getboolean("GenerateSSLRating", fallback=False)
-      settings.use_ssllabs = sslscannerconfig.getboolean("UseSSLLabs", fallback=False)
-      if not settings.use_ssllabs:
-        settings.local_scanner = sslscannerconfig["LocalScanner"].strip('\" ')
-        settings.openssl_path = sslscannerconfig["OpenSSLPath"].strip('\" ')
-        settings.show_progress = sslscannerconfig.getboolean("ShowProgress", fallback=False)
-      return settings
+      # Convert ConfigParser section to dictionary format
+      config_dict = {
+        "generate_rating": sslscannerconfig.getboolean("GenerateSSLRating", fallback=False),
+        "use_ssllabs": sslscannerconfig.getboolean("UseSSLLabs", fallback=False)
+      }
+    
+      if not config_dict["use_ssllabs"]:
+        config_dict["local_scanner"] = sslscannerconfig.get("LocalScanner", "").strip('\" ')
+        config_dict["openssl_path"] = sslscannerconfig.get("OpenSSLPath", "").strip('\" ')
+        config_dict["show_progress"] = sslscannerconfig.getboolean("ShowProgress", fallback=False)
+
+      return ssl_rating.create_ssl_config(config_dict)
     except Exception as e:
-      logger.error(f"SSLScanner configuration is invalid: {e}")
+      logger.error(f"SSL scanner configuration is invalid: {e}")
       raise
 
   def _get_report(self, urls, include_ssl_rating=False):
@@ -753,9 +389,9 @@ class WebMonitor:
           logger.info(f"Site is now online: {record.url}")
     return has_down_sites
 
-  # render output based on list of SiteRecord objects
   def _render_template(self, template, report, outputfile=None):
-    engine = Template(template)
+    """Render output based on list of SiteRecord objects"""
+    engine = jinja2.Template(template)
     html = engine.render(sites=report)
     if outputfile:
       with open(outputfile, 'w') as f:
@@ -763,90 +399,116 @@ class WebMonitor:
     return html
 
   def _generate_xlsx_report(self, report, outputfile=None):
-    # Create an in-memory Excel file and add a worksheet
-    with io.BytesIO() as output:
-      with xlsxwriter.Workbook(output, {'in_memory': True}) as workbook:
-        worksheet = workbook.add_worksheet('Site Report')
-        # Create header
-        bold = workbook.add_format({'bold': True})
-        header = [['On',2], ['Grade',4], ['Expires In (days)',4], ['URL',40], ['IP',15], ['Error',40],
-                  ['City',10], ['Region',10], ['Country',3]
-                 ]
-        for i in range(0, len(header)):
-          name = header[i][0]
-          width = header[i][1]
-          worksheet.write(0, i, name, bold)
-          worksheet.set_column(i, i, width)
-        # Auto-filter
-        worksheet.autofilter(0, 0, len(report)-1, len(header)-1)
-        # Fill in sheet with report data
-        good = workbook.add_format({'bold': True, 'font_color': 'green'})
-        bad = workbook.add_format({'bold': True, 'font_color': 'red'})
-        row = 1
-        for record in report:
-          if record.online:
-            worksheet.write(row, 0, 'Y', good)
-          else:
-            worksheet.write(row, 0, 'N', bad)
-          if record.ssl_rating and record.ssl_rating.startswith('A'):
-            worksheet.write(row, 1, record.ssl_rating, good)
-          else:
-            worksheet.write(row, 1, record.ssl_rating, bad)
-          if record.ssl_expires and record.ssl_expires > 60:
-            worksheet.write(row, 2, record.ssl_expires, good)
-          else:
-            worksheet.write(row, 2, record.ssl_expires, bad)
-          if record.ssl_report:
-            worksheet.write_url(row, 3, record.ssl_report, string=record.url)
-          else:
-            worksheet.write(row, 3, record.url)
-          worksheet.write(row, 4, record.ip)
-          worksheet.write(row, 5, record.error, bad if record.error else None)
-          # skip getting location as it's no longer needed
-          if record.ssl_rating and False:
-            city, region, country = get_url_location(record.url)
-            worksheet.write(row, 6, city)
-            worksheet.write(row, 7, region)
-            worksheet.write(row, 8, country)
-          row += 1
-      output.seek(0)
-      content = output.read()
+    """Generate Excel report with site report data using openpyxl"""
+    # Create a new workbook and worksheet
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = 'Site Report'
+    
+    # Create header with formatting
+    header_font = openpyxl.styles.Font(bold=True)
+    good_font = openpyxl.styles.Font(bold=True, color="00800000")  # Green
+    bad_font = openpyxl.styles.Font(bold=True, color="00FF0000")   # Red
+    
+    headers = ['On', 'Grade', 'Expires In (days)', 'URL', 'IP', 'Error', 'City', 'Region', 'Country']
+    column_widths = [4, 6, 18, 40, 15, 40, 10, 10, 8]
+    
+    # Set headers
+    for col, (header, width) in enumerate(zip(headers, column_widths), 1):
+      cell = worksheet.cell(row=1, column=col, value=header)
+      cell.font = header_font
+      worksheet.column_dimensions[cell.column_letter].width = width
+    
+    # Add auto-filter
+    worksheet.auto_filter.ref = f"A1:{worksheet.cell(row=1, column=len(headers)).coordinate}"
+    
+    # Fill in sheet with report data
+    for row_idx, record in enumerate(report, 2):  # Start from row 2
+      # Online status
+      online_cell = worksheet.cell(row=row_idx, column=1, value='Y' if record.online else 'N')
+      online_cell.font = good_font if record.online else bad_font
+      
+      # SSL Grade
+      if record.ssl_rating:
+        grade_cell = worksheet.cell(row=row_idx, column=2, value=record.ssl_rating)
+        grade_cell.font = good_font if record.ssl_rating.startswith('A') else bad_font
+      
+      # SSL Expires
+      if record.ssl_expires:
+        expires_cell = worksheet.cell(row=row_idx, column=3, value=record.ssl_expires)
+        expires_cell.font = good_font if record.ssl_expires > 60 else bad_font
+      
+      # URL (with hyperlink if SSL report available)
+      url_cell = worksheet.cell(row=row_idx, column=4, value=record.url)
+      if record.ssl_report:
+        url_cell.hyperlink = record.ssl_report
+        url_cell.style = "Hyperlink"
+      
+      # IP Address
+      worksheet.cell(row=row_idx, column=5, value=record.ip)
+      
+      # Error
+      if record.error:
+        error_cell = worksheet.cell(row=row_idx, column=6, value=record.error)
+        error_cell.font = bad_font
+      
+      # Location columns (currently not populated as noted in original code)
+      # Columns 7-9 for City, Region, Country left empty as in original
+    
+    # Save or return as bytes
     if outputfile:
-      with open(outputfile, 'wb') as f:
-        f.write(content)
-    return content
+      workbook.save(outputfile)
+      workbook.close()
+      return None
+    else:
+      # Save to BytesIO for in-memory handling
+      with io.BytesIO() as output:
+        workbook.save(output)
+        workbook.close()
+        output.seek(0)
+        return output.read()
 
   def _send_email_report(self, report):
     try:
-      email_config = self._email_settings
-      # construct email
-      email = Mail()
-      email.from_email = email_config.sender
-      recipients = email_config.recipients.split(';')
-      for recipient in recipients:
-        email.add_to(recipient)
-      # formatter variables
+      if not self._email_settings:
+        logger.warning("Email settings not configured, skipping email report.")
+        return
+      
+      # Load email template
+      with open(self._email_settings.body_template, 'r') as f:
+        template_content = f.read()
+      
+      # Format subject with current date/time
       today = time.strftime('%Y-%m-%d', time.localtime())
       now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-      mapping = { 'now': now, 'today': today }
-      email.subject = email_config.subject_formatter.format_map(mapping)
-      email.add_content(self._render_template(email_config.body_template, report), MimeType.html)
-      # get attachment
-      if email_config.include_attachment:
-        content = self._generate_xlsx_report(report)
-        attachment = Attachment()
-        attachment.file_content = base64.b64encode(content).decode()
-        attachment.file_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        attachment.file_name = f"{today}-Site-Report.xlsx"
-        attachment.disposition = "attachment"
-        email.add_attachment(attachment)
-      # send email
-      sendgrid = SendGridAPIClient(email_config.api_key)
-      r = sendgrid.send(email)
-      if r.status_code > 400:
-        logger.error(f"SendGrid API failed: error={r.status_code}")
-      else:
-        logger.info(f"Report was sent successfully.")
+      mapping = {'now': now, 'today': today}
+      subject = self._email_settings.subject_formatter.format_map(mapping)
+      
+      # Render HTML content
+      html_content = self._render_template(template_content, report)
+      
+      # Generate Excel attachment if enabled
+      attachment_data = None
+      attachment_filename = None
+      attachment_type = None
+      
+      if self._email_settings.include_attachment:
+        attachment_data = self._generate_xlsx_report(report)
+        attachment_filename = f"{today}-Site-Report.xlsx"
+        attachment_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      
+      # Send email using generic handler
+      email_helper = email_util.EmailHelper(self._email_settings)
+      success = email_helper.send_email(
+        subject=subject,
+        html_content=html_content,
+        attachment_data=attachment_data,
+        attachment_filename=attachment_filename,
+        attachment_type=attachment_type
+      )
+      
+      if not success:
+        logger.error("Failed to send email report")
     except Exception as e:
       logger.error(f"Failed to send Site SSL Report: {e}")
 
@@ -868,7 +530,7 @@ class WebMonitor:
       logger.debug("Sending webhook notification...")
       headers = {
         "Content-Type": "application/json",
-        "User-Agent": USER_AGENT
+        "User-Agent": web_util.get_user_agent()
       }
       r = requests.post(webhook_config.endpoint, headers=headers, data=payload)
       if r.status_code > 400:
@@ -883,10 +545,10 @@ class WebMonitor:
       tenant=self._influxdb_settings.tenant,
       bucket=self._influxdb_settings.bucket
       )
-    influxdb_writer = InfluxDBHelper(influxdb_settings)
+    influxdb_writer = influxdb.InfluxDBHelper(influxdb_settings)
     logger.debug("Storing metrics into InfluxDB...")
     for record in report:
-      parsed_uri = urlparse(record.url)
+      parsed_uri = urllib.parse.urlparse(record.url)
       data = []
       if not record.error:
         data.append(("Response_Time", record.response_time))
@@ -920,7 +582,7 @@ class WebMonitor:
       self._influxdb_settings = self._load_influxdb_config(config, "InfluxDB")
       self._webhook_settings = self._load_webhook_config(config, "WebHook")
       if self._include_SSL_report:
-        SSLReport.set_config(self._load_sslscanner_config(config["SSL"]))
+        ssl_rating.SSLReport.set_config(self._load_sslscanner_config(config["SSL"]))
     except Exception as e:
       logger.error(f"Config file {configfile} is invalid: {e}")
       raise
@@ -961,30 +623,20 @@ class WebMonitor:
       if not os.path.exists(archive_folder):
         os.makedirs(archive_folder)
       report_file = f"{archive_folder}/Site-Report-{now.strftime('%Y-%m-%d_%H_%M_%S')}.xlsx"
+      
+      # Generate and save Excel report
       self._generate_xlsx_report(full_report, report_file)
       if num_errors > 0:
         logger.error(f"Scan completed: {num_errors} of {len(full_report)} URLs have errors.")
       else:
         logger.info(f"Scan completed: no errors for {len(full_report)} URLs.")
 
-class WebMonitorTestCase(unittest.TestCase):
-  def test_webmonitor_report(self):
-    urls = ['https://www.google.com', 'https://www.google1.com']
-    report, has_down = WebMonitor.get_report(urls, True)
-    self.assertEqual(len(report), 2, 'wrong number of records')
-    WebMonitor.generate_xlsx_report(report, '/tmp/000.xlsx')
-    html = WebMonitor.generate_html_body(report, '/tmp/000.html')
-    WebMonitor.send_email_report(report)
-
-if 'UNIT_TEST' in os.environ:
-  test = WebMonitorTestCase()
-  test.test_webmonitor_report()
-
 ########################################
 # CLI interface
 ########################################
 
 def check_sites(args):
+  web_util.get_latest_user_agent()
   monitor = WebMonitor(args.config)
   monitor.check_sites()
 
@@ -995,4 +647,4 @@ if (__name__ == '__main__') and ('UNIT_TEST' not in os.environ):
   CLI_config = { 'func':check_sites, 'arguments': [
     {'name':'config', 'help':'Config file for monitor'} 
     ]}
-  CLIParser.run(CLI_config)
+  common.CLIParser.run(CLI_config)

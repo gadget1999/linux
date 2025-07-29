@@ -58,6 +58,7 @@ EXTRA_OPTS=(
 
 ENTRYPOINT=()
 
+#DEBUG_DOCKER=1
 new_container_service $APP_NAME $IMAGE EXTRA_OPTS ENTRYPOINT
 
 $SUDO docker logs --follow $APP_NAME
