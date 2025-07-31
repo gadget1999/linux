@@ -10,7 +10,7 @@ function check_email_env {
 
 FROM_NAME="Server-$(hostname)"
 
-function send_email() {
+function send_email_sendgrid() {
  local mailto=$1
  local subject=$2
  local body=$3
@@ -27,4 +27,28 @@ function send_email() {
   --header "Authorization: Bearer $SENDGRID_API_KEY" \
   --header 'Content-Type: application/json' \
   --data "$maildata"
+}
+
+function send_email_brevo() {
+  local mailto=$1
+  local subject=$2
+  local body=$3
+
+  if [[ -z "$BREVO_API_KEY" || -z "$BREVO_FROM" ]]; then
+    echo "BREVO_API_KEY and BREVO_FROM must be set in the environment." >&2
+    return 1
+  fi
+
+  local maildata="{\
+    \"sender\":{\"email\":\"$BREVO_FROM\",\"name\":\"$FROM_NAME\"},\
+    \"to\":[{\"email\":\"$mailto\"}],\
+    \"subject\":\"$subject\",\
+    \"htmlContent\":\"$body\"\
+  }"
+
+  /usr/bin/curl --request POST \
+    --url https://api.brevo.com/v3/smtp/email \
+    --header "api-key: $BREVO_API_KEY" \
+    --header 'Content-Type: application/json' \
+    --data "$maildata"
 }
