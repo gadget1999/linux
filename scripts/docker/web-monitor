@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "SENDGRID_API_KEY MONITOR_CONFIG_ROOT"
+check_env "EMAIL_API_KEY MONITOR_CONFIG_ROOT"
 
 IMAGE="gadget1999/rpi-web-monitor"
 
@@ -47,7 +47,7 @@ MAX_RAM="512m"
 EXTRA_OPTS=(
  --read-only
  --tmpfs /run
- -e SENDGRID_API_KEY=$SENDGRID_API_KEY
+ -e EMAIL_API_KEY=$EMAIL_API_KEY
  -e APP_NAME=$APP_NAME
  -v $WEB_MONITOR_CONFIG_DIR:/config
  -v $WEB_MONITOR_LIST:/config/$WEB_MONITOR_FILE_NAME
