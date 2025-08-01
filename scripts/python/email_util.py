@@ -130,11 +130,62 @@ class BrevoProvider(EmailProviderBase):
       logger.error(f"Brevo: Failed to send email: {e2}")
       return False
 
+class GmailProvider(EmailProviderBase):
+  def __init__(self, api_key: str):
+    super().__init__(api_key)
+
+  def send_email(self, sender: str, recipients: str, subject: str, html_content: str, attachment_data: Optional[bytes] = None,
+                 attachment_filename: Optional[str] = None, attachment_type: Optional[str] = None) -> bool:
+    try:
+      import smtplib
+      from email.mime.multipart import MIMEMultipart
+      from email.mime.text import MIMEText
+      from email.mime.base import MIMEBase
+      from email import encoders
+      
+      # Gmail SMTP settings
+      smtp_server = "smtp.gmail.com"
+      smtp_port = 587
+      username = sender
+      password = self._api_key  # API key is the app password
+      
+      # Create message
+      msg = MIMEMultipart()
+      msg['From'] = sender
+      msg['To'] = recipients
+      msg['Subject'] = subject
+      msg.attach(MIMEText(html_content, 'html'))
+      
+      # Add attachment if provided
+      if attachment_data and attachment_filename:
+        part = MIMEBase('application', 'octet-stream')
+        part.set_payload(attachment_data)
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', f'attachment; filename="{attachment_filename}"')
+        msg.attach(part)
+      
+      # Connect and send
+      server = smtplib.SMTP(smtp_server, smtp_port)
+      server.starttls()
+      server.login(username, password)
+      server.sendmail(sender, recipients.split(';'), msg.as_string())
+      server.quit()
+      logger.info(f"Gmail: Email sent successfully to {len(recipients.split(';'))} recipients.")
+      return True
+    except ImportError as e1:
+      logger.error(f"Required library not available for Gmail SMTP: {e1}")
+      return False
+    except Exception as e2:
+      logger.error(f"Gmail: Failed to send email: {e2}")
+      return False
+
 def get_email_provider(provider_name: str, api_key: str) -> EmailProviderBase:
   """Factory method to create the appropriate provider"""
   if provider_name.lower() == "sendgrid":
     return SendGridProvider(api_key)
   elif provider_name.lower() == "brevo":
     return BrevoProvider(api_key)
+  elif provider_name.lower() == "gmail":
+    return GmailProvider(api_key)
   else:
     raise ValueError(f"Unsupported email provider: {provider_name}")
