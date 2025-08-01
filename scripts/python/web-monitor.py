@@ -186,6 +186,15 @@ class InfluxDBConfig:
   tenant: str = None
   bucket: str = None
 
+@dataclasses.dataclass
+class EmailConfig:
+  email_provider: email_util.EmailProviderBase = None
+  sender: str = ""
+  recipients: str = ""
+  subject_formatter: str = ""
+  body_template: str = ""
+  include_attachment: bool = False
+
 # to start simple, this utility just do one-pass checking (no internal scheduler)
 class WebMonitor:
   #########################################
@@ -268,23 +277,21 @@ class WebMonitor:
     try:
       if section not in config:
         return None
-      section_config = config[section]
-      # Convert config file section to dictionary for the new API
-      config_dict = {
-        "provider": section_config.get("EmailProvider", "brevo"),
-        "sender": section_config.get("Sender", ""),
-        "recipients": section_config.get("Recipients", ""),
-        "subject": section_config.get("Subject", ""),
-        "body_template": section_config.get("BodyTemplate", ""),
-        "attachment": section_config.getboolean('Attachment', fallback=True)
-      }
-      # Handle template file path relative to config directory
-      template_file = config_dict["body_template"].strip('" ')
+      sectionConfig = config[section]
+      settings = EmailConfig()
+      provider = sectionConfig.get("EmailProvider", "sendgrid").strip('" ')
+      api_key = os.environ["EMAIL_API_KEY"]
+      settings.email_provider = email_util.get_email_provider(provider, api_key)
+      settings.sender = sectionConfig.get("Sender", "").strip('" ')
+      settings.recipients = sectionConfig.get("Recipients", "").strip('" ')
+      settings.subject_formatter = sectionConfig.get("Subject", "").strip('" ')
+      settings.include_attachment = sectionConfig.getboolean('Attachment', fallback=False)
+      # use full path for body template
+      template_file = sectionConfig.get("BodyTemplate", "").strip('" ')
       if template_file and template_file == os.path.basename(template_file):
         template_file = os.path.join(self._config_dir, template_file)
-      config_dict["body_template"] = template_file
-      # Use the new dictionary-based loader
-      return email_util.load_email_config(config_dict)
+      settings.body_template = template_file
+      return settings
     except Exception as e:
       logger.error(f"Email configuration is invalid: {e}")
       raise
@@ -508,16 +515,16 @@ class WebMonitor:
       if not self._email_settings:
         logger.warning("Email settings not configured, skipping email report.")
         return
-      
-      # Load email template
-      with open(self._email_settings.body_template, 'r') as f:
-        template_content = f.read()
-      
+
       # Format subject with current date/time
       today = time.strftime('%Y-%m-%d', time.localtime())
       now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
       mapping = {'now': now, 'today': today}
       subject = self._email_settings.subject_formatter.format_map(mapping)
+
+      # Load email body template
+      with open(self._email_settings.body_template, 'r') as f:
+        template_content = f.read()
       
       # Render HTML content
       html_content = self._render_template(template_content, report)
@@ -531,21 +538,19 @@ class WebMonitor:
         attachment_data = self._generate_xlsx_report(report)
         attachment_filename = f"{today}-Site-Report.xlsx"
         attachment_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      
-      # Send email using generic handler
-      email_helper = email_util.EmailHelper(self._email_settings)
-      success = email_helper.send_email(
+      success = self._email_settings.email_provider.send_email(
+        sender=self._email_settings.sender,
+        recipients=self._email_settings.recipients,
         subject=subject,
         html_content=html_content,
         attachment_data=attachment_data,
         attachment_filename=attachment_filename,
         attachment_type=attachment_type
       )
-      
       if not success:
         logger.error("Failed to send email report")
     except Exception as e:
-      logger.error(f"Failed to send Site SSL Report: {e}")
+      logger.error(f"Failed to send Site Report: {e}")
 
   def _send_webhook_notice(self, report):
     # get post body

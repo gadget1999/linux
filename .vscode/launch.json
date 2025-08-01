@@ -131,7 +131,7 @@
         "${relativeFileDirname}/web-monitor/web-monitor.cfg"
       ],
       "env": {
-        "SENDGRID_API_KEY": "INVALID_KEY_PLACE_HOLDER"
+        "EMAIL_API_KEY": "INVALID_KEY_PLACE_HOLDER"
       },
       "console": "integratedTerminal",
       "type": "python"
