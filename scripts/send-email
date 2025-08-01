@@ -11,15 +11,24 @@ check_email_env
 SUBJECT=$1
 BODY=$2
 
-if [ "$EMAIL_API_KEY" == "$MAILERSEND_API_KEY" ]; then
+if [ "$EMAIL_API_KEY" == "$GMAIL_API_KEY" ]; then
+ log "Sending email to $MAIN_EMAIL (Gmail)"
+ "$PYTHON_VENV"python3 "$CMD_PATH/python/email_util.py" \
+  --provider gmail \
+  --api-key "$GMAIL_API_KEY" \
+  --sender "$GMAIL_SENDER" \
+  --recipients "$MAIN_EMAIL" \
+  --subject "$SUBJECT" \
+  --body "$BODY"
+elif [ "$EMAIL_API_KEY" == "$SENDGRID_API_KEY" ]; then
+ log "Sending email to $MAIN_EMAIL (SendGrid)"
+ send_email_sendgrid $MAIN_EMAIL "$SUBJECT" "$BODY"
+elif [ "$EMAIL_API_KEY" == "$MAILERSEND_API_KEY" ]; then
  log "Sending email to $MAIN_EMAIL (MailerSend)"
  send_email_mailersend $MAIN_EMAIL "$SUBJECT" "$BODY"
 elif [ "$EMAIL_API_KEY" == "$MAILJET_API_KEY" ]; then
  log "Sending email to $MAIN_EMAIL (Mailjet)"
  send_email_mailjet $MAIN_EMAIL "$SUBJECT" "$BODY"
-elif [ "$EMAIL_API_KEY" == "$SENDGRID_API_KEY" ]; then
- log "Sending email to $MAIN_EMAIL (SendGrid)"
- send_email_sendgrid $MAIN_EMAIL "$SUBJECT" "$BODY"
 elif [ "$EMAIL_API_KEY" == "$BREVO_API_KEY" ]; then
  log "Sending email to $MAIN_EMAIL (Brevo)"
  send_email_brevo $MAIN_EMAIL "$SUBJECT" "$BODY"
