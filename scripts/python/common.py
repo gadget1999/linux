@@ -30,7 +30,7 @@ class Logger:
         app_name = CLIParser.get_app_name()
       app_logfile = f"/tmp/{app_name}.log"
       try:
-        fileHandler = logging.FileHandler(app_logfile, encoding = "UTF-8")
+        fileHandler = logging.FileHandler(app_logfile, encoding = "UTF-8", delay = True)
         file_log_format = "%(asctime)s: %(levelname)s - %(message)s"
         fileHandler.setFormatter(logging.Formatter(file_log_format))
         fileHandler.setLevel(logging.INFO)
