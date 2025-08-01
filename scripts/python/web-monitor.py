@@ -69,7 +69,7 @@ class SiteInfo:
     # by default alive and online status will be False unless explicitly set to True
     try:
       #logger.debug(f"Checking [{url}] status...")
-      time.sleep(0.5)
+      time.sleep(1)
       t_start = time.perf_counter_ns()
       headers = {
         "Accept-Language": "en-US,en;q=0.5",
