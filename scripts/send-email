@@ -17,7 +17,7 @@ if [ "$EMAIL_API_KEY" == "$GMAIL_API_KEY" ]; then
  export EMAIL_API_KEY
  "$PYTHON_VENV"python3 "$CMD_PATH/python/email_util.py" \
   --provider gmail \
-  --sender "$GMAIL_SENDER" \
+  --sender "$EMAIL_SENDER" \
   --to "$MAIN_EMAIL" \
   --subject "$SUBJECT" \
   --body "$BODY"

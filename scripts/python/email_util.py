@@ -213,7 +213,7 @@ def send_email_cli(args):
     attachment_filename = os.path.basename(attachment)
 
   provider_obj = get_email_provider(provider, api_key)
-  if provider_obj.send_email(
+  provider_obj.send_email(
     sender=sender,
     recipients=recipients,
     subject=subject,
@@ -221,8 +221,7 @@ def send_email_cli(args):
     attachment_data=attachment_data,
     attachment_filename=attachment_filename,
     attachment_type=attachment_type
-  ):
-    logger.info("Email sent successfully.")
+  )
 
 if __name__ == "__main__":
   CLI_config = {
