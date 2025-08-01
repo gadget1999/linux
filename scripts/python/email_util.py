@@ -194,9 +194,9 @@ def get_email_provider(provider_name: str, api_key: str) -> EmailProviderBase:
 
 def send_email_cli(args):
   provider = args.provider
-  api_key = args.api_key
+  api_key = os.environ["EMAIL_API_KEY"]
   sender = args.sender
-  recipients = args.recipients
+  recipients = args.to
   subject = args.subject
   body = args.body
   attachment = args.attachment if hasattr(args, 'attachment') else None
@@ -212,35 +212,25 @@ def send_email_cli(args):
       attachment_data = f.read()
     attachment_filename = os.path.basename(attachment)
 
-  try:
-    provider_obj = get_email_provider(provider, api_key)
-    ok = provider_obj.send_email(
-      sender=sender,
-      recipients=recipients,
-      subject=subject,
-      html_content=body,
-      attachment_data=attachment_data,
-      attachment_filename=attachment_filename,
-      attachment_type=attachment_type
-    )
-    if ok:
-      logger.info("Email sent successfully.")
-      sys.exit(0)
-    else:
-      logger.error("Failed to send email.")
-      sys.exit(1)
-  except Exception as e:
-    logger.error(f"Exception: {e}")
-    sys.exit(2)
+  provider_obj = get_email_provider(provider, api_key)
+  if provider_obj.send_email(
+    sender=sender,
+    recipients=recipients,
+    subject=subject,
+    html_content=body,
+    attachment_data=attachment_data,
+    attachment_filename=attachment_filename,
+    attachment_type=attachment_type
+  ):
+    logger.info("Email sent successfully.")
 
 if __name__ == "__main__":
   CLI_config = {
     'arguments': [
-      { 'name': '--provider', 'help': 'Email provider (sendgrid, brevo, gmail)', },
-      { 'name': '--api-key', 'help': 'API key or password for the provider', },
-      { 'name': '--sender', 'help': 'Sender email address', },
-      { 'name': '--recipients', 'help': 'Recipient email(s), separated by semicolon', },
-      { 'name': '--subject', 'help': 'Email subject', },
+      { 'name': '--provider', 'help': 'Email provider (sendgrid, brevo, gmail)', 'required': True },
+      { 'name': '--sender', 'help': 'Sender email address', 'required': True },
+      { 'name': '--to', 'help': 'Recipient email(s), separated by semicolon', 'required': True },
+      { 'name': '--subject', 'help': 'Email subject', 'required': True },
       { 'name': '--body', 'help': 'Email body (HTML allowed)', },
       { 'name': '--attachment', 'help': 'Path to attachment file (optional)', 'action': 'store', },
       { 'name': '--attachment-type', 'help': 'Attachment MIME type (optional)', 'action': 'store', },

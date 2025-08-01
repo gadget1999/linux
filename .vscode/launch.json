@@ -107,6 +107,22 @@
       "type": "python"
     },
     {
+      "name": "Python: email_util",
+      "request": "launch",
+      "program": "${file}",
+      "args": [
+        "--provider", "brevo",
+        "--sender", "from@email.com",
+        "--to", "test@email.com",
+        "--subject", "Test Email",
+      ],
+      "env": {
+        "EMAIL_API_KEY": "your_api_key",
+      },
+      "console": "integratedTerminal",
+      "type": "python"
+    },
+    {
       "name": "Python: AZVM",
       "request": "launch",
       "program": "${file}",
