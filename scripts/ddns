@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 ENABLE_LOGGING=1
 
-check_env "DDNS_DOMAIN DDNS_KEY DNS_ZONE_ID"
+check_env "DDNS_DOMAIN DDNS_KEY"
 
 PACKAGES="dig curl"
 DNS_IP=$(/usr/bin/dig @1.1.1.1 $DDNS_DOMAIN +short | tail -1)
@@ -27,50 +27,20 @@ fi
 
 log "Updating DDNS ..."
 
-# Function to get the DNS record ID and current content from Cloudflare
-get_cloudflare_record_info() {
+# Switch to DuckDNS, since Cloudflare requires higher permissions and is more complex to set up
+function update_duckdns() {
+ local ddns_domain=$1
+ local ddns_key=$2
+ local public_ip=$3
  local response
- response=$(/usr/bin/curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$DNS_ZONE_ID/dns_records?type=$DNS_RECORD_TYPE&name=$DDNS_DOMAIN" \
-        -H "Authorization: Bearer $DDNS_KEY" \
-        -H "Content-Type: application/json")
-
- # Check for API errors
- if echo "$response" | jq -e '.success == false' >/dev/null; then
-  error "Cloudflare API Error (Get Record): $(echo "$response" | jq -r '.errors[0].message')"
-  return 1
- fi
-
- # Extract ID and content
- DNS_RECORD_ID=$(echo "$response" | jq -r '.result[0].id')
- if [ -z "$DNS_RECORD_ID" ] || [ "$DNS_RECORD_ID" == "null" ]; then
-  error "Error: DNS record '$DDNS_DOMAIN' not found in DNS zone '$DNS_ZONE_ID'."
-  return 1
- fi
-
- return 0
-}
-
-# Function to update the DNS record on Cloudflare
-function update_cloudflare_record() {
- local new_ip=$1
- local API_endpoint="https://api.cloudflare.com/client/v4/zones/$DNS_ZONE_ID/dns_records/$DNS_RECORD_ID"
- local response
-
- response=$(/usr/bin/curl -s -X PUT $API_endpoint \
-        -H "Authorization: Bearer $DDNS_KEY" \
-        -H "Content-Type: application/json" \
-        --data "{\"type\":\"A\",\"name\":\"$DDNS_DOMAIN\",\"content\":\"$new_ip\",\"ttl\":120,\"proxied\":false}")
-
- if echo "$response" | jq -e '.success == true' >/dev/null; then
-  log "Successfully updated DNS record '$DDNS_DOMAIN' to $new_ip"
+ response=$(/usr/bin/curl -s "https://www.duckdns.org/update?domains=$ddns_domain&token=$ddns_key&ip=$public_ip")
+ if [ "$response" == "OK" ]; then
+  log "DuckDNS updated successfully to $PUBLIC_IP"
   return 0
  else
-  error "Failed to update DNS record '$DDNS_DOMAIN'. Error: $(echo "$response" | jq -r '.errors[0].message')"
+  error "DuckDNS update failed: $response"
   return 1
  fi
 }
 
-get_cloudflare_record_info
-[ $? -ne 0 ] && exit 1 # Exit if record not found or API error
-
-update_cloudflare_record $PUBLIC_IP
+update_duckdns $DDNS_DOMAIN $DDNS_KEY $PUBLIC_IP
