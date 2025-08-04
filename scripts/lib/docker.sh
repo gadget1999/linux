@@ -445,12 +445,12 @@ function build_image_from_github() {
  #squash_image $IMAGE_NAME
 
  log "Pushing image to docker hub..."
- $DOCKER_CMD push --all-tags $image_name
-
- log "Removing local image..."
- $DOCKER_CMD rmi "$image_name:$target_platform"
- [ "$default_tag" != "" ] && \
+ $DOCKER_CMD push --all-tags $image_name && {
+  log "Removing local image..."
+  $DOCKER_CMD rmi "$image_name:$target_platform"
+  [ "$default_tag" != "" ] && \
    $DOCKER_CMD rmi "$image_name:$default_tag"
+ }
 }
 
 # use buildx to build multi-arch images
@@ -469,10 +469,10 @@ function buildx_image_from_github() {
  log "Building docker image [$image_name @ $target_platform] ..."
  $DOCKER_CMD buildx build --force-rm --no-cache \
    --platform=$target_platform --push \
-   $github_path -t $image_name:latest
-
- log "Removing local image..."
- $DOCKER_CMD rmi "$image_name:latest"
+   $github_path -t $image_name:latest && {
+    log "Removing local image..."
+    $DOCKER_CMD rmi "$image_name:latest"
+   }
 }
 
 ####################
