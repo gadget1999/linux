@@ -31,9 +31,8 @@ log "Updating DDNS ..."
 function update_duckdns() {
  local ddns_domain=$1
  local ddns_key=$2
- local public_ip=$3
  local response
- response=$(/usr/bin/curl -s "https://www.duckdns.org/update?domains=$ddns_domain&token=$ddns_key&ip=$public_ip")
+ response=$(/usr/bin/curl -s "https://www.duckdns.org/update?domains=$ddns_domain&token=$ddns_key")
  if [ "$response" == "OK" ]; then
   log "DuckDNS updated successfully to $PUBLIC_IP"
   return 0
@@ -43,4 +42,4 @@ function update_duckdns() {
  fi
 }
 
-update_duckdns $DDNS_DOMAIN $DDNS_KEY $PUBLIC_IP
+update_duckdns $DDNS_DOMAIN $DDNS_KEY
