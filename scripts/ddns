@@ -7,14 +7,12 @@ ENABLE_LOGGING=1
 check_env "DDNS_DOMAIN DDNS_KEY"
 
 PACKAGES="dig curl"
-DNS_IP=$(/usr/bin/dig @1.1.1.1 $DDNS_DOMAIN +short | tail -1)
-
 check_packages "$PACKAGES"
 
 $CMD_PATH/wait-internet
 
+DNS_IP=$(/usr/bin/dig @1.1.1.1 $DDNS_DOMAIN +short | tail -1)
 PUBLIC_IP=$(/usr/bin/curl -s --fail https://checkip.amazonaws.com)
-
 if [ "$PUBLIC_IP" == "" ] || [ "$DNS_IP" == "" ]; then
  log_error "Failed to get IPs. (Public: $PUBLIC_IP, DNS: $DNS_IP)"
  #exit 1
