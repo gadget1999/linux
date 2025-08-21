@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_pkgs "awk"
+
+INTERFACE=$(ip route | awk '/^default/ {print $5; exit}')
+debug "Default NIC: $INTERFACE"
+
+# Get current RX and TX in MB
+RX_MB=$(cat /proc/net/dev | grep "$INTERFACE" | awk '{print $2/1024/1024}')
+TX_MB=$(cat /proc/net/dev | grep "$INTERFACE" | awk '{print $10/1024/1024}')
+log "Egress=$TX_MB MB; Ingress=$RX_MB MB"
