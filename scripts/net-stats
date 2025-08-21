@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 #ENABLE_LOGGING=0
 #DEBUG=0
 
-check_pkgs "awk"
+check_packages "awk"
 
 INTERFACE=$(ip route | awk '/^default/ {print $5; exit}')
 debug "Default NIC: $INTERFACE"
