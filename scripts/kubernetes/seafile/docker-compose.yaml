@@ -19,15 +19,17 @@ services:
     entrypoint: memcached -m 128
     networks:
       - seafile-net
-          
+
   seafile:
-    image: seafileltd/seafile-mc:latest
+    image: seafileltd/seafile-mc:12.0-latest
     restart: unless-stopped
     container_name: seafile
     ports:
       - "${SEAFILE_PORT}:443"
     volumes:
       - ${SEAFILE_DATA}/data:/shared
+    env_file:
+      - ${SEAFILE_DATA}/.env          
     environment:
       - DB_HOST=db
       - DB_ROOT_PASSWD=${SEAFILE_DB_KEY}
