@@ -411,6 +411,30 @@ function delete_orphan_volumes()    {
     xargs --no-run-if-empty docker rmi
 }
 
+function delete_old_images() {
+ local image_name="$1"
+ local keep_version="$2"
+
+ if [ -z "$image_name" ]; then
+  error "Usage: delete_old_images image_name [version_to_keep]"
+  return 1
+ fi
+
+ # Find old image IDs
+ local old_images=$($DOCKER_CMD images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | \
+  grep "^$image_name:" | \
+  grep -v ":$keep_version" | \
+  awk '{print $2}')
+
+ if [ -n "$old_images" ]; then
+  debug "Removing old images for $image_name except version $keep_version:"
+  debug "$old_images"
+  $DOCKER_CMD rmi $old_images
+ else
+  debug "No old images to remove for $image_name."
+ fi
+}
+
 ###############################
 # Building images from Github
 ###############################

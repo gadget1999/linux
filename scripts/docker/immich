@@ -15,6 +15,9 @@ export IMMICH_DATA
 POD="immich"
 COMPOSE_FILE_ROOT="$CMD_PATH/kubernetes"
 
+IMMICH_SERVER_IMAGE="ghcr.io/immich-app/immich-server"
+IMMICH_ML_IMAGE="ghcr.io/immich-app/immich-machine-learning"
+
 #########################
 # Helper functions
 #########################
@@ -32,6 +35,10 @@ function start_pod() {
  # use Cloudflare protected domain instead
  debug "Starting reverse proxy..."
  $CMD_PATH/nginx proxy $IMMICH_DOMAIN 2283
+
+ # delete older images
+ delete_old_images "$IMMICH_SERVER_IMAGE" "$IMMICH_VERSION"
+ delete_old_images "$IMMICH_ML_IMAGE" "$IMMICH_VERSION"
 }
 
 function stop_pod() {
