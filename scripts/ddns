@@ -18,12 +18,12 @@ if [ "$PUBLIC_IP" == "" ] || [ "$DNS_IP" == "" ]; then
  #exit 1
 fi
 
-debug "Public IP: $PUBLIC_IP, DNS IP: $DNS_IP"
 if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
+ debug "Skip. Public IP same as DNS IP: $DNS_IP"
  exit 0
 fi
 
-log "Updating DDNS ..."
+log "Updating DDNS ... (Public: $PUBLIC_IP, DNS: $DNS_IP)"
 
 # Switch to DuckDNS, since Cloudflare requires higher permissions and is more complex to set up
 function update_duckdns() {
@@ -32,7 +32,7 @@ function update_duckdns() {
  local response
  response=$(/usr/bin/curl -s "https://www.duckdns.org/update?domains=$ddns_domain&token=$ddns_key")
  if [ "$response" == "OK" ]; then
-  log "DuckDNS updated successfully to $PUBLIC_IP"
+  debug "DuckDNS updated successfully to $PUBLIC_IP"
   return 0
  else
   error "DuckDNS update failed: $response"
