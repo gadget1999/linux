@@ -11,16 +11,26 @@ check_packages "$PACKAGES"
 
 $CMD_PATH/wait-internet
 
+CACHE_FILE="/tmp/ddns_ip"
+
 DNS_IP=$(/usr/bin/dig @1.1.1.1 $DDNS_DOMAIN +short | tail -1)
 PUBLIC_IP=$(/usr/bin/curl -s --fail https://checkip.amazonaws.com)
 if [ "$PUBLIC_IP" == "" ] || [ "$DNS_IP" == "" ]; then
- log_error "Failed to get IPs. (Public: $PUBLIC_IP, DNS: $DNS_IP)"
- #exit 1
+ debug "Failed to get IPs. (Public: $PUBLIC_IP, DNS: $DNS_IP)"
 fi
 
 if [ "$PUBLIC_IP" == "$DNS_IP" ]; then
  debug "Skip. Public IP same as DNS IP: $DNS_IP"
  exit 0
+fi
+
+# Skip if public IP unchanged from cache
+if [ -f "$CACHE_FILE" ]; then
+ CACHED_IP=$(cat "$CACHE_FILE")
+ if [ "$PUBLIC_IP" == "$CACHED_IP" ]; then
+  debug "Skip. Public IP same as cached IP: $CACHED_IP"
+  exit 0
+ fi
 fi
 
 log "Updating DDNS ... (Public: $PUBLIC_IP, DNS: $DNS_IP)"
@@ -33,6 +43,7 @@ function update_duckdns() {
  response=$(/usr/bin/curl -s "https://www.duckdns.org/update?domains=$ddns_domain&token=$ddns_key")
  if [ "$response" == "OK" ]; then
   debug "DuckDNS updated successfully to $PUBLIC_IP"
+  echo -n "$PUBLIC_IP" > "$CACHE_FILE"
   return 0
  else
   error "DuckDNS update failed: $response"
