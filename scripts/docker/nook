@@ -9,9 +9,6 @@ check_env "WEATHER_API_PROVIDER_1 WEATHER_API_KEY_1 WEATHER_PORT_LOCAL GPS_COORD
 CONTAINER="nook"
 IMAGE="gadget1999/rpi-nook-weather"
 
-WORK_DIR=/download/container/nook
-grant_container_access $WORK_DIR
-
 sudo rm -R $LOG
 touch $LOG
 grant_container_access $LOG
@@ -27,8 +24,6 @@ EXTRA_OPTS=(
  -e WEATHER_API_PROVIDER_3=$WEATHER_API_PROVIDER_3
  -e WEATHER_API_KEY_3=$WEATHER_API_KEY_3
  -e GPS_COORDINATES=$GPS_COORDINATES
- -e QUOTE_FILE=/quotes/quotes.csv
- -v $WORK_DIR/quotes:/quotes:ro
  -v $LOG:/tmp/nook-weather.log
  -p $WEATHER_PORT_LOCAL:8080
  -m $MAX_RAM
