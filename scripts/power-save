@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+POWER_CMD="sudo /usr/bin/cpupower"
+case $1 in
+ on)
+  $POWER_CMD frequency-set -g powersave
+  $POWER_CMD frequency-info
+  ;;
+ off)
+  $POWER_CMD frequency-set -g performance
+  $POWER_CMD frequency-info
+  ;;
+ *)
+  show_usage "on | off"
+  ;;
+esac

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/disk.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+# only allow one VHD or disk at the same time, in the future we may support multiple if needed
+MOUNT_POINT=/tmp/unlocked
+
+# unmount in case already mounted
+unmount_bitlocker $MOUNT_POINT
+unmount_bitlocker_vhd $MOUNT_POINT
+
+case $1 in
+ disk)
+  DISK_DEV="$2"
+  MOUNT_MODE="$3"
+  [ "$DISK_DEV" == "" ] && usage
+  [ ! -b "$DISK_DEV" ] && fatal_error "Disk device $DISK_DEV not found"
+  mount_bitlocker $DISK_DEV $MOUNT_POINT $MOUNT_MODE
+  ;;
+ vhd)
+  VHD_FILE="$2"
+  MOUNT_MODE="$3"
+  [ "$VHD_FILE" == "" ] && usage
+  [ ! -f "$VHD_FILE" ] && fatal_error "VHD file $VHD_FILE not found"
+  # seems partition number is always 2
+  mount_bitlocker_vhd $VHD_FILE 2 $MOUNT_POINT $MOUNT_MODE
+  ;;
+ *)
+  show_usage "disk partition [RW] | vhd vhd_file_path [RW]"
+  ;;
+esac
