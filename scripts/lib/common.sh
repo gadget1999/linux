@@ -236,6 +236,39 @@ function set_lastrun()   {
  [ "$?" != "0" ] && log_error "Failed to set timestamp."
 }
 
+function check_schedule() {
+  local schedule_pattern=$1
+  # Get current time as HHMM format (e.g., 1430 for 2:30 PM)
+  local current_time=$(date +%H%M)
+
+  # Save original IFS and set it to semicolon for parsing
+  local OLD_IFS=$IFS
+  IFS=';'
+  
+  for range in $schedule_pattern; do
+    # Split range into start and end times
+    local start_time_str=$(echo "$range" | cut -d'-' -f1)
+    local end_time_str=$(echo "$range" | cut -d'-' -f2)
+
+    # Convert times to integers for comparison (remove colon)
+    local start_time=$(echo "$start_time_str" | tr -d ':')
+    local end_time=$(echo "$end_time_str" | tr -d ':')
+
+    # Check if current time is within the range
+    if [ "$current_time" -ge "$start_time" ] && [ "$current_time" -le "$end_time" ]; then
+      echo "RUN"
+      IFS=$OLD_IFS
+      return 0
+    fi
+  done
+  
+  # Restore IFS
+  IFS=$OLD_IFS
+
+  echo "SKIP"
+  return 1
+}
+
 ############# CIFS #############
 
 function mount_cifs_share() {
