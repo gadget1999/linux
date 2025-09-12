@@ -9,6 +9,7 @@ EPOCH=$(date +%s)
 PROGRAM="${0##*/}"
 LOG=/tmp/$PROGRAM.log
 ENABLE_LOGGING=1
+MAX_LOG_FILE_SIZE=1000000
 DEBUG=1
 
 ############# Env Checking #############
@@ -116,7 +117,18 @@ function color_echo() {
 function log() {
  local TIMESTAMP=$(date +%Y.%m.%d_%H:%M:%S)
  color_echo green "$TIMESTAMP $1"
- [ "$ENABLE_LOGGING" == "1" ] && echo "$TIMESTAMP $1" >> $LOG
+ if [ "$ENABLE_LOGGING" == "1" ]; then
+  if [ -f "$LOG" ]; then
+   # Get file size (portable: try stat then fallback to wc)
+   local filesize
+   filesize=$(stat -c%s "$LOG" 2>/dev/null || wc -c < "$LOG")
+   if [ "$filesize" -gt "$MAX_LOG_FILE_SIZE" ]; then
+    # Truncate (overwrite) the log file
+    : > "$LOG"
+   fi
+  fi
+  echo "$TIMESTAMP $1" >> $LOG
+ fi
 }
 
 function log_error() {
