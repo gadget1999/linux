@@ -5,7 +5,7 @@ source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/email.sh
 
 check_email_env
-check_env "MAIN_EMAIL"
+check_env "MAIN_EMAIL EMAIL_SENDER EMAIL_API_KEY"
 
 [ $# != 2 ] && show_usage "subject body"
 

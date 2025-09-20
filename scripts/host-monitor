@@ -8,12 +8,12 @@ source $CMD_PATH/lib/firebase.sh
 #DEBUG=0
 
 check_env "METRICS_FB_URL METRICS_FB_KEY"
+check_env "MAIN_EMAIL EMAIL_SENDER EMAIL_API_KEY"
 check_packages "curl jq"
 
 if [ $# == 0 ]; then
- check_env "SENDGRID_API_KEY MAIN_EMAIL HOST_WATCHLIST"
+ check_env "HOST_WATCHLIST"
 else
- check_env "SENDGRID_API_KEY MAIN_EMAIL"
  HOST_WATCHLIST="$*"
 fi
 check_packages "jq"
@@ -43,7 +43,7 @@ function send_host_report() {
  local error=$2
  log_error "Sending error report: $error"
  check_email_env
- send_email \
+ send-email \
   $MAIN_EMAIL \
   "Server [$host] may be down" \
   "$error"
