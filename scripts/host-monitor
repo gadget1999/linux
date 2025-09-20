@@ -44,7 +44,6 @@ function send_host_report() {
  log_error "Sending error report: $error"
  check_email_env
  send-email \
-  $MAIN_EMAIL \
   "Server [$host] may be down" \
   "$error"
 }
