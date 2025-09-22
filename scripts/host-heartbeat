@@ -26,7 +26,7 @@ function fb_send_metrics() {
    }
   )
 
- debug "Send metrics: $msg"
+ #debug "Send metrics: $msg"
  firebase_send "heartbeat/$host" "$msg"
 }
 
