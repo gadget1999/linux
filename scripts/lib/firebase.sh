@@ -28,9 +28,10 @@ function firebase_response() {
 function firebase_send() {
  local path=$1
  local msg=$2
- local url="$FB_BASE_URL/$path.json?auth=$FB_KEY"
+ local resource_url="$FB_BASE_URL/$path.json"
+ local url="$resource_url?auth=$FB_KEY"
 
- debug "Sending firebase message to [$url]: $msg"
+ debug "Sending firebase message to [$resource_url]: $msg"
  curl -X PUT -d "$msg" "$url"
 }
 
