@@ -35,7 +35,8 @@ function check_alive() {
  fi
 
  local temperature=$(firebase_get_attr "heartbeat/$host" "temperature")
- debug "[$host] ($temperature°): last seen $delta seconds ago." 
+ local free_ram_mb=$(firebase_get_attr "heartbeat/$host" "free_ram_mb")
+ debug "[$host]: last seen $delta seconds ago (free_ram_mb:$free_ram_mb MB, temperature:$temperature°): " 
 }
 
 function send_host_report() {

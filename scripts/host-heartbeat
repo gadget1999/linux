@@ -15,14 +15,21 @@ function get_cpu_temperature() {
  echo $temperature
 }
 
+function get_free_ram_mb() {
+  # Returns free RAM in MB (rounded down)
+  awk '/MemFree/ { printf "%d", $2/1024 }' /proc/meminfo
+}
+
 function fb_send_metrics() {
  local host=$(hostname)
  local temperature=$(get_cpu_temperature)
+ local free_ram_mb=$(get_free_ram_mb)
  local msg=$( \
-   jq -n '{timestamp:$epoch, updated:$time, temperature:$temperature}' \
+   jq -n '{timestamp:$epoch, updated:$time, temperature:$temperature, free_ram_mb:$free_ram_mb}' \
     --arg epoch $EPOCH \
     --arg time $NOW \
     --arg temperature "$temperature" \
+    --arg free_ram_mb "$free_ram_mb" \
    }
   )
 
