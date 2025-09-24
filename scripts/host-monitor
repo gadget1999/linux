@@ -20,23 +20,42 @@ check_packages "jq"
 
 MAX_DELAY=7300
 
+FLAG_DIR=/tmp
+
 function check_alive() {
  local host=$1
+ local flag_file="$FLAG_DIR/host-monitor-$host.down"
  local timestamp=$(firebase_get_attr "heartbeat/$host" "timestamp")
+ local error=""
  if [ "$timestamp" == "null" ] || [ "$timestamp" == "" ] ; then
-  send_host_report $host "Failed to get heartbeat for host [$host]."
+  error="[$host]: No heartbeat data found."
+  log_error "$error"
+  if [ ! -f "$flag_file" ]; then
+    send_host_report $host "$error"
+    touch "$flag_file"
+  fi
   return
  fi
 
  local delta=$(( $(date +%s) - $timestamp ))
  if (( $delta > $MAX_DELAY )); then
-  send_host_report $host "[$host]: $delta seconds passed since last update. Host may be down."
+  error="[$host]: $delta seconds passed since last update. Host may be down."
+  log_error "$error"
+  if [ ! -f "$flag_file" ]; then
+    send_host_report $host "$error"
+    touch "$flag_file"
+  fi
   return
+ fi
+
+ # Host is online, clear flag if it exists
+ if [ -f "$flag_file" ]; then
+   rm -f "$flag_file"
  fi
 
  local temperature=$(firebase_get_attr "heartbeat/$host" "temperature")
  local free_ram_mb=$(firebase_get_attr "heartbeat/$host" "free_ram_mb")
- debug "[$host]: last seen $delta seconds ago (free_ram_mb:$free_ram_mb MB, temperature:$temperature°): " 
+ debug "[$host]: last seen $delta seconds ago (free RAM: $free_ram_mb MB, temperature: $temperature°)" 
 }
 
 function send_host_report() {
