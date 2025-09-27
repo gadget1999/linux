@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+
+check_root
+
+debug "Clearing docker builder cache"
+$SUDO docker volume rm buildx_buildkit_multi-platform-builder0_state
+
+debug "Clearing logs"
+$SUDO rm -f /var/log/*.gz /var/log/*.[0-9] /var/log/*.old
+
+debug "Clearing apt cache"
+$SUDO apt-get clean
+$SUDO rm -rf /var/cache/apt/archives
+$SUDO rm -rf /var/cache/apt/archives/partial
