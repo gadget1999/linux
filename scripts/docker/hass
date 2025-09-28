@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "CONTAINER_CONFIG_ROOT"
+check_env "CONTAINER_CONFIG_ROOT HASS_PORT_LOCAL"
 
 CONTAINER="hass"
 IMAGE="ghcr.io/home-assistant/home-assistant:stable"
@@ -17,7 +17,7 @@ EXTRA_OPTS=(
  --log-driver none
  --cap-drop ALL
  --security-opt no-new-privileges
- -p 14104:8123
+ -p $HASS_PORT_LOCAL:8123
  -v $HOST_PATH/config:/config
  -v $HOST_PATH/bin:/cmd:ro
  -m $MAX_RAM
@@ -29,3 +29,11 @@ ENTRYPOINT=()
 # Home Assistant uses customized init
 NO_DOCKER_INIT="yes"
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
+
+if [ "$HASS_DOMAIN" != "" ]; then
+ debug "Starting nginx reverse proxy with external domain ($HASS_DOMAIN)..."
+ nginx proxy $HASS_DOMAIN $HASS_PORT_LOCAL
+elif [ "$HASS_PORT_EXT" != "" ]; then
+ debug "Starting nginx reverse proxy..."
+ nginx $CONTAINER $HASS_PORT_EXT $HASS_PORT_LOCAL
+fi
