@@ -215,8 +215,10 @@ function new_container() {
   $DOCKER_CMD pull $image_name
  fi
 
+ local init_options="--init"
+ [ "$NO_DOCKER_INIT" != "" ] && init_options=""
  local docker_options=(
-  run --init
+  run $init_options
   -v /etc/localtime:/etc/localtime:ro
   --tmpfs /tmp
   --name $container_name

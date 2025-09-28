@@ -18,6 +18,8 @@ create_docker_network bridge sandbox
 
 EXTRA_OPTS=(
  --network sandbox
+ --cap-drop ALL
+ --security-opt no-new-privileges
  -p $YOUTUBE_PORT_LOCAL:8081
  -v $YOUTUBE_ROOT:/downloads
  -e DELETE_FILE_ON_TRASHCAN=true

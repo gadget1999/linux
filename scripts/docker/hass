@@ -4,30 +4,28 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/docker.sh
 
-check_env "CONTAINER_CONFIG_ROOT CERT_STORAGE CONTAINER_UID"
+check_env "CONTAINER_CONFIG_ROOT"
 
 CONTAINER="hass"
-IMAGE="gadget1999/rpi-homeassistant"
+IMAGE="ghcr.io/home-assistant/home-assistant:stable"
 
 HOST_PATH=$CONTAINER_CONFIG_ROOT/$CONTAINER
 grant_container_access $HOST_PATH $CERT_STORAGE
 
-MAX_RAM="100m"
+MAX_RAM="1024m"
 EXTRA_OPTS=(
  --log-driver none
- --tmpfs /run
+ --cap-drop ALL
+ --security-opt no-new-privileges
  -p 14104:8123
- -v $HOST_PATH/config:/config/homeassistant:ro
+ -v $HOST_PATH/config:/config
  -v $HOST_PATH/bin:/cmd:ro
- -v $CERT_STORAGE:/config/letsencrypt
- -u $CONTAINER_UID
  -m $MAX_RAM
  )
 
-ENTRYPOINT=(
- hass -c /config/homeassistant
-   --log-file /tmp/hass.log
- )
+ENTRYPOINT=()
 
 [ "$1" == "debug" ] && DEBUG_DOCKER=1
+# Home Assistant uses customized init
+NO_DOCKER_INIT="yes"
 new_container_service $CONTAINER $IMAGE EXTRA_OPTS ENTRYPOINT
