@@ -8,7 +8,38 @@ source $CMD_PATH/lib/common.sh
 # download ChromeOS Flex image from this page:
 # https://support.google.com/chromeosflex/answer/11541904?hl=en
 IMAGE_PATH="/mnt/Azure/Share/ChromeOS/chromeos.bin"
+IMAGE_URL="https://dl.google.com/chromeos-flex/images/latest.bin.zip"
+ZIP_FILE="/tmp/chromeos.zip"
+UNZIP_DIR="/tmp/chromeos"
+DISK_SIZE=9
 TARGET_DEVICE=/dev/sdb
+
+function get_ChromeOS_ISO() {
+ [ -f "$IMAGE_PATH" ] && return 0
+
+ # check if /tmp has enough space
+ local available_space=$(df --output=avail /tmp | tail -n 1)
+ local required_space=$((DISK_SIZE * 1024 * 1024)) # in KB
+ [ $available_space -lt $required_space ] && fatal_error "/tmp does not have enough space"
+
+ debug "Downloading ChromeOS Flex image from $IMAGE_URL to $ZIP_FILE..."
+ wget -O $ZIP_FILE $IMAGE_URL || fatal_error "Download failed"
+
+ [ ! -f "$ZIP_FILE" ] && fatal_error "File '$ZIP_FILE' does not exist"
+ mkdir -p "$UNZIP_DIR" && unzip "$ZIP_FILE" -d "$UNZIP_DIR" && \
+  echo "Extraction completed!" || echo "Error: Extraction failed!"
+ IMAGE_PATH=$(find "$UNZIP_DIR" -type f -name "*.bin" | head -n 1)
+ [ ! -f "$IMAGE_PATH" ] && fatal_error "BIN file $IMAGE_PATH cannot be found in $UNZIP_DIR"
+}
+
+get_ChromeOS_ISO
+
+read -p "Enter the USB device target [$/dev/sdb]: " TARGET_DEVICE
+TARGET_DEVICE=${TARGET_DEVICE:-/dev/sdb}
 
 log "Creating ChromeOS Flex image on [$TARGET_DEVICE] from [$IMAGE_PATH]..."
 sudo dd if=$IMAGE_PATH of=$TARGET_DEVICE bs=4M status=progress
+sync
+
+debug "Delete temporary files..."
+rm -rf $ZIP_FILE $UNZIP_DIR
