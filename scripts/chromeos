@@ -9,9 +9,9 @@ source $CMD_PATH/lib/common.sh
 # https://support.google.com/chromeosflex/answer/11541904?hl=en
 IMAGE_PATH="/mnt/Azure/Share/ChromeOS/chromeos.bin"
 IMAGE_URL="https://dl.google.com/chromeos-flex/images/latest.bin.zip"
-ZIP_FILE="/tmp/chromeos.zip"
+ZIP_FILE="/downloads/chromeos.zip"
 UNZIP_DIR="/tmp/chromeos"
-DISK_SIZE=9
+DISK_SIZE=8 # in GB
 TARGET_DEVICE=/dev/sdb
 
 function get_ChromeOS_ISO() {
@@ -22,10 +22,12 @@ function get_ChromeOS_ISO() {
  local required_space=$((DISK_SIZE * 1024 * 1024)) # in KB
  [ $available_space -lt $required_space ] && fatal_error "/tmp does not have enough space"
 
- debug "Downloading ChromeOS Flex image from $IMAGE_URL to $ZIP_FILE..."
- wget -O $ZIP_FILE $IMAGE_URL || fatal_error "Download failed"
+ if [ ! -f "$ZIP_FILE" ]; then
+  mkdir -p $(dirname $ZIP_FILE)
+  debug "Downloading ChromeOS Flex image from $IMAGE_URL to $ZIP_FILE..."
+  wget -O $ZIP_FILE $IMAGE_URL || fatal_error "Download failed"
+ fi
 
- [ ! -f "$ZIP_FILE" ] && fatal_error "File '$ZIP_FILE' does not exist"
  mkdir -p "$UNZIP_DIR" && unzip "$ZIP_FILE" -d "$UNZIP_DIR" && \
   echo "Extraction completed!" || echo "Error: Extraction failed!"
  IMAGE_PATH=$(find "$UNZIP_DIR" -type f -name "*.bin" | head -n 1)
@@ -42,4 +44,4 @@ sudo dd if=$IMAGE_PATH of=$TARGET_DEVICE bs=4M status=progress
 sync
 
 debug "Delete temporary files..."
-rm -rf $ZIP_FILE $UNZIP_DIR
+rm -rf $UNZIP_DIR
