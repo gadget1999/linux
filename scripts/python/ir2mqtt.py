@@ -162,7 +162,9 @@ class IR_MQTT_Bridge:
       self.__mqtt_port = int(os.environ['MQTT_PORT'].strip('\" '))
       mqtt_user = os.environ['MQTT_USER'].strip('\" ')
       mqtt_password = os.environ['MQTT_PASSWORD'].strip('\" ')
-      self.__mqtt_client = mqtt_client.Client("IR_MQTT_Bridge")
+      mqtt_API_version = mqtt_client.CallbackAPIVersion.VERSION2
+      mqtt_client_id = "IR_MQTT_Bridge"
+      self.__mqtt_client = mqtt_client.Client(mqtt_API_version, mqtt_client_id)
       self.__mqtt_client.on_connect = IR_MQTT_Bridge.__on_mqtt_connect
       self.__mqtt_client.on_disconnect = IR_MQTT_Bridge.__on_mqtt_disconnect
       self.__mqtt_client.on_publish = IR_MQTT_Bridge.__on_mqtt_publish
@@ -172,7 +174,7 @@ class IR_MQTT_Bridge:
       logger.error(f"MQTT configuration is invalid: {e}")
       raise
 
-  def __on_mqtt_connect(client, userdata, flags, rc):
+  def __on_mqtt_connect(client, userdata, flags, reason_code, properties):
     if rc == 0:
       client.connected_flag = True
       client.bad_connection_flag = False
@@ -180,14 +182,14 @@ class IR_MQTT_Bridge:
     else:
       client.connected_flag = False
       client.bad_connection_flag = True
-      logger.error(f"MQTT client connection error: {rc}")
+      logger.error(f"MQTT client connection error: {reason_code}")
 
-  def __on_mqtt_disconnect(client, userdata, rc):
-    logger.error(f"MQTT connection dropped: {rc}")
+  def __on_mqtt_disconnect(client, userdata, disconnect_flags, reason_code, properties):
+    logger.error(f"MQTT connection dropped: {reason_code}")
     client.connected_flag = False
     client.disconnect_flag = True
 
-  def __on_mqtt_publish(client, userdata, mid):
+  def __on_mqtt_publish(client, userdata, mid, reason_code, properties):
     logger.info(f"Sent MQTT msg #{mid}")
 
   def __disconnect(self):
