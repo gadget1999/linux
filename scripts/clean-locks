@@ -12,7 +12,7 @@ check_packages "pgrep"
 function clean_lock() {
  local lockfile=$1
  local filename="$(basename -- "$lockfile")"
- local app="${filename%.*}"
+ local app="${filename%%.*}"
  
  debug "Checking lock file $lockfile (App: $app) ..."
  [ ! -e $lockfile ] && return
