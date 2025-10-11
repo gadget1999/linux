@@ -11,6 +11,4 @@ psutil
 paho-mqtt
 # uncomment for Raspberry Pi
 #gpiozero
-#pigpio
 #RPi.GPIO
-#lgpio
