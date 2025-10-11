@@ -42,7 +42,7 @@ class MQTT_Helper:
       raise
 
   def __on_mqtt_connect(client, userdata, flags, reason_code, properties):
-    if rc == 0:
+    if reason_code == 0:
       client.connected_flag = True
       client.bad_connection_flag = False
       logger.info("MQTT client connected.")      
