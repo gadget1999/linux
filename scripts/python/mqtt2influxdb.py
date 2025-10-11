@@ -98,7 +98,8 @@ class MQTT_Helper:
   def __on_mqtt_log(client, userdata, level, buf):
     # Forward raw paho log buffer to our logger at debug level
     try:
-      logger.debug(f"[paho] {buf}")
+      if "DEBUG" in os.environ:
+        logger.debug(f"[paho] {buf}")
     except Exception:
       pass
 
