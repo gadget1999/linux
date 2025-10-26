@@ -27,24 +27,20 @@ set_rclone_env() {
 set_rclone_env
 
 sync_data() {
-  local sync_config="$1"
-  # sync config format: source_dir|target_dir|action
-  local source_dir=$(echo $sync_config | cut -d'|' -f1)
-  local target_dir=$(echo $sync_config | cut -d'|' -f2)
-  local action=$(echo $sync_config | cut -d'|' -f3)
-  if [ -z "$source_dir" ] || [ -z "$target_dir" ] || [ -z "$action" ]; then  
+  local source_dir target_dir action options
+  IFS='|' read -r source_dir target_dir action options <<< "$1"
+  if [ -z "$source_dir" ] || [ -z "$target_dir" ] || [ -z "$action" ]; then
     error "Invalid sync config: [$sync_config]"
     return 1
   fi
 
-  debug "Sync config: source_dir=[$source_dir], target_dir=[$target_dir], action=[$action]"
+  debug "Sync config: source_dir=[$source_dir], target_dir=[$target_dir], action=[$action], options=[$options]"
   rclone $action $source_dir $target_dir \
-    --min-age 1d \
-    --immutable \
     --log-file=/tmp/rclone.log \
-    --log-level INFO
+    --log-level INFO \
+    $options
 }
 
-for sync_config in ${SYNC_DATA_CONFIG[*]}; do
+for sync_config in "${SYNC_DATA_CONFIG[@]}"; do
  sync_data "$sync_config"
 done
