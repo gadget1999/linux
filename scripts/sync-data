@@ -22,7 +22,7 @@ set_rclone_env() {
   export RCLONE_PROGRESS=true
   export RCLONE_SIZE_ONLY=true
   #export RCLONE_NO_UPDATE_MODTIME=true
-  export RCLONE_STATS=30s
+  export RCLONE_STATS=10s
 }
 set_rclone_env
 
