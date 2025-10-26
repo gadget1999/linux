@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_env "SYNC_DATA_CONFIG"
+check_packages "rclone"
+
+lock
+
+set_rclone_env() {
+  # rclone uses Go and seems GC cannot keep up when large number of big files
+  export GOGC=80
+
+  # export global rclone options
+  #export RCLONE_BWLIMIT=10M
+  export RCLONE_BWLIMIT="off"
+  export RCLONE_TRANSFERS=1
+  export RCLONE_MULTI_THREAD_STREAMS=0
+  export RCLONE_PROGRESS=true
+  export RCLONE_SIZE_ONLY=true
+  #export RCLONE_NO_UPDATE_MODTIME=true
+  export RCLONE_STATS=30s
+}
+set_rclone_env
+
+sync_data() {
+  local sync_config="$1"
+  # sync config format: source_dir|target_dir|action
+  local source_dir=$(echo $sync_config | cut -d'|' -f1)
+  local target_dir=$(echo $sync_config | cut -d'|' -f2)
+  local action=$(echo $sync_config | cut -d'|' -f3)
+  if [ -z "$source_dir" ] || [ -z "$target_dir" ] || [ -z "$action" ]; then  
+    error "Invalid sync config: [$sync_config]"
+    return 1
+  fi
+
+  debug "Sync config: source_dir=[$source_dir], target_dir=[$target_dir], action=[$action]"
+  rclone $action $source_dir $target_dir \
+    --min-age 1d \
+    --immutable \
+    --log-file=/tmp/rclone.log \
+    --log-level INFO
+}
+
+for sync_config in ${SYNC_DATA_CONFIG[*]}; do
+ sync_data "$sync_config"
+done
