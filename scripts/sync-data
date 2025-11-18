@@ -38,6 +38,7 @@ sync_data() {
   rclone $action $source_dir $target_dir \
     --log-file=/tmp/rclone.log \
     --log-level INFO \
+    --stats=0 \
     $options
 }
 
