@@ -53,7 +53,8 @@ function upgrade_pod() {
  local pod_name=$1
  local compose_file="$COMPOSE_FILE_ROOT/$pod_name/docker-compose.yaml"
 
- debug "Upgrade immich server ..."
+ debug "Upgrade immich images ..."
+ $DOCKER_CMD compose -f $compose_file pull
 }
 
 #########################
@@ -66,12 +67,14 @@ case $1 in
   ;;
  upgrade)
   upgrade_pod $POD
+  start_pod $POD
   ;;
  debug)
   DEBUG_POD=1
   start_pod $POD
   ;;
  *)
+  upgrade_pod $POD
   start_pod $POD
   ;;
 esac
