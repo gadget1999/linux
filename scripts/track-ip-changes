@@ -4,7 +4,7 @@ CMD_PATH=$(dirname "$0")
 source $CMD_PATH/lib/common.sh
 source $CMD_PATH/lib/email.sh
 
-check_env "MAIN_EMAIL"
+check_env "MAIN_EMAIL EMAIL_SENDER EMAIL_API_KEY"
 check_email_env
 
 CHECK_INTERVAL=600
@@ -50,8 +50,7 @@ function notify_ip_change {
  local old_ip=$2
 
  debug "Sending email notification to $MAIN_EMAIL"
- send_email \
-  $MAIN_EMAIL \
+ send-email \
   "Public IP changed from [$old_ip] to [$new_ip]" \
   "$update_ip_whitelist"
 }
