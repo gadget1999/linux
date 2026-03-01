@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+CMD_PATH=$(dirname "$0")
+source $CMD_PATH/lib/common.sh
+source $CMD_PATH/lib/docker.sh
+#ENABLE_LOGGING=0
+#DEBUG=0
+
+check_env "CONTAINER_CONFIG_ROOT MEDIA_IMPORT_FOLDER"
+
+IMAGE=gadget1999/rpi-media-tool
+CONFIG_FOLDER="$CONTAINER_CONFIG_ROOT/media"
+
+EXTRA_OPTS=(
+ --cap-drop ALL
+ --security-opt no-new-privileges
+ -v $CONFIG_FOLDER:/config
+ -v $MEDIA_IMPORT_FOLDER:/Import
+ )
+
+ENTRYPOINT=()
+
+[ "$1" == "debug" ] && DEBUG_DOCKER=1
+
+container_cli $IMAGE EXTRA_OPTS ENTRYPOINT
