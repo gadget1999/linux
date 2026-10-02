@@ -22,7 +22,10 @@ function mount_vera_volume() {
 
  debug "Mounting Veracrypt volume [$vol_file] to $VERA_MOUNTPOINT..."
  mkdir -p $VERA_MOUNTPOINT
- sudo veracrypt --text --mount $vol_file $VERA_MOUNTPOINT \
+ # sudo veracrypt --text --mount $vol_file \
+ #               --fs-options="uid=8000,gid=8000,umask=022" \
+ sudo veracrypt --text --mount $vol_file \
+                $VERA_MOUNTPOINT \
                 --pim 0 --keyfiles "" --protect-hidden no
  ls -l $VERA_MOUNTPOINT
 }
